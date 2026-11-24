@@ -2,10 +2,10 @@
 # Deterministic headless test runner: verifies physics tuning targets (0-100 km/h, top speed), Pacejka curves and audio DSP.
 extends SceneTree
 
-const GameConstants = preload("res://src/core/constants.gd")
-const PacejkaTire = preload("res://src/physics/pacejka_tire.gd")
-const RaycastWheel = preload("res://src/physics/raycast_wheel.gd")
-const VehicleController = preload("res://src/vehicles/vehicle_controller.gd")
+const GameConstants = preload("res://scripts/core/constants.gd")
+const PacejkaTire = preload("res://scripts/vehicle/pacejka_tire.gd")
+const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
+const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 const ProceduralAudioEngine = preload("res://src/audio/procedural_audio_engine.gd")
 
 func _init():
