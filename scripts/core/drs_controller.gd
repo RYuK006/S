@@ -37,13 +37,11 @@ func _process(delta: float):
 	var avg_frame_time = sum / float(history_size)
 	var avg_fps = 1.0 / max(0.0001, avg_frame_time)
 	
-	var vp = get_viewport()
-	if not vp:
-		return
-		
 	if avg_fps < target_fps * 0.92:
 		current_scale = max(min_scale, current_scale - 0.05)
 	elif avg_fps > target_fps * 0.98 and current_scale < max_scale:
 		current_scale = min(max_scale, current_scale + 0.02)
 		
-	vp.scaling_3d_scale = current_scale
+	var vp = get_viewport()
+	if vp:
+		vp.scaling_3d_scale = current_scale
