@@ -10,7 +10,7 @@
   #canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; }
   canvas { display: block; width: 100%; height: 100%; }
 
-  /* HUD Elements */
+  /* HUD Root */
   #hud { position: absolute; inset: 0; pointer-events: none; }
   
   /* Top-Left: Position, Lap, Timers */
@@ -20,41 +20,67 @@
   #lap-info { font-size: 22px; font-weight: bold; color: #eee; }
   #time-info { font-size: 15px; color: #a0c0e0; font-family: monospace; }
 
-  /* Bottom-Right: Speedometer & Tachometer */
+  /* Top-Center: Kill Feed / Battle Announcements */
+  #battle-feed { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 40; pointer-events: none; }
+  .feed-item { background: rgba(18, 22, 28, 0.88); border-left: 3px solid #ff3300; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #fff; text-shadow: 0 1px 3px #000; animation: fadeSlide 3.5s forwards; }
+  @keyframes fadeSlide { 0% { opacity: 0; transform: translateY(-8px); } 10% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+
+  /* Bottom-Left: Armour & Combat Status */
+  #combat-cluster { position: absolute; bottom: 24px; left: 24px; display: flex; flex-direction: column; gap: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+  .bar-label { font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #bbb; display: flex; justify-content: space-between; }
+  #health-bar-container { width: 240px; height: 14px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.25); }
+  #health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff2200, #ff8800, #00dd55); transition: width 0.08s; }
+  
+  #weapons-dock { display: flex; gap: 10px; margin-top: 4px; }
+  .weapon-card { background: rgba(12, 16, 22, 0.85); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 6px 12px; min-width: 72px; text-align: center; }
+  .weapon-card.active { border-color: #ff6600; box-shadow: 0 0 10px rgba(255,100,0,0.4); }
+  .w-type { font-size: 10px; color: #889; text-transform: uppercase; letter-spacing: 1px; }
+  .w-name { font-size: 13px; font-weight: bold; color: #fff; margin: 2px 0; }
+  .w-ammo { font-size: 12px; color: #ffaa00; font-family: monospace; font-weight: bold; }
+
+  /* Bottom-Right: Speedometer, Tachometer, Nitro */
   #speed-cluster { position: absolute; bottom: 24px; right: 28px; text-align: right; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
   #speed-num { font-size: 64px; font-weight: 900; color: #00e5ff; line-height: 1; }
   #speed-unit { font-size: 16px; color: #88a; margin-left: 4px; }
   #rpm-gauge { font-size: 18px; color: #ffb700; font-weight: bold; margin-top: 4px; }
-  #nitro-bar-container { width: 220px; height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; margin-top: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+  #nitro-bar-container { width: 240px; height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; margin-top: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
   #nitro-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #00bbff, #00ffaa); transition: width 0.05s; }
 
   /* Top-Right: 2D Minimap Radar */
   #minimap-canvas { position: absolute; top: 20px; right: 24px; width: 180px; height: 180px; border-radius: 50%; background: rgba(10, 14, 20, 0.85); border: 2px solid rgba(255, 120, 0, 0.4); box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
 
+  /* Target Crosshair / Reticle */
+  #target-reticle { position: absolute; width: 44px; height: 44px; border: 2px solid rgba(255, 60, 0, 0.8); border-radius: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; transition: transform 0.05s ease-out; }
+  #target-reticle::before { content: ''; position: absolute; top: 50%; left: -6px; right: -6px; height: 2px; background: rgba(255, 60, 0, 0.8); }
+  #target-reticle::after { content: ''; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: rgba(255, 60, 0, 0.8); }
+  #target-dist { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: bold; color: #ff3300; font-family: monospace; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+
   /* Center Screen: Countdown Overlay */
   #countdown-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 900; text-shadow: 0 0 30px rgba(255,100,0,0.8); color: #ff6600; display: none; }
 
   /* Results Modal */
-  #results-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(12, 14, 18, 0.95); border: 2px solid #ff7700; border-radius: 8px; padding: 28px 40px; text-align: center; display: none; pointer-events: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9); z-index: 50; }
+  #results-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(12, 14, 18, 0.96); border: 2px solid #ff7700; border-radius: 8px; padding: 28px 40px; text-align: center; display: none; pointer-events: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9); z-index: 50; min-width: 380px; }
   #results-modal h2 { font-size: 38px; color: #ffaa00; margin-bottom: 12px; }
-  #results-standings { font-size: 17px; text-align: left; margin: 16px 0; line-height: 1.8; color: #ddd; }
-  .btn-restart { padding: 10px 24px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+  #results-standings { font-size: 16px; text-align: left; margin: 16px 0; line-height: 1.8; color: #ddd; }
+  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; }
+  .btn-restart:hover { background: #ff7722; }
 
   /* Controls Hint */
-  #controls-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.8); padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 13px; color: #bbb; display: flex; gap: 16px; }
-  .key { background: #222; border: 1px solid #444; border-bottom: 2px solid #555; padding: 2px 7px; border-radius: 3px; color: #ff9900; font-weight: bold; }
+  #controls-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.85); padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 12px; color: #bbb; display: flex; gap: 14px; white-space: nowrap; }
+  .key { background: #222; border: 1px solid #444; border-bottom: 2px solid #555; padding: 2px 6px; border-radius: 3px; color: #ff9900; font-weight: bold; }
 
   /* Mobile Touch Controls */
   #touch-controls { position: absolute; inset: 0; pointer-events: none; display: none; }
-  .touch-btn { position: absolute; width: 72px; height: 72px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; pointer-events: auto; touch-action: none; color: #fff; }
+  .touch-btn { position: absolute; width: 68px; height: 68px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; pointer-events: auto; touch-action: none; color: #fff; }
   .touch-btn:active { background: rgba(255, 120, 0, 0.4); border-color: #ff7700; }
-  #btn-gas { bottom: 24px; right: 24px; width: 84px; height: 84px; background: rgba(0, 220, 100, 0.2); }
-  #btn-brake { bottom: 24px; right: 120px; width: 72px; height: 72px; background: rgba(220, 50, 50, 0.2); }
-  #btn-handbrake { bottom: 110px; right: 60px; }
-  #btn-nitro { bottom: 180px; right: 24px; }
-  #btn-cam { top: 16px; right: 16px; }
+  #btn-gas { bottom: 24px; right: 24px; width: 80px; height: 80px; background: rgba(0, 220, 100, 0.2); }
+  #btn-brake { bottom: 24px; right: 115px; width: 68px; height: 68px; background: rgba(220, 50, 50, 0.2); }
+  #btn-fire { bottom: 115px; right: 24px; width: 72px; height: 72px; background: rgba(255, 80, 0, 0.3); border-color: #ff6600; }
+  #btn-rocket { bottom: 115px; right: 105px; width: 68px; height: 68px; background: rgba(255, 180, 0, 0.25); }
+  #btn-mine { bottom: 195px; right: 24px; width: 60px; height: 60px; background: rgba(200, 0, 255, 0.25); }
+  #btn-nitro { bottom: 195px; right: 95px; width: 60px; height: 60px; }
   #dpad-left { bottom: 36px; left: 24px; }
-  #dpad-right { bottom: 36px; left: 116px; }
+  #dpad-right { bottom: 36px; left: 104px; }
 
   /* Boot Overlay */
   #boot-screen { position: absolute; inset: 0; background: #0a0b0e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; cursor: pointer; transition: opacity 0.5s; }
@@ -72,16 +98,56 @@
 
 <!-- In-Race HUD -->
 <div id="hud">
+  <!-- Top-Left: Position, Lap, Timers -->
   <div id="race-stats">
     <div id="pos-badge">1<span>ST / 6</span></div>
     <div id="lap-info">LAP 1 / 3</div>
     <div id="time-info">TIME: 0:00.00 | BEST: --:--.--</div>
   </div>
 
+  <!-- Top-Center: Battle Announcements Feed -->
+  <div id="battle-feed"></div>
+
+  <!-- 2D Minimap Radar -->
   <canvas id="minimap-canvas" width="180" height="180"></canvas>
 
+  <!-- 3D Target Reticle Screen Overlay -->
+  <div id="target-reticle">
+    <div id="target-dist">LOCK 35M</div>
+  </div>
+
+  <!-- Countdown Banner -->
   <div id="countdown-banner">3</div>
 
+  <!-- Bottom-Left: Armour & Combat Dock -->
+  <div id="combat-cluster">
+    <div class="bar-label">
+      <span>ARMOUR INTEGRITY</span>
+      <span id="health-num">700 / 700</span>
+    </div>
+    <div id="health-bar-container">
+      <div id="health-fill"></div>
+    </div>
+    <div id="weapons-dock">
+      <div class="weapon-card active" id="card-primary">
+        <div class="w-type">PRIMARY [J]</div>
+        <div class="w-name">TWIN MG</div>
+        <div class="w-ammo" id="ammo-primary">INF</div>
+      </div>
+      <div class="weapon-card" id="card-roof">
+        <div class="w-type">ROOF [K]</div>
+        <div class="w-name">ROCKETS</div>
+        <div class="w-ammo" id="ammo-roof">6 / 6</div>
+      </div>
+      <div class="weapon-card" id="card-rear">
+        <div class="w-type">REAR [E]</div>
+        <div class="w-name">MINES</div>
+        <div class="w-ammo" id="ammo-rear">3 / 3</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom-Right: Speedometer & Nitro -->
   <div id="speed-cluster">
     <div id="speed-num">0<span id="speed-unit">KM/H</span></div>
     <div id="rpm-gauge">GEAR 1 | 900 RPM</div>
@@ -90,13 +156,16 @@
     </div>
   </div>
 
+  <!-- Controls Hint -->
   <div id="controls-hint">
-    <div><span class="key">W</span> / <span class="key">S</span> Gas / Brake</div>
-    <div><span class="key">A</span> / <span class="key">D</span> Steer</div>
-    <div><span class="key">SPACE</span> Handbrake Drift</div>
+    <div><span class="key">W</span>/<span class="key">S</span> Drive</div>
+    <div><span class="key">A</span>/<span class="key">D</span> Steer</div>
+    <div><span class="key">L-CLICK</span>/<span class="key">J</span> Twin MG</div>
+    <div><span class="key">R-CLICK</span>/<span class="key">K</span> Rockets</div>
+    <div><span class="key">E</span> Drop Mine</div>
+    <div><span class="key">SPACE</span> Drift</div>
     <div><span class="key">SHIFT</span> Nitro</div>
-    <div><span class="key">C</span> Camera</div>
-    <div><span class="key">F3</span> Telemetry</div>
+    <div><span class="key">C</span> Cam</div>
   </div>
 </div>
 
@@ -113,31 +182,28 @@
   <div id="dpad-right" class="touch-btn">▶</div>
   <div id="btn-gas" class="touch-btn">GAS</div>
   <div id="btn-brake" class="touch-btn">BRK</div>
-  <div id="btn-handbrake" class="touch-btn">DRIFT</div>
+  <div id="btn-fire" class="touch-btn">MG</div>
+  <div id="btn-rocket" class="touch-btn">RCKT</div>
+  <div id="btn-mine" class="touch-btn">MINE</div>
   <div id="btn-nitro" class="touch-btn">NITRO</div>
-  <div id="btn-cam" class="touch-btn">CAM</div>
 </div>
 
 <!-- Boot Splash / Audio Unlocker -->
 <div id="boot-screen">
   <h1>GRID<span>LETHAL</span></h1>
-  <p>STAGE 2 — 3-LAP CIRCUIT RACE VS 5 AI RIVALS</p>
-  <div class="press-start">Click to Enter Grid & Unlock Audio</div>
+  <p>STAGE 3 — ARMED VEHICULAR COMBAT & 3-LAP CIRCUIT RACE</p>
+  <div class="press-start">Click to Enter Grid & Arm Weapons</div>
 </div>
 
 <script>
-// ============================================================================
-// SECTION 0: GLOBAL SETUP & MOBILE DETECTION
-// ============================================================================
-const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
-if (isMobile) {
-  document.getElementById('touch-controls').style.display = 'block';
-  document.getElementById('controls-hint').style.display = 'none';
-}
 
 // ============================================================================
-// SECTION 1: PROCEDURAL DSP WEB AUDIO ENGINE (ZERO-BUZZ)
+// MODULE: AUDIO.JS
 // ============================================================================
+// web/audio.js
+// Procedural Web Audio Engine with anti-buzz synthesis, zero DC offset,
+// combustion pulse trains, granular tire squeal, and synthesized combat effects.
+
 class ProceduralAudioEngine {
   constructor() {
     this.ctx = null;
@@ -159,7 +225,8 @@ class ProceduralAudioEngine {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
     this.ctx = new AudioContextClass();
-    
+
+    // Paul Kellet's filter for true pink noise
     let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
     let sum = 0;
     for (let i = 0; i < this.sampleRate; i++) {
@@ -175,6 +242,7 @@ class ProceduralAudioEngine {
       sum += val;
       b6 = white * 0.115926;
     }
+    // Remove DC offset
     const mean = sum / this.sampleRate;
     let maxP = 0.0001;
     for (let i = 0; i < this.sampleRate; i++) {
@@ -186,6 +254,12 @@ class ProceduralAudioEngine {
 
     this.scriptNode = this.ctx.createScriptProcessor(2048, 0, 2);
     this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.value = -12;
+    this.compressor.knee.value = 8;
+    this.compressor.ratio.value = 6;
+    this.compressor.attack.value = 0.003;
+    this.compressor.release.value = 0.15;
+
     this.scriptNode.onaudioprocess = (e) => this.processAudio(e);
     this.scriptNode.connect(this.compressor);
     this.compressor.connect(this.ctx.destination);
@@ -246,11 +320,145 @@ class ProceduralAudioEngine {
       right[i] = sample;
     }
   }
+
+  // Gunfire sound synthesis (punchy transient click + filtered noise burst)
+  playGunfire() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    
+    // Low transient thud
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.05);
+    oscGain.gain.setValueAtTime(0.45, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    osc.connect(oscGain);
+    oscGain.connect(this.compressor);
+    osc.start(now);
+    osc.stop(now + 0.06);
+
+    // Crack noise
+    const noiseBuf = this.ctx.createBuffer(1, 44100 * 0.08, 44100);
+    const data = noiseBuf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (44100 * 0.015));
+    }
+    const noiseSrc = this.ctx.createBufferSource();
+    noiseSrc.buffer = noiseBuf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1600;
+    filter.Q.value = 1.8;
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.55, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+    noiseSrc.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.compressor);
+    noiseSrc.start(now);
+  }
+
+  // Rocket launch whoosh
+  playRocketLaunch() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const dur = 0.35;
+    const buf = this.ctx.createBuffer(1, 44100 * dur, 44100);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      let t = i / 44100;
+      d[i] = (Math.random() * 2 - 1) * (1.0 - t / dur);
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(350, now);
+    filter.frequency.exponentialRampToValueAtTime(1400, now + dur);
+    filter.Q.value = 2.5;
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.compressor);
+    src.start(now);
+  }
+
+  // Sub-bass explosive impact boom
+  playExplosion() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const dur = 0.75;
+
+    // Sub-bass sine boom
+    const sub = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(95, now);
+    sub.frequency.exponentialRampToValueAtTime(28, now + dur);
+    subGain.gain.setValueAtTime(0.9, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    sub.connect(subGain);
+    subGain.connect(this.compressor);
+    sub.start(now);
+    sub.stop(now + dur);
+
+    // Deep noise rumble
+    const buf = this.ctx.createBuffer(1, 44100 * dur, 44100);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      let t = i / 44100;
+      d[i] = (Math.random() * 2 - 1) * Math.exp(-t * 4.5);
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.exponentialRampToValueAtTime(120, now + dur);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.8, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.compressor);
+    src.start(now);
+  }
+
+  // Dual tone musical pickup chime
+  playPickupChime() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    [880, 1320].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.35, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.22);
+      osc.connect(gain);
+      gain.connect(this.compressor);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.22);
+    });
+  }
 }
 
+
 // ============================================================================
-// SECTION 2: PACEJKA MAGIC FORMULA TIRE DYNAMICS
+// MODULE: PHYSICS.JS
 // ============================================================================
+// web/physics.js
+// Pacejka Magic Formula Tire Model and 4-Corner Raycast Suspension
+
 class PacejkaTire {
   constructor() {
     this.peakSlip = 0.13;
@@ -290,9 +498,6 @@ class PacejkaTire {
   }
 }
 
-// ============================================================================
-// SECTION 3: 4-CORNER RAYCAST SUSPENSION & VEHICLE SIMULATION
-// ============================================================================
 class RaycastWheel {
   constructor(isFront, isLeft, relPos) {
     this.isFront = isFront;
@@ -376,11 +581,20 @@ class RaycastWheel {
   }
 }
 
+
+// ============================================================================
+// MODULE: VEHICLES.JS
+// ============================================================================
+// web/vehicles.js
+// Procedural Vehicle Architecture, 120Hz Dynamics, Damage & Procedural Mesh
+
 class VehicleController {
   constructor(scene, colorHex = 0xee1808, isAI = false, driverName = "Player") {
     this.scene = scene;
     this.isAI = isAI;
     this.driverName = driverName;
+    this.colorHex = colorHex;
+
     this.mass = 1050.0;
     this.position = new THREE.Vector3(0, 1.2, 0);
     this.quaternion = new THREE.Quaternion();
@@ -394,7 +608,15 @@ class VehicleController {
     this.turboBoost = 0;
     this.nitroAmount = 100.0;
     this.nitroActive = false;
+
+    // Combat & Health
+    this.maxHealth = 700.0;
     this.health = 700.0;
+    this.isWrecked = false;
+    this.respawnTimer = 0;
+    this.invulnerableTimer = 0;
+    this.revengeTarget = null;
+    this.slipTimer = 0; // Triggered by oil slicks
 
     this.throttleInput = 0;
     this.brakeInput = 0;
@@ -415,11 +637,118 @@ class VehicleController {
     this.rl.oppositeWheel = this.rr; this.rr.oppositeWheel = this.rl;
     this.wheels = [this.fl, this.fr, this.rl, this.rr];
 
-    this.meshGroup = buildProceduralSprinterMesh(this, colorHex);
+    // Procedural Mesh & Materials
+    this.paintMat = new THREE.MeshPhysicalMaterial({
+      color: colorHex, metalness: 0.82, roughness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.04
+    });
+    this.charredMat = new THREE.MeshStandardMaterial({
+      color: 0x18181a, roughness: 0.95, metalness: 0.1
+    });
+
+    this.meshGroup = buildProceduralSprinterMesh(this);
     this.scene.add(this.meshGroup);
+
+    // Weapon system attached to car
+    this.weapons = new WeaponSystem(this);
+  }
+
+  applyDamage(amount, attacker = null, hitLocalPos = null) {
+    if (this.isWrecked || this.invulnerableTimer > 0) return;
+
+    // Apply passive armour mitigation (25%)
+    let effectiveDamage = amount;
+    if (this.weapons.passiveWeapon && this.weapons.passiveWeapon.id === 'armour_plating') {
+      effectiveDamage *= (1.0 - this.weapons.passiveWeapon.damageResistance);
+    }
+
+    this.health = Math.max(0, this.health - effectiveDamage);
+
+    // AI revenge targeting
+    if (this.isAI && attacker && attacker !== this) {
+      this.revengeTarget = attacker;
+    }
+
+    // Dynamic mesh denting
+    if (hitLocalPos && this.bodyGeo) {
+      this.dentMesh(hitLocalPos, 1.2, 0.22);
+    }
+
+    // Fatal Wreck trigger
+    if (this.health <= 0 && !this.isWrecked) {
+      this.isWrecked = true;
+      this.respawnTimer = 3.5;
+      this.bodyMesh.material = this.charredMat;
+      this.velocity.multiplyScalar(0.4);
+      this.angularVelocity.set((Math.random()-0.5)*4, (Math.random()-0.5)*6, (Math.random()-0.5)*4);
+
+      if (window.audio) window.audio.playExplosion();
+      if (window.spawnExplosion) window.spawnExplosion(this.position.clone().add(new THREE.Vector3(0, 0.8, 0)));
+
+      // Battle Feed Announcement
+      if (window.addBattleFeed) {
+        const victimName = this.isAI ? this.driverName : "YOU";
+        const killerName = attacker ? (attacker.isAI ? attacker.driverName : "YOU") : "THE TRACK";
+        window.addBattleFeed(`${killerName} WRECKED ${victimName}!`);
+      }
+    }
+  }
+
+  dentMesh(localHit, radius, strength) {
+    const pos = this.bodyGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      let vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+      let dx = vx - localHit.x, dy = vy - localHit.y, dz = vz - localHit.z;
+      let d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      if (d < radius) {
+        let factor = (1.0 - d / radius) * strength;
+        pos.setXYZ(i, vx - dx * factor, vy - Math.abs(dy) * factor * 0.5, vz - dz * factor);
+      }
+    }
+    pos.needsUpdate = true;
+    this.bodyGeo.computeVertexNormals();
+  }
+
+  respawn(spawnPos, spawnQuat) {
+    this.isWrecked = false;
+    this.health = this.maxHealth;
+    this.position.copy(spawnPos);
+    this.quaternion.copy(spawnQuat);
+    this.velocity.set(0, 0, 0);
+    this.angularVelocity.set(0, 0, 0);
+    this.invulnerableTimer = 1.8;
+    this.bodyMesh.material = this.paintMat;
   }
 
   physicsStep(dt) {
+    if (this.invulnerableTimer > 0) this.invulnerableTimer -= dt;
+
+    if (this.isWrecked) {
+      this.respawnTimer -= dt;
+      // Wrecked vehicle continues to skid and settle
+      this.velocity.multiplyScalar(0.96);
+      this.angularVelocity.multiplyScalar(0.94);
+      this.position.add(this.velocity.clone().multiplyScalar(dt));
+      const rotDelta = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        this.angularVelocity.x * dt, this.angularVelocity.y * dt, this.angularVelocity.z * dt
+      ));
+      this.quaternion.multiply(rotDelta).normalize();
+      this.meshGroup.position.copy(this.position);
+      this.meshGroup.quaternion.copy(this.quaternion);
+
+      // Smoke and fire trail when wrecked
+      if (Math.random() < 0.4 && window.spawnSmoke) {
+        window.spawnSmoke(this.position.clone().add(new THREE.Vector3((Math.random()-0.5)*0.8, 0.6, (Math.random()-0.5)*0.8)));
+      }
+      return;
+    }
+
+    // Oil slick slip effect
+    let surfaceMu = 1.0;
+    if (this.slipTimer > 0) {
+      this.slipTimer -= dt;
+      surfaceMu = 0.22;
+    }
+
     this.matrixWorld.compose(this.position, this.quaternion, new THREE.Vector3(1, 1, 1));
     this.speedKmh = this.velocity.length() * 3.6;
 
@@ -464,6 +793,7 @@ class VehicleController {
     let netTorqueBody = new THREE.Vector3();
 
     for (let w of this.wheels) {
+      w.surfaceMu = surfaceMu;
       const f = w.update(this, dt, 0.0);
       netForce.add(f);
       const rArm = w.relPos.clone().applyQuaternion(this.quaternion);
@@ -489,12 +819,22 @@ class VehicleController {
 
     this.meshGroup.position.copy(this.position);
     this.meshGroup.quaternion.copy(this.quaternion);
+
+    // Update floating health bar visual
+    if (this.hpFillMesh) {
+      const hpPct = Math.max(0, this.health / this.maxHealth);
+      this.hpFillMesh.scale.x = hpPct;
+      this.hpFillMesh.position.x = -(1.0 - hpPct) * 0.7;
+      if (hpPct < 0.3) this.hpFillMesh.material.color.setHex(0xff2200);
+      else if (hpPct < 0.6) this.hpFillMesh.material.color.setHex(0xffaa00);
+      else this.hpFillMesh.material.color.setHex(0x00ff66);
+    }
   }
 }
 
-function buildProceduralSprinterMesh(car, colorHex = 0xee1808) {
+function buildProceduralSprinterMesh(car) {
   const group = new THREE.Group();
-  const bodyGeo = new THREE.BoxGeometry(1.68, 0.72, 3.8, 4, 3, 6);
+  const bodyGeo = new THREE.BoxGeometry(1.68, 0.72, 3.8, 5, 4, 8);
   const pos = bodyGeo.attributes.position;
   for (let i = 0; i < pos.count; i++) {
     let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
@@ -503,24 +843,54 @@ function buildProceduralSprinterMesh(car, colorHex = 0xee1808) {
     pos.setXYZ(i, x, y + 0.35, z);
   }
   bodyGeo.computeVertexNormals();
+  car.bodyGeo = bodyGeo;
 
-  const paintMat = new THREE.MeshPhysicalMaterial({
-    color: colorHex, metalness: 0.82, roughness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.04
-  });
-  const bodyMesh = new THREE.Mesh(bodyGeo, paintMat);
+  const bodyMesh = new THREE.Mesh(bodyGeo, car.paintMat);
   bodyMesh.castShadow = true;
   group.add(bodyMesh);
+  car.bodyMesh = bodyMesh;
 
-  // Wing & Lights
+  // Rear Wing
   const wing = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.06, 0.35), new THREE.MeshStandardMaterial({ color: 0x111113 }));
   wing.position.set(0, 0.95, 1.4);
   group.add(wing);
 
+  // Twin Front Machine Guns
+  const mgMat = new THREE.MeshStandardMaterial({ color: 0x222225, metalness: 0.9, roughness: 0.3 });
+  for (let s of [-1, 1]) {
+    const mgBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.7, 8).rotateX(Math.PI / 2), mgMat);
+    mgBarrel.position.set(s * 0.52, 0.48, -1.8);
+    group.add(mgBarrel);
+  }
+
+  // Roof Rocket Launcher Pod
+  const podMat = new THREE.MeshStandardMaterial({ color: 0x2e3036, metalness: 0.8, roughness: 0.4 });
+  const pod = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.22, 0.7), podMat);
+  pod.position.set(0, 1.05, 0.1);
+  group.add(pod);
+  for (let rx of [-0.1, 0.1]) {
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.72, 8).rotateX(Math.PI / 2), mgMat);
+    tube.position.set(rx, 1.05, 0.1);
+    group.add(tube);
+  }
+
+  // Headlights
   const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xe6f0ff, emissiveIntensity: 2.5 });
   for (let s of [-1, 1]) {
     const hl = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.04), hlMat);
     hl.position.set(s * 0.58, 0.42, -1.9);
     group.add(hl);
+  }
+
+  // Floating 3D Health Bar (for AI and rivals)
+  if (car.isAI) {
+    const hpBg = new THREE.Mesh(new THREE.PlaneGeometry(1.44, 0.14), new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide }));
+    hpBg.position.set(0, 1.5, 0);
+    const hpFill = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.11), new THREE.MeshBasicMaterial({ color: 0x00ff66, side: THREE.DoubleSide }));
+    hpFill.position.set(0, 1.5, 0.01);
+    car.hpFillMesh = hpFill;
+    group.add(hpBg);
+    group.add(hpFill);
   }
 
   // Wheels
@@ -542,9 +912,218 @@ function buildProceduralSprinterMesh(car, colorHex = 0xee1808) {
   return group;
 }
 
+
 // ============================================================================
-// SECTION 4: SPLINE CIRCUIT TRACK GENERATOR (CATMULL-ROM)
+// MODULE: WEAPONS.JS
 // ============================================================================
+// web/weapons.js
+// Stage 3 Vehicular Combat Arsenal: 10 Weapons & Vehicle Weapon System
+
+const WEAPONS = {
+  // --- PRIMARY FRONT WEAPONS ---
+  twin_mg: {
+    id: "twin_mg",
+    name: "Twin MG",
+    slot: "primary",
+    damage: 12.0,
+    fireRate: 12.5, // 0.08s cooldown
+    range: 120.0,
+    velocity: 340.0,
+    heatPerShot: 0.012,
+    maxAmmo: 999, // Infinite for player in Stage 3
+    isBallistic: false,
+    description: "Rapid-fire twin kinetic machine guns mounted on front quarter panels."
+  },
+  heavy_mg: {
+    id: "heavy_mg",
+    name: "Heavy MG",
+    slot: "primary",
+    damage: 26.0,
+    fireRate: 6.5,
+    range: 150.0,
+    velocity: 380.0,
+    heatPerShot: 0.024,
+    maxAmmo: 300,
+    isBallistic: false,
+    description: "High-calibre armour-piercing rounds with heavy kinetic impact."
+  },
+  shotgun_cannon: {
+    id: "shotgun_cannon",
+    name: "Shotgun Cannon",
+    slot: "primary",
+    damage: 9.0, // per pellet (8 pellets = 72 dmg)
+    pellets: 8,
+    fireRate: 1.8,
+    range: 50.0,
+    velocity: 280.0,
+    spreadAngle: 0.14,
+    heatPerShot: 0.08,
+    maxAmmo: 45,
+    isBallistic: false,
+    description: "8-pellet buckshot blast devastating in close bumper-to-bumper combat."
+  },
+
+  // --- ROOF WEAPONS ---
+  rocket_pod: {
+    id: "rocket_pod",
+    name: "Rocket Pod",
+    slot: "roof",
+    damage: 48.0,
+    blastRadius: 5.5,
+    fireRate: 1.25, // 0.8s cooldown
+    velocity: 160.0,
+    range: 160.0,
+    salvoCount: 1,
+    maxAmmo: 18,
+    isHoming: false,
+    description: "High-velocity unguided ballistic rockets with explosive blast radius."
+  },
+  homing_missile: {
+    id: "homing_missile",
+    name: "Homing Missile",
+    slot: "roof",
+    damage: 85.0,
+    blastRadius: 6.5,
+    fireRate: 0.75, // 1.33s cooldown
+    velocity: 130.0,
+    range: 180.0,
+    turnRate: 6.0, // rad/s
+    lockAngle: 0.61, // ~35 degrees
+    maxAmmo: 6,
+    isHoming: true,
+    description: "Laser-guided tracking missile with terminal seeking and devastating splash."
+  },
+
+  // --- REAR WEAPONS ---
+  mine_dropper: {
+    id: "mine_dropper",
+    name: "Mine Dropper",
+    slot: "rear",
+    damage: 120.0,
+    blastRadius: 6.0,
+    armDelay: 0.8,
+    triggerRadius: 3.5,
+    fireRate: 0.65,
+    maxAmmo: 6,
+    impulse: 18000.0,
+    description: "Magnetic proximity contact mines that launch tailgating rivals airborne."
+  },
+  oil_slick: {
+    id: "oil_slick",
+    name: "Oil Slick",
+    slot: "rear",
+    damage: 0.0,
+    duration: 12.0,
+    triggerRadius: 3.2,
+    slipMu: 0.20,
+    slipDuration: 4.0,
+    fireRate: 0.5,
+    maxAmmo: 4,
+    description: "Viscous synthetic lubricant puddle that induces severe loss of control."
+  },
+
+  // --- PASSIVE WEAPONS ---
+  ram_plate: {
+    id: "ram_plate",
+    name: "Ram Plate",
+    slot: "passive",
+    collisionDmgMult: 2.4,
+    selfDamageReduction: 0.60,
+    description: "Reinforced front-end cow-catcher doubling ramming damage while reducing self damage."
+  },
+  armour_plating: {
+    id: "armour_plating",
+    name: "Armour Plating",
+    slot: "passive",
+    bonusHealth: 250.0,
+    damageResistance: 0.25,
+    description: "Hardened composite panels granting +250 HP and 25% damage mitigation."
+  },
+  countermeasures: {
+    id: "countermeasures",
+    name: "Countermeasures",
+    slot: "passive",
+    cooldown: 8.0,
+    range: 30.0,
+    description: "Automated flare decoys disrupting incoming homing missile guidance."
+  }
+};
+
+class WeaponSystem {
+  constructor(vehicle) {
+    this.vehicle = vehicle;
+    this.primaryWeapon = WEAPONS.twin_mg;
+    this.roofWeapon = WEAPONS.rocket_pod;
+    this.rearWeapon = WEAPONS.mine_dropper;
+    this.passiveWeapon = WEAPONS.armour_plating;
+
+    this.primaryCooldown = 0;
+    this.roofCooldown = 0;
+    this.rearCooldown = 0;
+    this.heat = 0;
+    this.isOverheated = false;
+
+    this.primaryAmmo = this.primaryWeapon.maxAmmo;
+    this.roofAmmo = 6;
+    this.rearAmmo = 3;
+
+    this.currentTarget = null;
+    this.targetDist = 0;
+  }
+
+  update(dt, enemyCars = []) {
+    if (this.primaryCooldown > 0) this.primaryCooldown -= dt;
+    if (this.roofCooldown > 0) this.roofCooldown -= dt;
+    if (this.rearCooldown > 0) this.rearCooldown -= dt;
+
+    // Heat dissipation
+    if (this.heat > 0) {
+      this.heat = Math.max(0, this.heat - dt * 0.35);
+      if (this.isOverheated && this.heat < 0.25) this.isOverheated = false;
+    }
+
+    // Auto-aim target acquisition in forward cone
+    this.currentTarget = null;
+    this.targetDist = 999;
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.vehicle.quaternion);
+
+    for (let enemy of enemyCars) {
+      if (enemy === this.vehicle || enemy.isWrecked) continue;
+      const toEnemy = enemy.position.clone().sub(this.vehicle.position);
+      const dist = toEnemy.length();
+      if (dist < 130.0) {
+        toEnemy.normalize();
+        const angle = forward.angleTo(toEnemy);
+        if (angle < (this.roofWeapon.lockAngle || 0.61)) {
+          if (dist < this.targetDist) {
+            this.targetDist = dist;
+            this.currentTarget = enemy;
+          }
+        }
+      }
+    }
+  }
+
+  canFirePrimary() {
+    return this.primaryCooldown <= 0 && !this.isOverheated && this.primaryAmmo > 0 && !this.vehicle.isWrecked;
+  }
+
+  canFireRoof() {
+    return this.roofCooldown <= 0 && this.roofAmmo > 0 && !this.vehicle.isWrecked;
+  }
+
+  canFireRear() {
+    return this.rearCooldown <= 0 && this.rearAmmo > 0 && !this.vehicle.isWrecked;
+  }
+}
+
+
+// ============================================================================
+// MODULE: TRACKS.JS
+// ============================================================================
+// web/tracks.js
+// Spline Track Construction, Checkpoint Gates and Dynamic Circuit Pickups
+
 const circuitPoints = [
   new THREE.Vector3(0, 0, 0),
   new THREE.Vector3(0, 0, -140),
@@ -571,42 +1150,7 @@ for (let i = 0; i < numCheckpoints; i++) {
   checkpointGates.push(splineSamples[idx]);
 }
 
-// ============================================================================
-// SECTION 5: THREE.JS RENDERER, LIGHTING & SCENERY
-// ============================================================================
-const container = document.getElementById('canvas-container');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x7599c2);
-scene.fog = new THREE.FogExp2(0x8fa8c6, 0.0035);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
-
-const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x3f352b, 0.8);
-scene.add(hemiLight);
-
-const sunLight = new THREE.DirectionalLight(0xffedd2, 3.2);
-sunLight.position.set(-60, 80, -60);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
-scene.add(sunLight);
-
-// Ground
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x5a4d3e, roughness: 0.95 }));
-ground.receiveShadow = true;
-scene.add(ground);
-
-// Swept Road Geometry
-function buildSweptRoad() {
+function buildTrackRoad(scene) {
   const roadWidth = 14.0;
   const geom = new THREE.BufferGeometry();
   const verts = [], uvs = [], indices = [];
@@ -642,12 +1186,700 @@ function buildSweptRoad() {
   roadMesh.receiveShadow = true;
   scene.add(roadMesh);
 }
-buildSweptRoad();
+
+// Dynamic Track Pickups Manager
+class TrackPickupManager {
+  constructor(scene) {
+    this.scene = scene;
+    this.pickups = [];
+
+    // Place pickups at interesting track locations
+    const spawnGateIndices = [2, 5, 8, 11, 14, 17];
+    const types = ['repair', 'ammo', 'nitro', 'repair', 'ammo', 'nitro'];
+
+    for (let i = 0; i < spawnGateIndices.length; i++) {
+      const gateIdx = spawnGateIndices[i];
+      const pt = checkpointGates[gateIdx];
+      const type = types[i];
+      this.createPickup(pt.clone().add(new THREE.Vector3(0, 1.2, 0)), type);
+    }
+  }
+
+  createPickup(pos, type) {
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    let mat, geom;
+    if (type === 'repair') {
+      mat = new THREE.MeshStandardMaterial({ color: 0x00ff66, emissive: 0x00cc44, emissiveIntensity: 1.2, roughness: 0.2 });
+      // Cross shape
+      const c1 = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 0.25), mat);
+      const c2 = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.8, 0.25), mat);
+      group.add(c1); group.add(c2);
+    } else if (type === 'ammo') {
+      mat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff6600, emissiveIntensity: 1.0, roughness: 0.3 });
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.45, 0.45), mat);
+      group.add(box);
+    } else { // nitro
+      mat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, emissive: 0x0088ff, emissiveIntensity: 1.5, roughness: 0.2 });
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.75, 12), mat);
+      group.add(cyl);
+    }
+
+    this.scene.add(group);
+    this.pickups.push({
+      group,
+      baseY: pos.y,
+      type,
+      respawnTimer: 0,
+      active: true
+    });
+  }
+
+  update(dt, vehicles = []) {
+    const time = performance.now() * 0.003;
+    for (let p of this.pickups) {
+      if (!p.active) {
+        p.respawnTimer -= dt;
+        if (p.respawnTimer <= 0) {
+          p.active = true;
+          p.group.visible = true;
+        }
+        continue;
+      }
+
+      // Hover and rotate
+      p.group.rotation.y += dt * 2.2;
+      p.group.position.y = p.baseY + Math.sin(time + p.baseY) * 0.25;
+
+      // Contact detection with vehicles
+      for (let v of vehicles) {
+        if (v.isWrecked) continue;
+        if (v.position.distanceTo(p.group.position) < 3.2) {
+          this.collect(p, v);
+          break;
+        }
+      }
+    }
+  }
+
+  collect(p, vehicle) {
+    p.active = false;
+    p.group.visible = false;
+    p.respawnTimer = 15.0; // 15s respawn
+
+    if (window.audio) window.audio.playPickupChime();
+
+    if (p.type === 'repair') {
+      vehicle.health = Math.min(vehicle.maxHealth, vehicle.health + 250.0);
+      if (!vehicle.isAI && window.addBattleFeed) window.addBattleFeed("+250 ARMOUR RESTORED");
+    } else if (p.type === 'ammo') {
+      vehicle.weapons.roofAmmo = Math.min(vehicle.weapons.roofWeapon.maxAmmo, vehicle.weapons.roofAmmo + 3);
+      vehicle.weapons.rearAmmo = Math.min(vehicle.weapons.rearWeapon.maxAmmo, vehicle.weapons.rearAmmo + 2);
+      if (!vehicle.isAI && window.addBattleFeed) window.addBattleFeed("+AMMO & ROCKETS REFILLED");
+    } else if (p.type === 'nitro') {
+      vehicle.nitroAmount = Math.min(100.0, vehicle.nitroAmount + 50.0);
+      if (!vehicle.isAI && window.addBattleFeed) window.addBattleFeed("+50% NITRO BOOST");
+    }
+  }
+}
+
 
 // ============================================================================
-// SECTION 6: GRID SPAWN: PLAYER + 5 AI OPPONENTS
+// MODULE: COMBAT.JS
 // ============================================================================
+// web/combat.js
+// Sub-stepped Ballistics, Homing Guidance, Explosions, Mines & Combat Manager
+
+class CombatManager {
+  constructor(scene) {
+    this.scene = scene;
+    this.projectiles = [];
+    this.mines = [];
+    this.oilSlicks = [];
+    this.explosions = [];
+    this.smokePuffs = [];
+
+    // Shared geometries and materials
+    this.bulletGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 6).rotateX(Math.PI / 2);
+    this.bulletMat = new THREE.MeshBasicMaterial({ color: 0xffcc33 });
+
+    this.rocketGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.9, 8).rotateX(Math.PI / 2);
+    this.rocketMat = new THREE.MeshStandardMaterial({ color: 0x44444a, metalness: 0.8 });
+
+    this.mineGeo = new THREE.CylinderGeometry(0.35, 0.42, 0.16, 12);
+    this.mineMat = new THREE.MeshStandardMaterial({ color: 0x222225, metalness: 0.9, roughness: 0.3 });
+    this.mineLightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+    this.oilGeo = new THREE.CircleGeometry(2.4, 16).rotateX(-Math.PI / 2);
+    this.oilMat = new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.08, metalness: 0.9 });
+
+    this.expGeo = new THREE.SphereGeometry(1, 12, 8);
+    this.expMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.9 });
+
+    this.smokeGeo = new THREE.SphereGeometry(0.5, 8, 6);
+  }
+
+  fireBullets(sourceCar, weapon, target = null) {
+    if (window.audio) window.audio.playGunfire();
+
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(sourceCar.quaternion);
+    const barrelOffsets = [-0.52, 0.52];
+
+    for (let bx of barrelOffsets) {
+      const bMesh = new THREE.Mesh(this.bulletGeo, this.bulletMat);
+      const startPos = new THREE.Vector3(bx, 0.48, -1.8).applyQuaternion(sourceCar.quaternion).add(sourceCar.position);
+      bMesh.position.copy(startPos);
+      bMesh.quaternion.copy(sourceCar.quaternion);
+
+      // Auto-aim deflection towards target if within cone
+      let dir = forward.clone();
+      if (target && !target.isWrecked) {
+        const toTarget = target.position.clone().add(new THREE.Vector3(0, 0.5, 0)).sub(startPos).normalize();
+        if (forward.angleTo(toTarget) < 0.45) {
+          dir = toTarget;
+        }
+      }
+
+      this.scene.add(bMesh);
+      this.projectiles.push({
+        mesh: bMesh,
+        pos: startPos,
+        velocity: dir.multiplyScalar(weapon.velocity),
+        damage: weapon.damage,
+        sourceCar: sourceCar,
+        lifetime: weapon.range / weapon.velocity,
+        type: 'bullet'
+      });
+    }
+
+    // Recoil
+    sourceCar.velocity.sub(forward.clone().multiplyScalar(0.4));
+  }
+
+  launchRocket(sourceCar, weapon, target = null) {
+    if (window.audio) window.audio.playRocketLaunch();
+
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(sourceCar.quaternion);
+    const startPos = new THREE.Vector3(0, 1.05, -0.6).applyQuaternion(sourceCar.quaternion).add(sourceCar.position);
+
+    const rMesh = new THREE.Mesh(this.rocketGeo, this.rocketMat);
+    rMesh.position.copy(startPos);
+    rMesh.quaternion.copy(sourceCar.quaternion);
+    this.scene.add(rMesh);
+
+    this.projectiles.push({
+      mesh: rMesh,
+      pos: startPos,
+      forward: forward.clone(),
+      velocity: forward.clone().multiplyScalar(weapon.velocity),
+      damage: weapon.damage,
+      blastRadius: weapon.blastRadius || 5.5,
+      sourceCar: sourceCar,
+      target: target,
+      isHoming: !!weapon.isHoming,
+      turnRate: weapon.turnRate || 6.0,
+      lifetime: 2.5,
+      type: 'rocket'
+    });
+  }
+
+  dropMine(sourceCar, weapon) {
+    const rearPos = new THREE.Vector3(0, 0.1, 2.2).applyQuaternion(sourceCar.quaternion).add(sourceCar.position);
+    const group = new THREE.Group();
+    group.position.copy(rearPos);
+
+    const mBase = new THREE.Mesh(this.mineGeo, this.mineMat);
+    const mLight = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), this.mineLightMat);
+    mLight.position.y = 0.12;
+    group.add(mBase);
+    group.add(mLight);
+    this.scene.add(group);
+
+    this.mines.push({
+      group: group,
+      pos: rearPos,
+      sourceCar: sourceCar,
+      armTimer: weapon.armDelay || 0.8,
+      damage: weapon.damage || 120.0,
+      blastRadius: weapon.blastRadius || 6.0,
+      triggerRadius: weapon.triggerRadius || 3.5,
+      active: true
+    });
+  }
+
+  dropOilSlick(sourceCar, weapon) {
+    const rearPos = new THREE.Vector3(0, 0.05, 2.2).applyQuaternion(sourceCar.quaternion).add(sourceCar.position);
+    const slick = new THREE.Mesh(this.oilGeo, this.oilMat);
+    slick.position.copy(rearPos);
+    this.scene.add(slick);
+
+    this.oilSlicks.push({
+      mesh: slick,
+      pos: rearPos,
+      lifetime: weapon.duration || 12.0
+    });
+  }
+
+  spawnExplosion(pos, maxRadius = 4.5) {
+    const expMesh = new THREE.Mesh(this.expGeo, this.expMat.clone());
+    expMesh.position.copy(pos);
+    this.scene.add(expMesh);
+
+    this.explosions.push({
+      mesh: expMesh,
+      radius: 0.5,
+      maxRadius: maxRadius,
+      life: 0.45,
+      maxLife: 0.45
+    });
+
+    // Spawn burst smoke
+    for (let i = 0; i < 4; i++) {
+      this.spawnSmoke(pos.clone().add(new THREE.Vector3((Math.random()-0.5)*1.5, Math.random()*1.2, (Math.random()-0.5)*1.5)));
+    }
+  }
+
+  spawnSmoke(pos) {
+    const sMat = new THREE.MeshBasicMaterial({ color: 0x333336, transparent: true, opacity: 0.7 });
+    const sMesh = new THREE.Mesh(this.smokeGeo, sMat);
+    sMesh.position.copy(pos);
+    this.scene.add(sMesh);
+
+    this.smokePuffs.push({
+      mesh: sMesh,
+      pos: pos,
+      vel: new THREE.Vector3((Math.random()-0.5)*0.8, 1.2 + Math.random()*1.5, (Math.random()-0.5)*0.8),
+      scale: 0.6,
+      life: 0.85,
+      maxLife: 0.85
+    });
+  }
+
+  update(dt, allCars = []) {
+    // 1. Update Projectiles
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      p.lifetime -= dt;
+
+      if (p.isHoming && p.target && !p.target.isWrecked) {
+        const toTarget = p.target.position.clone().add(new THREE.Vector3(0, 0.5, 0)).sub(p.pos).normalize();
+        const currentDir = p.velocity.clone().normalize();
+        currentDir.lerp(toTarget, dt * p.turnRate).normalize();
+        p.velocity.copy(currentDir.multiplyScalar(130.0));
+        p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), currentDir);
+      }
+
+      p.pos.add(p.velocity.clone().multiplyScalar(dt));
+      p.mesh.position.copy(p.pos);
+
+      // Check collision with cars
+      let collided = false;
+      for (let car of allCars) {
+        if (car === p.sourceCar || car.isWrecked) continue;
+        if (car.position.distanceTo(p.pos) < 2.2) {
+          collided = true;
+          const hitLocal = p.pos.clone().sub(car.position);
+          car.applyDamage(p.damage, p.sourceCar, hitLocal);
+
+          if (p.type === 'rocket') {
+            this.explodeRocket(p, allCars);
+          }
+          break;
+        }
+      }
+
+      // Smoke puff behind rockets
+      if (p.type === 'rocket' && Math.random() < 0.5) {
+        this.spawnSmoke(p.pos.clone());
+      }
+
+      if (collided || p.lifetime <= 0) {
+        if (p.type === 'rocket' && !collided) {
+          this.explodeRocket(p, allCars);
+        }
+        this.scene.remove(p.mesh);
+        this.projectiles.splice(i, 1);
+      }
+    }
+
+    // 2. Update Mines
+    for (let i = this.mines.length - 1; i >= 0; i--) {
+      const m = this.mines[i];
+      if (m.armTimer > 0) {
+        m.armTimer -= dt;
+        continue;
+      }
+
+      // Blinking red light
+      m.group.children[1].visible = (Math.floor(performance.now() * 0.008) % 2 === 0);
+
+      // Trigger detection
+      let exploded = false;
+      for (let car of allCars) {
+        if (car.isWrecked) continue;
+        if (car.position.distanceTo(m.pos) < m.triggerRadius) {
+          exploded = true;
+          this.spawnExplosion(m.pos, m.blastRadius);
+          if (window.audio) window.audio.playExplosion();
+
+          // Apply damage and airborne launch impulse
+          for (let target of allCars) {
+            const dist = target.position.distanceTo(m.pos);
+            if (dist < m.blastRadius) {
+              const dmg = m.damage * (1.0 - dist / m.blastRadius);
+              target.applyDamage(dmg, m.sourceCar);
+              // Blast impulse
+              const impulseDir = target.position.clone().sub(m.pos).normalize().add(new THREE.Vector3(0, 0.8, 0)).normalize();
+              target.velocity.add(impulseDir.multiplyScalar(22.0 * (1.0 - dist / m.blastRadius)));
+            }
+          }
+          break;
+        }
+      }
+
+      if (exploded) {
+        this.scene.remove(m.group);
+        this.mines.splice(i, 1);
+      }
+    }
+
+    // 3. Update Oil Slicks
+    for (let i = this.oilSlicks.length - 1; i >= 0; i--) {
+      const o = this.oilSlicks[i];
+      o.lifetime -= dt;
+      for (let car of allCars) {
+        if (car.isWrecked) continue;
+        if (car.position.distanceTo(o.pos) < 2.5) {
+          car.slipTimer = 3.5;
+        }
+      }
+      if (o.lifetime <= 0) {
+        this.scene.remove(o.mesh);
+        this.oilSlicks.splice(i, 1);
+      }
+    }
+
+    // 4. Update Explosions
+    for (let i = this.explosions.length - 1; i >= 0; i--) {
+      const e = this.explosions[i];
+      e.life -= dt;
+      const progress = 1.0 - (e.life / e.maxLife);
+      const s = 0.5 + progress * e.maxRadius;
+      e.mesh.scale.set(s, s, s);
+      e.mesh.material.opacity = (1.0 - progress) * 0.9;
+      if (e.life <= 0) {
+        this.scene.remove(e.mesh);
+        this.explosions.splice(i, 1);
+      }
+    }
+
+    // 5. Update Smoke Puffs
+    for (let i = this.smokePuffs.length - 1; i >= 0; i--) {
+      const sm = this.smokePuffs[i];
+      sm.life -= dt;
+      sm.pos.add(sm.vel.clone().multiplyScalar(dt));
+      sm.scale += dt * 1.5;
+      sm.mesh.scale.set(sm.scale, sm.scale, sm.scale);
+      sm.mesh.position.copy(sm.pos);
+      sm.mesh.material.opacity = (sm.life / sm.maxLife) * 0.7;
+      if (sm.life <= 0) {
+        this.scene.remove(sm.mesh);
+        this.smokePuffs.splice(i, 1);
+      }
+    }
+  }
+
+  explodeRocket(rocket, allCars) {
+    this.spawnExplosion(rocket.pos, rocket.blastRadius);
+    if (window.audio) window.audio.playExplosion();
+
+    // Splash damage and impulse
+    for (let car of allCars) {
+      if (car.isWrecked) continue;
+      const dist = car.position.distanceTo(rocket.pos);
+      if (dist < rocket.blastRadius) {
+        const falloff = 1.0 - (dist / rocket.blastRadius);
+        car.applyDamage(rocket.damage * falloff, rocket.sourceCar);
+        const impulse = car.position.clone().sub(rocket.pos).normalize().add(new THREE.Vector3(0, 0.4, 0)).normalize();
+        car.velocity.add(impulse.multiplyScalar(14.0 * falloff));
+      }
+    }
+  }
+}
+
+
+// ============================================================================
+// MODULE: AI.JS
+// ============================================================================
+// web/ai.js
+// AI Navigation, Curvature Speed Profiling, Tactical Combat & Revenge System
+
+function updateAI(aiObj, dt, allCars = [], combatMgr = null) {
+  const car = aiObj.car;
+  if (car.isWrecked) return;
+
+  const numPts = splineSamples.length;
+
+  // 1. Spline Navigation: Look ahead for target waypoint
+  let bestIdx = car.waypointIdx;
+  let bestDistSq = 1e9;
+  for (let o = -3; o <= 8; o++) {
+    let idx = (car.waypointIdx + o + numPts) % numPts;
+    let d = car.position.distanceToSquared(splineSamples[idx]);
+    if (d < bestDistSq) { bestDistSq = d; bestIdx = idx; }
+  }
+  car.waypointIdx = (bestIdx + 10) % numPts;
+  const targetPt = splineSamples[car.waypointIdx];
+
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(car.quaternion);
+  const toTarget = targetPt.clone().sub(car.position).normalize();
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(car.quaternion);
+
+  const steerDot = right.dot(toTarget);
+  car.steerInput = THREE.MathUtils.lerp(car.steerInput, THREE.MathUtils.clamp(steerDot * 2.2, -1.0, 1.0), dt * 6.0);
+
+  // 2. Curvature speed profiling
+  const aheadPt = splineSamples[(car.waypointIdx + 8) % numPts];
+  const turnAngle = toTarget.angleTo(aheadPt.clone().sub(targetPt).normalize());
+  let safeSpeed = THREE.MathUtils.clamp(175.0 - (turnAngle * 120.0), 60.0, 175.0);
+
+  // Aggressive personality boosts speed
+  if (aiObj.cfg.style === "Aggressive" || car.revengeTarget) {
+    safeSpeed = Math.min(185.0, safeSpeed * 1.1);
+  }
+
+  if (car.speedKmh < safeSpeed) {
+    car.throttleInput = 1.0;
+    car.brakeInput = 0.0;
+  } else {
+    car.throttleInput = 0.0;
+    car.brakeInput = THREE.MathUtils.clamp((car.speedKmh - safeSpeed) * 0.05, 0.2, 1.0);
+  }
+
+  // 3. Combat Evaluation & Weapon Firing
+  if (!combatMgr) return;
+  car.weapons.update(dt, allCars);
+
+  // Target selection: prefer revenge target if in view
+  let target = car.revengeTarget && !car.revengeTarget.isWrecked ? car.revengeTarget : car.weapons.currentTarget;
+
+  if (target && !target.isWrecked) {
+    const toEnemy = target.position.clone().sub(car.position);
+    const dist = toEnemy.length();
+    toEnemy.normalize();
+    const angle = forward.angleTo(toEnemy);
+
+    // Front Machine Gun: burst fire when within 55m and aligned
+    if (dist < 55.0 && angle < 0.35 && car.weapons.canFirePrimary()) {
+      if (Math.random() < 0.6) {
+        combatMgr.fireBullets(car, car.weapons.primaryWeapon, target);
+        car.weapons.primaryCooldown = 1.0 / car.weapons.primaryWeapon.fireRate;
+      }
+    }
+
+    // Roof Rocket: launch if target within 45m
+    if (dist < 45.0 && angle < 0.40 && car.weapons.canFireRoof()) {
+      if (Math.random() < 0.25) {
+        combatMgr.launchRocket(car, car.weapons.roofWeapon, target);
+        car.weapons.roofAmmo--;
+        car.weapons.roofCooldown = 1.0 / car.weapons.roofWeapon.fireRate;
+      }
+    }
+  }
+
+  // Tailgating check: drop mine if someone is riding rear bumper
+  for (let other of allCars) {
+    if (other === car || other.isWrecked) continue;
+    const toOther = other.position.clone().sub(car.position);
+    const dist = toOther.length();
+    if (dist < 8.0 && forward.dot(toOther.normalize()) < -0.7) {
+      if (car.weapons.canFireRear() && Math.random() < 0.3) {
+        combatMgr.dropMine(car, car.weapons.rearWeapon);
+        car.weapons.rearAmmo--;
+        car.weapons.rearCooldown = 2.0;
+        break;
+      }
+    }
+  }
+}
+
+
+// ============================================================================
+// MODULE: UI.JS
+// ============================================================================
+// web/ui.js
+// Radar Minimap, 3D Target Reticle, Combat HUD & Battle Announcements
+
+const minimapCanvas = document.getElementById('minimap-canvas');
+const mCtx = minimapCanvas.getContext('2d');
+const targetReticle = document.getElementById('target-reticle');
+const targetDistLabel = document.getElementById('target-dist');
+const battleFeed = document.getElementById('battle-feed');
+
+function addBattleFeed(text) {
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.innerText = text;
+  battleFeed.appendChild(item);
+  setTimeout(() => {
+    if (item.parentNode) item.parentNode.removeChild(item);
+  }, 3500);
+}
+window.addBattleFeed = addBattleFeed;
+
+function drawMinimap(allCars, playerCar) {
+  mCtx.clearRect(0, 0, 180, 180);
+  mCtx.fillStyle = 'rgba(12, 16, 22, 0.9)';
+  mCtx.beginPath();
+  mCtx.arc(90, 90, 88, 0, Math.PI * 2);
+  mCtx.fill();
+  mCtx.strokeStyle = 'rgba(255, 120, 0, 0.5)';
+  mCtx.lineWidth = 2;
+  mCtx.stroke();
+
+  // Draw Spline Loop
+  mCtx.strokeStyle = 'rgba(150, 170, 190, 0.45)';
+  mCtx.lineWidth = 3;
+  mCtx.beginPath();
+  const cX = 130, cZ = -70, scale = 0.45;
+  for (let i = 0; i < splineSamples.length; i++) {
+    let pt = splineSamples[i];
+    let sx = 90 + ((pt.x - cX) * scale);
+    let sy = 90 + ((pt.z - cZ) * scale);
+    if (i === 0) mCtx.moveTo(sx, sy);
+    else mCtx.lineTo(sx, sy);
+  }
+  mCtx.closePath();
+  mCtx.stroke();
+
+  // Draw AI Blips
+  for (let car of allCars) {
+    if (car === playerCar) continue;
+    let sx = 90 + ((car.position.x - cX) * scale);
+    let sy = 90 + ((car.position.z - cZ) * scale);
+    mCtx.fillStyle = car.isWrecked ? '#555555' : '#ff2222';
+    mCtx.beginPath();
+    mCtx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+    mCtx.fill();
+  }
+
+  // Draw Player Blip
+  let px = 90 + ((playerCar.position.x - cX) * scale);
+  let py = 90 + ((playerCar.position.z - cZ) * scale);
+  mCtx.fillStyle = '#00f0ff';
+  mCtx.beginPath();
+  mCtx.arc(px, py, 5.0, 0, Math.PI * 2);
+  mCtx.fill();
+}
+
+function updateHUD(playerCar, allCars, carProgress, currentLapTime, bestLapTime, totalLaps, camera) {
+  const pRank = allCars.indexOf(playerCar) + 1;
+  const pProg = carProgress.get(playerCar);
+
+  document.getElementById('pos-badge').innerHTML = `${pRank}<span>${['TH','ST','ND','RD','TH','TH','TH'][pRank]} / 6</span>`;
+  document.getElementById('lap-info').innerText = `LAP ${pProg ? pProg.lap : 1} / ${totalLaps}`;
+  document.getElementById('time-info').innerText = `TIME: ${fmtTime(currentLapTime)} | BEST: ${bestLapTime < 9000 ? fmtTime(bestLapTime) : '--:--.--'}`;
+  document.getElementById('speed-num').innerHTML = `${Math.round(playerCar.speedKmh)}<span id="speed-unit">KM/H</span>`;
+  document.getElementById('rpm-gauge').innerText = `GEAR ${playerCar.currentGear} | ${Math.round(playerCar.engineRPM)} RPM`;
+  document.getElementById('nitro-fill').style.width = `${playerCar.nitroAmount}%`;
+
+  // Armour Integrities
+  const hpPct = Math.max(0, playerCar.health / playerCar.maxHealth) * 100;
+  document.getElementById('health-fill').style.width = `${hpPct}%`;
+  document.getElementById('health-num').innerText = `${Math.round(playerCar.health)} / ${playerCar.maxHealth}`;
+
+  // Ammo Displays
+  document.getElementById('ammo-roof').innerText = `${playerCar.weapons.roofAmmo} / ${playerCar.weapons.roofWeapon.maxAmmo}`;
+  document.getElementById('ammo-rear').innerText = `${playerCar.weapons.rearAmmo} / ${playerCar.weapons.rearWeapon.maxAmmo}`;
+
+  // 3D Target Reticle Screen Projection
+  const target = playerCar.weapons.currentTarget;
+  if (target && !target.isWrecked) {
+    const screenPos = target.position.clone().add(new THREE.Vector3(0, 0.6, 0)).project(camera);
+    if (screenPos.z < 1.0) {
+      const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+      targetReticle.style.display = 'block';
+      targetReticle.style.left = `${x}px`;
+      targetReticle.style.top = `${y}px`;
+      targetDistLabel.innerText = `LOCK ${Math.round(playerCar.weapons.targetDist)}M`;
+    } else {
+      targetReticle.style.display = 'none';
+    }
+  } else {
+    targetReticle.style.display = 'none';
+  }
+
+  drawMinimap(allCars, playerCar);
+}
+
+function fmtTime(sec) {
+  let m = Math.floor(sec / 60);
+  let s = Math.floor(sec) % 60;
+  let ms = Math.floor((sec - Math.floor(sec)) * 100);
+  return `${m}:${s < 10 ? '0' : ''}${s}.${ms < 10 ? '0' : ''}${ms}`;
+}
+
+
+// ============================================================================
+// MODULE: MAIN.JS
+// ============================================================================
+// web/main.js
+// Main Game Engine, 120Hz Loop, Scene Initialization, Controls & Game States
+
+// Mobile Detection
+const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+if (isMobile) {
+  document.getElementById('touch-controls').style.display = 'block';
+  document.getElementById('controls-hint').style.display = 'none';
+}
+
+// Global Audio Instance
 const audio = new ProceduralAudioEngine();
+window.audio = audio;
+
+// Three.js Scene, Camera, Renderer
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x7599c2);
+scene.fog = new THREE.FogExp2(0x8fa8c6, 0.0035);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x3f352b, 0.8);
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xffedd2, 3.2);
+sunLight.position.set(-60, 80, -60);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+scene.add(sunLight);
+
+// Ground & Road
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x5a4d3e, roughness: 0.95 }));
+ground.receiveShadow = true;
+scene.add(ground);
+buildTrackRoad(scene);
+
+// Subsystems
+const combatManager = new CombatManager(scene);
+window.spawnExplosion = (pos) => combatManager.spawnExplosion(pos);
+window.spawnSmoke = (pos) => combatManager.spawnSmoke(pos);
+
+const pickupManager = new TrackPickupManager(scene);
+
+// Grid Spawn: Player + 5 AI Rivals
 const playerCar = new VehicleController(scene, 0xee1808, false, "Player");
 playerCar.position.set(-3.5, 0.6, -35.0);
 
@@ -669,9 +1901,7 @@ for (let cfg of aiConfigs) {
   aiCars.push({ car: ai, cfg: cfg });
 }
 
-// ============================================================================
-// SECTION 7: RACE STATE MACHINE & LAP PROGRESSION
-// ============================================================================
+// Race Progression State
 let raceState = "COUNTDOWN"; // COUNTDOWN, RACING, FINISHED
 let countdownTimer = 3.99;
 let totalLaps = 3;
@@ -684,102 +1914,63 @@ for (let c of allCars) {
   carProgress.set(c, { lap: 1, nextGate: 1, score: 0, isFinished: false, lapTimer: 0 });
 }
 
-function updateAI(aiObj, dt) {
-  const car = aiObj.car;
-  const numPts = splineSamples.length;
-
-  // Look ahead for target waypoint
-  let bestIdx = car.waypointIdx;
-  let bestDistSq = 1e9;
-  for (let o = -3; o <= 8; o++) {
-    let idx = (car.waypointIdx + o + numPts) % numPts;
-    let d = car.position.distanceToSquared(splineSamples[idx]);
-    if (d < bestDistSq) { bestDistSq = d; bestIdx = idx; }
-  }
-  car.waypointIdx = (bestIdx + 10) % numPts;
-  const targetPt = splineSamples[car.waypointIdx];
-
-  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(car.quaternion);
-  const toTarget = targetPt.clone().sub(car.position).normalize();
-  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(car.quaternion);
-
-  const steerDot = right.dot(toTarget);
-  car.steerInput = THREE.MathUtils.lerp(car.steerInput, THREE.MathUtils.clamp(steerDot * 2.2, -1.0, 1.0), dt * 6.0);
-
-  // Curvature speed control
-  const aheadPt = splineSamples[(car.waypointIdx + 8) % numPts];
-  const turnAngle = toTarget.angleTo(aheadPt.clone().sub(targetPt).normalize());
-  const safeSpeed = THREE.MathUtils.clamp(175.0 - (turnAngle * 120.0), 60.0, 175.0);
-
-  if (car.speedKmh < safeSpeed) {
-    car.throttleInput = 1.0;
-    car.brakeInput = 0.0;
-  } else {
-    car.throttleInput = 0.0;
-    car.brakeInput = THREE.MathUtils.clamp((car.speedKmh - safeSpeed) * 0.05, 0.2, 1.0);
-  }
-}
-
-// ============================================================================
-// SECTION 8: MINIMAP RADAR & HUD DRAWING
-// ============================================================================
-const minimapCanvas = document.getElementById('minimap-canvas');
-const mCtx = minimapCanvas.getContext('2d');
-
-function drawMinimap() {
-  mCtx.clearRect(0, 0, 180, 180);
-  mCtx.fillStyle = 'rgba(12, 16, 22, 0.9)';
-  mCtx.beginPath();
-  mCtx.arc(90, 90, 88, 0, Math.PI * 2);
-  mCtx.fill();
-  mCtx.strokeStyle = 'rgba(255, 120, 0, 0.5)';
-  mCtx.lineWidth = 2;
-  mCtx.stroke();
-
-  // Draw Spline Loop
-  mCtx.strokeStyle = 'rgba(150, 170, 190, 0.5)';
-  mCtx.lineWidth = 3;
-  mCtx.beginPath();
-  const cX = 130, cZ = -70, scale = 0.45;
-  for (let i = 0; i < splineSamples.length; i++) {
-    let pt = splineSamples[i];
-    let sx = 90 + ((pt.x - cX) * scale);
-    let sy = 90 + ((pt.z - cZ) * scale);
-    if (i === 0) mCtx.moveTo(sx, sy);
-    else mCtx.lineTo(sx, sy);
-  }
-  mCtx.closePath();
-  mCtx.stroke();
-
-  // Draw AI Blips
-  mCtx.fillStyle = '#ff2222';
-  for (let ai of aiCars) {
-    let sx = 90 + ((ai.car.position.x - cX) * scale);
-    let sy = 90 + ((ai.car.position.z - cZ) * scale);
-    mCtx.beginPath();
-    mCtx.arc(sx, sy, 3.5, 0, Math.PI * 2);
-    mCtx.fill();
-  }
-
-  // Draw Player Blip
-  let px = 90 + ((playerCar.position.x - cX) * scale);
-  let py = 90 + ((playerCar.position.z - cZ) * scale);
-  mCtx.fillStyle = '#00f0ff';
-  mCtx.beginPath();
-  mCtx.arc(px, py, 5.0, 0, Math.PI * 2);
-  mCtx.fill();
-}
-
-// ============================================================================
-// SECTION 9: CONTROLS & CAMERA RIG
-// ============================================================================
+// Controls Listeners
 const keys = {};
+let mouseLeftDown = false;
+let mouseRightDown = false;
+
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'KeyE' || e.code === 'KeyL') triggerDropMine();
+  if (e.code === 'KeyK') triggerFireRocket();
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; });
 
+window.addEventListener('mousedown', (e) => {
+  if (e.button === 0) mouseLeftDown = true;
+  if (e.button === 2) {
+    mouseRightDown = true;
+    triggerFireRocket();
+  }
+});
+window.addEventListener('mouseup', (e) => {
+  if (e.button === 0) mouseLeftDown = false;
+  if (e.button === 2) mouseRightDown = false;
+});
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Mobile Touch Wire-up
+function bindTouch(id, onStart, onEnd) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); onStart(); }, { passive: false });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); onEnd(); }, { passive: false });
+}
+bindTouch('btn-gas', () => { keys['KeyW'] = true; }, () => { keys['KeyW'] = false; });
+bindTouch('btn-brake', () => { keys['KeyS'] = true; }, () => { keys['KeyS'] = false; });
+bindTouch('dpad-left', () => { keys['KeyA'] = true; }, () => { keys['KeyA'] = false; });
+bindTouch('dpad-right', () => { keys['KeyD'] = true; }, () => { keys['KeyD'] = false; });
+bindTouch('btn-fire', () => { mouseLeftDown = true; }, () => { mouseLeftDown = false; });
+bindTouch('btn-rocket', () => { triggerFireRocket(); }, () => {});
+bindTouch('btn-mine', () => { triggerDropMine(); }, () => {});
+bindTouch('btn-nitro', () => { keys['ShiftLeft'] = true; }, () => { keys['ShiftLeft'] = false; });
+
+function triggerFireRocket() {
+  if (raceState !== "RACING" || !playerCar.weapons.canFireRoof()) return;
+  combatManager.launchRocket(playerCar, playerCar.weapons.roofWeapon, playerCar.weapons.currentTarget);
+  playerCar.weapons.roofAmmo--;
+  playerCar.weapons.roofCooldown = 1.0 / playerCar.weapons.roofWeapon.fireRate;
+}
+
+function triggerDropMine() {
+  if (raceState !== "RACING" || !playerCar.weapons.canFireRear()) return;
+  combatManager.dropMine(playerCar, playerCar.weapons.rearWeapon);
+  playerCar.weapons.rearAmmo--;
+  playerCar.weapons.rearCooldown = 1.5;
+}
+
+// Camera Modes
 let cameraMode = 0; // 0 = Chase, 1 = Cockpit, 2 = Tactical
 
 function updateCamera(dt) {
@@ -807,9 +1998,7 @@ function updateCamera(dt) {
   }
 }
 
-// ============================================================================
-// SECTION 10: MAIN ANIMATION & 120HZ PHYSICS LOOP
-// ============================================================================
+// Main Animation & 120Hz Loop
 let lastTime = performance.now();
 let physicsAccumulator = 0;
 const fixedTimeStep = 1.0 / 120.0;
@@ -854,18 +2043,40 @@ function animate(currentTime) {
       playerCar.nitroAmount = Math.min(100, playerCar.nitroAmount + delta * 6);
     }
 
-    // AI Control updates
-    for (let ai of aiCars) updateAI(ai, delta);
+    // Player Weapon Firing
+    playerCar.weapons.update(delta, allCars);
+    if ((mouseLeftDown || keys['KeyJ'] || keys['KeyF']) && playerCar.weapons.canFirePrimary()) {
+      combatManager.fireBullets(playerCar, playerCar.weapons.primaryWeapon, playerCar.weapons.currentTarget);
+      playerCar.weapons.primaryCooldown = 1.0 / playerCar.weapons.primaryWeapon.fireRate;
+    }
+
+    // AI Control & Combat updates
+    for (let ai of aiCars) updateAI(ai, delta, allCars, combatManager);
   }
 
   // 120 Hz Fixed Timestep Physics Accumulator
   physicsAccumulator += delta;
   let steps = 0;
   while (physicsAccumulator >= fixedTimeStep && steps < 5) {
-    for (let c of allCars) c.physicsStep(fixedTimeStep);
+    for (let c of allCars) {
+      // Wrecked vehicle respawn check
+      if (c.isWrecked && c.respawnTimer <= 0) {
+        const prog = carProgress.get(c);
+        const spawnGate = checkpointGates[prog ? prog.nextGate : 0];
+        const nextGate = checkpointGates[((prog ? prog.nextGate : 0) + 1) % numCheckpoints];
+        const fwd = nextGate.clone().sub(spawnGate).normalize();
+        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), fwd);
+        c.respawn(spawnGate.clone().add(new THREE.Vector3(0, 0.8, 0)), quat);
+      }
+      c.physicsStep(fixedTimeStep);
+    }
     physicsAccumulator -= fixedTimeStep;
     steps++;
   }
+
+  // Update Combat Systems & Pickups
+  combatManager.update(delta, allCars);
+  pickupManager.update(delta, allCars);
 
   // Checkpoint & Leaderboard Progression
   if (raceState === "RACING") {
@@ -906,25 +2117,10 @@ function animate(currentTime) {
   sunLight.position.set(playerCar.position.x - 60, 80, playerCar.position.z - 60);
   sunLight.target = playerCar.meshGroup;
 
-  // HUD Update
-  const pRank = allCars.indexOf(playerCar) + 1;
-  const pProg = carProgress.get(playerCar);
-  document.getElementById('pos-badge').innerHTML = `${pRank}<span>${['TH','ST','ND','RD','TH','TH','TH'][pRank]} / 6</span>`;
-  document.getElementById('lap-info').innerText = `LAP ${pProg.lap} / ${totalLaps}`;
-  document.getElementById('time-info').innerText = `TIME: ${fmtTime(currentLapTime)} | BEST: ${bestLapTime < 9000 ? fmtTime(bestLapTime) : '--:--.--'}`;
-  document.getElementById('speed-num').innerHTML = `${Math.round(playerCar.speedKmh)}<span id="speed-unit">KM/H</span>`;
-  document.getElementById('rpm-gauge').innerText = `GEAR ${playerCar.currentGear} | ${Math.round(playerCar.engineRPM)} RPM`;
-  document.getElementById('nitro-fill').style.width = `${playerCar.nitroAmount}%`;
+  // UI & HUD Update
+  updateHUD(playerCar, allCars, carProgress, currentLapTime, bestLapTime, totalLaps, camera);
 
-  drawMinimap();
   renderer.render(scene, camera);
-}
-
-function fmtTime(sec) {
-  let m = Math.floor(sec / 60);
-  let s = Math.floor(sec) % 60;
-  let ms = Math.floor((sec - Math.floor(sec)) * 100);
-  return `${m}:${s < 10 ? '0' : ''}${s}.${ms < 10 ? '0' : ''}${ms}`;
 }
 
 function finishRace() {
@@ -936,7 +2132,7 @@ function finishRace() {
   for (let i = 0; i < allCars.length; i++) {
     const c = allCars[i];
     const isP = c === playerCar;
-    html += `<div><strong>${i + 1}.</strong> ${isP ? '<span style="color:#ff8800;">YOU (Sprinter R2)</span>' : c.driverName}</div>`;
+    html += `<div><strong>${i + 1}.</strong> ${isP ? '<span style="color:#ff8800;">YOU (Sprinter R2)</span>' : c.driverName} ${c.isWrecked ? '<span style="color:#ff3300;">[WRECKED]</span>' : ''}</div>`;
   }
   document.getElementById('results-standings').innerHTML = html;
 }
@@ -956,6 +2152,8 @@ document.getElementById('boot-screen').addEventListener('click', () => {
 });
 
 requestAnimationFrame(animate);
+
+
 </script>
 </body>
 </html>
