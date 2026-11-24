@@ -2,9 +2,9 @@
 # Scene-based deterministic test runner for Stage 2 Racing.
 extends Node3D
 
-const SplineTrack = preload("res://src/tracks/spline_track.gd")
-const RaceManager = preload("res://src/core/race_manager.gd")
-const VehicleController = preload("res://src/vehicles/vehicle_controller.gd")
+const SplineTrack = preload("res://scripts/race/spline_track.gd")
+const RaceManager = preload("res://scripts/race/race_manager.gd")
+const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 const AIDriver = preload("res://src/ai/ai_driver.gd")
 
 func _ready():
