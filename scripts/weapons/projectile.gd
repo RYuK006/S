@@ -17,7 +17,6 @@ var homing_turn_rate: float = 4.5
 var mesh_inst: MeshInstance3D
 
 func setup(origin: Vector3, dir: Vector3, speed: float, p_damage: float, p_splash: float, shooter = null, target = null):
-	global_position = origin
 	velocity = dir.normalized() * speed
 	damage = p_damage
 	splash_radius = p_splash
@@ -25,7 +24,12 @@ func setup(origin: Vector3, dir: Vector3, speed: float, p_damage: float, p_splas
 	homing_target = target
 	is_homing = (target != null)
 	
-	look_at(global_position + velocity, Vector3.UP)
+	if is_inside_tree():
+		global_position = origin
+		if velocity.length_squared() > 0.01:
+			look_at(global_position + velocity, Vector3.UP)
+	else:
+		position = origin
 	
 	# Procedural Rocket Model
 	mesh_inst = MeshInstance3D.new()
