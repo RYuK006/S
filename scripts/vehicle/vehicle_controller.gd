@@ -5,6 +5,7 @@ extends RigidBody3D
 
 const GameConstants = preload("res://scripts/core/constants.gd")
 const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
+const ProceduralCarMesh = preload("res://scripts/vehicle/procedural_car_mesh.gd")
 
 @export var car_id: String = "sprinter_r2"
 var recipe: Dictionary
@@ -49,22 +50,120 @@ var rear_right_wheel: RaycastWheel
 var car_mesh_instance: Node3D
 
 func _ready():
-	recipe = GameConstants.CAR_RECIPES[car_id]
+	recipe = _load_recipe()
 	mass = recipe.mass
 	health = recipe.health
 	max_health = recipe.health
 	
 	# Calculate rectangular box inertia tensor
-	var lx = recipe.track_width
-	var ly = 1.35
-	var lz = recipe.wheelbase + 1.2
+	var lx: float = recipe.track_width
+	var ly: float = 1.35
+	var lz: float = recipe.wheelbase + 1.2
 	var ix = (1.0 / 12.0) * mass * (ly * ly + lz * lz)
 	var iy = (1.0 / 12.0) * mass * (lx * lx + lz * lz)
 	var iz = (1.0 / 12.0) * mass * (lx * lx + ly * ly)
 	inertia = Vector3(ix, iy, iz)
 	
+	# Chassis collision
+	_setup_chassis_collision()
+	
 	# Setup 4 raycast wheels
 	_setup_wheels()
+	
+	# Setup visual model & bind wheels
+	_setup_visual_model()
+
+func _load_recipe() -> Dictionary:
+	var base_recipe: Dictionary = GameConstants.CAR_RECIPES.get("sprinter_r2", {}).duplicate(true)
+	if FileAccess.file_exists("res://data/vehicles.json"):
+		var f = FileAccess.open("res://data/vehicles.json", FileAccess.READ)
+		if f:
+			var json_obj = JSON.parse_string(f.get_as_text())
+			if json_obj is Dictionary and json_obj.has("vehicles"):
+				for v in json_obj.vehicles:
+					if v.get("id") == car_id:
+						if v.has("name"): base_recipe["name"] = v.name
+						if v.has("mass"): base_recipe["mass"] = float(v.mass)
+						if v.has("max_torque_nm"): base_recipe["peak_torque_nm"] = float(v.max_torque_nm)
+						if v.has("idle_rpm"): base_recipe["idle_rpm"] = float(v.idle_rpm)
+						if v.has("redline_rpm"): base_recipe["redline_rpm"] = float(v.redline_rpm)
+						if v.has("gear_ratios"): base_recipe["gear_ratios"] = v.gear_ratios
+						if v.has("final_drive"): base_recipe["final_drive"] = float(v.final_drive)
+						if v.has("wheelbase"): base_recipe["wheelbase"] = float(v.wheelbase)
+						if v.has("track_width"): base_recipe["track_width"] = float(v.track_width)
+						if v.has("drag_coeff"): base_recipe["drag_cd"] = float(v.drag_coeff)
+						if v.has("frontal_area"): base_recipe["frontal_area"] = float(v.frontal_area)
+						if v.has("health"): base_recipe["health"] = float(v.health)
+						if v.has("tire_params") and base_recipe.has("tire"):
+							for tk in v.tire_params:
+								base_recipe.tire[tk] = float(v.tire_params[tk])
+						if v.has("model_path"): base_recipe["model_path"] = v.model_path
+						return base_recipe
+	if GameConstants.CAR_RECIPES.has(car_id):
+		return GameConstants.CAR_RECIPES[car_id]
+	return base_recipe
+
+func _setup_chassis_collision():
+	var col_shape = CollisionShape3D.new()
+	var box = BoxShape3D.new()
+	var tw: float = recipe.get("track_width", 1.76)
+	var wb: float = recipe.get("wheelbase", 2.45)
+	box.size = Vector3(tw + 0.15, 0.75, wb + 1.4)
+	col_shape.shape = box
+	col_shape.position = Vector3(0, 0.55, 0)
+	add_child(col_shape)
+
+func _setup_visual_model():
+	var glb_path = "res://assets/models/cars/CarConcept.glb"
+	if recipe.has("model_path") and FileAccess.file_exists(recipe.model_path):
+		glb_path = recipe.model_path
+		
+	var loaded_model: Node3D = null
+	if FileAccess.file_exists(glb_path):
+		var gltf = GLTFDocument.new()
+		var state = GLTFState.new()
+		var err = gltf.append_from_file(glb_path, state)
+		if err == OK:
+			loaded_model = gltf.generate_scene(state) as Node3D
+			
+	if loaded_model:
+		car_mesh_instance = loaded_model
+		add_child(car_mesh_instance)
+		_bind_model_wheels(loaded_model)
+	else:
+		var proc = ProceduralCarMesh.new()
+		car_mesh_instance = proc.build_car(recipe)
+		add_child(car_mesh_instance)
+		_bind_model_wheels(proc)
+
+func _find_child_recursive(node: Node, names: Array[String]) -> Node3D:
+	for n in names:
+		if node.name.nocasecmp_to(n) == 0:
+			return node as Node3D
+	for child in node.get_children():
+		var res = _find_child_recursive(child, names)
+		if res:
+			return res
+	return null
+
+func _bind_model_wheels(root: Node3D):
+	var fl = _find_child_recursive(root, ["WheelFrontL", "wheel_FL", "Wheel_FL"])
+	var fr = _find_child_recursive(root, ["WheelFrontR", "wheel_FR", "Wheel_FR"])
+	var rl = _find_child_recursive(root, ["WheelRearL", "wheel_RL", "Wheel_RL"])
+	var rr = _find_child_recursive(root, ["WheelRearR", "wheel_RR", "Wheel_RR"])
+	
+	if fl: _attach_wheel_visual(front_left_wheel, fl)
+	if fr: _attach_wheel_visual(front_right_wheel, fr)
+	if rl: _attach_wheel_visual(rear_left_wheel, rl)
+	if rr: _attach_wheel_visual(rear_right_wheel, rr)
+
+func _attach_wheel_visual(wheel: RaycastWheel, visual_node: Node3D):
+	if visual_node.get_parent():
+		visual_node.get_parent().remove_child(visual_node)
+	wheel.add_child(visual_node)
+	visual_node.position = Vector3(0, -wheel.rest_length, 0)
+	visual_node.rotation = Vector3.ZERO
+	wheel.wheel_visual = visual_node
 
 func _setup_wheels():
 	var wb_half = recipe.wheelbase * 0.5
