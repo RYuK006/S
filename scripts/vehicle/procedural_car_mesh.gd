@@ -201,9 +201,12 @@ func _build_wheels():
 		Vector3(-tw_half, 0, wb_half),
 		Vector3(tw_half, 0, wb_half)
 	]
+	var wheel_names = ["wheel_FL", "wheel_FR", "wheel_RL", "wheel_RR"]
 	
-	for pos in wheel_positions:
+	for i in range(wheel_positions.size()):
+		var pos = wheel_positions[i]
 		var wheel_node = Node3D.new()
+		wheel_node.name = wheel_names[i]
 		wheel_node.position = pos
 		
 		# Tire mesh (Cylinder with rounded tire profile)
