@@ -7,6 +7,7 @@ const TestPhysicsBench = preload("res://tests/test_physics_bench.gd")
 const TestAudioBench = preload("res://tests/test_audio_bench.gd")
 const TestM2DrivingBench = preload("res://tests/test_m2_driving_bench.gd")
 const TestM3VisualBench = preload("res://tests/test_m3_visual_bench.gd")
+const TestM4RacingBench = preload("res://tests/test_m4_racing_bench.gd")
 
 func _init():
 	print("\n=======================================================")
@@ -30,9 +31,12 @@ func _init():
 	if not TestM3VisualBench.run():
 		all_pass = false
 		
+	if not TestM4RacingBench.run():
+		all_pass = false
+		
 	print("\n-------------------------------------------------------")
 	if all_pass:
-		print("RESULTS: ALL HEADLESS TESTS PASSED (5/5)")
+		print("RESULTS: ALL HEADLESS TESTS PASSED (6/6)")
 		print("-------------------------------------------------------\n")
 		quit(0)
 	else:
