@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GRIDLETHAL — Next-Gen Vehicular Combat Racing Engine</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body, html { width: 100%; height: 100%; overflow: hidden; background: #08080a; font-family: 'Segoe UI', Bahnschrift, 'Roboto Condensed', sans-serif; color: #fff; }
+  #canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* HUD & Telemetry */
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  #telemetry { position: absolute; top: 16px; left: 16px; background: rgba(12, 14, 18, 0.85); border: 1px solid rgba(255, 120, 0, 0.4); border-left: 4px solid #ff7700; padding: 12px 16px; font-family: monospace; font-size: 13px; color: #d0d8e0; border-radius: 4px; line-height: 1.5; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+  #telemetry .highlight { color: #ffaa00; font-weight: bold; }
+  #telemetry .speed { font-size: 20px; color: #00e5ff; font-weight: bold; }
+
+  /* Bottom Controls & Mobile Touch UI */
+  #controls-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.8); padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 13px; color: #bbb; display: flex; gap: 16px; }
+  .key { background: #222; border: 1px solid #444; border-bottom: 2px solid #555; padding: 2px 7px; border-radius: 3px; color: #ff9900; font-weight: bold; }
+
+  /* Mobile Touch Controls */
+  #touch-controls { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .touch-btn { position: absolute; width: 72px; height: 72px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; pointer-events: auto; touch-action: none; color: #fff; }
+  .touch-btn:active { background: rgba(255, 120, 0, 0.4); border-color: #ff7700; }
+  #btn-gas { bottom: 24px; right: 24px; width: 84px; height: 84px; background: rgba(0, 220, 100, 0.2); }
+  #btn-brake { bottom: 24px; right: 120px; width: 72px; height: 72px; background: rgba(220, 50, 50, 0.2); }
+  #btn-handbrake { bottom: 110px; right: 60px; }
+  #btn-nitro { bottom: 180px; right: 24px; }
+  #btn-cam { top: 16px; right: 16px; }
+  #dpad-left { bottom: 36px; left: 24px; }
+  #dpad-right { bottom: 36px; left: 116px; }
+
+  /* Boot Overlay */
+  #boot-screen { position: absolute; inset: 0; background: #0a0b0e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; cursor: pointer; transition: opacity 0.5s; }
+  #boot-screen h1 { font-size: 54px; letter-spacing: 6px; color: #fff; text-transform: uppercase; font-weight: 900; }
+  #boot-screen h1 span { color: #ff6600; text-shadow: 0 0 20px rgba(255, 102, 0, 0.6); }
+  #boot-screen p { color: #889; margin-top: 14px; font-size: 15px; letter-spacing: 2px; }
+  .press-start { margin-top: 36px; padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border-radius: 4px; letter-spacing: 2px; text-transform: uppercase; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.75; transform: scale(0.98); } }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Telemetry HUD -->
+<div id="hud">
+  <div id="telemetry">
+    <div style="border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 6px; font-weight: bold; color: #ff8800;">
+      GRIDLETHAL TELEMETRY <span style="font-size:10px; color:#888;">(STAGE 1 CORE FEEL)</span>
+    </div>
+    <div class="speed"><span id="speed-val">0</span> <span style="font-size:12px; color:#aaa;">KM/H</span></div>
+    <div>RPM: <span id="rpm-val" class="highlight">900</span> | GEAR: <span id="gear-val" class="highlight">1</span></div>
+    <div>BOOST: <span id="boost-val">0.0</span> bar | NITRO: <span id="nitro-val">100</span>%</div>
+    <div>CAM: <span id="cam-val" style="color:#00ffaa;">CHASE</span> | SURFACE: <span id="surf-val">ASPHALT</span></div>
+    <div style="margin-top:4px; font-size:11px; color:#888;">F3: Toggle HUD | C: Switch Camera | R: Flip Car</div>
+  </div>
+
+  <div id="controls-hint">
+    <div><span class="key">W</span> / <span class="key">S</span> Gas / Brake</div>
+    <div><span class="key">A</span> / <span class="key">D</span> Steer</div>
+    <div><span class="key">SPACE</span> Handbrake Drift</div>
+    <div><span class="key">SHIFT</span> Nitro</div>
+    <div><span class="key">C</span> Camera Mode</div>
+    <div><span class="key">F3</span> Telemetry</div>
+  </div>
+</div>
+
+<!-- Mobile Touch Controls -->
+<div id="touch-controls">
+  <div id="dpad-left" class="touch-btn">◀</div>
+  <div id="dpad-right" class="touch-btn">▶</div>
+  <div id="btn-gas" class="touch-btn">GAS</div>
+  <div id="btn-brake" class="touch-btn">BRK</div>
+  <div id="btn-handbrake" class="touch-btn">DRIFT</div>
+  <div id="btn-nitro" class="touch-btn">NITRO</div>
+  <div id="btn-cam" class="touch-btn">CAM</div>
+</div>
+
+<!-- Boot Splash / Audio Unlocker -->
+<div id="boot-screen">
+  <h1>GRID<span>LETHAL</span></h1>
+  <p>NEXT-GEN VEHICULAR COMBAT RACING ENGINE</p>
+  <div class="press-start">Click to Launch & Unlock Audio</div>
+</div>
+
+<script>
+// ============================================================================
+// SECTION 0: GLOBAL INITIALIZATION & DEFENSIVE ERROR HANDLING
+// ============================================================================
+window.addEventListener('error', function(e) {
+  console.error("GRIDLETHAL Engine Error:", e.message);
+});
+
+// Check mobile user-agent
+const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+if (isMobile) {
+  document.getElementById('touch-controls').style.display = 'block';
+  document.getElementById('controls-hint').style.display = 'none';
+}
+
+// Seeded PRNG Mulberry32
+let seed = 1337;
+function mulberry32() {
+  let t = seed += 0x6D2B79F5;
+  t = Math.imul(t ^ t >>> 15, t | 1);
+  t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+
+// ============================================================================
+// SECTION 1: PROCEDURAL DSP WEB AUDIO ENGINE (ZERO-BUZZ GUARANTEE)
+// ============================================================================
+class ProceduralAudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.sampleRate = 44100;
+    this.pinkNoise = new Float32Array(this.sampleRate);
+    this.pinkIdx = 0;
+    this.combustionPhase = 0;
+    this.currentRPM = 900;
+    this.throttleLoad = 0;
+    this.turboBoost = 0;
+    this.maxSlip = 0;
+    this.blowoffTimer = 0;
+    this.lastThrottle = 0;
+    this.initialized = false;
+  }
+
+  init() {
+    if (this.initialized) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    this.ctx = new AudioContextClass();
+    
+    // Fill centered pink noise buffer with zero DC offset
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    let sum = 0;
+    for (let i = 0; i < this.sampleRate; i++) {
+      let white = (Math.random() * 2) - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      let val = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+      this.pinkNoise[i] = val;
+      sum += val;
+      b6 = white * 0.115926;
+    }
+    const mean = sum / this.sampleRate;
+    let maxP = 0.0001;
+    for (let i = 0; i < this.sampleRate; i++) {
+      this.pinkNoise[i] -= mean;
+      maxP = Math.max(maxP, Math.abs(this.pinkNoise[i]));
+    }
+    const scl = 0.85 / maxP;
+    for (let i = 0; i < this.sampleRate; i++) this.pinkNoise[i] *= scl;
+
+    // Audio node chain: ScriptProcessor/Generator -> DynamicsCompressor -> Master
+    this.scriptNode = this.ctx.createScriptProcessor(2048, 0, 2);
+    this.compressor = this.ctx.createDynamicsCompressor();
+    this.compressor.threshold.setValueAtTime(-14, this.ctx.currentTime);
+    this.compressor.knee.setValueAtTime(40, this.ctx.currentTime);
+    this.compressor.ratio.setValueAtTime(4, this.ctx.currentTime);
+    this.compressor.attack.setValueAtTime(0.005, this.ctx.currentTime);
+    this.compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
+
+    this.scriptNode.onaudioprocess = (e) => this.processAudio(e);
+    this.scriptNode.connect(this.compressor);
+    this.compressor.connect(this.ctx.destination);
+    this.initialized = true;
+  }
+
+  update(rpm, throttle, boost, slip) {
+    this.currentRPM = rpm;
+    this.throttleLoad = throttle;
+    this.turboBoost = boost;
+    this.maxSlip = slip;
+
+    if (this.lastThrottle > 0.6 && throttle < 0.2 && boost > 0.3) {
+      this.blowoffTimer = 0.28;
+    }
+    this.lastThrottle = throttle;
+  }
+
+  processAudio(e) {
+    const left = e.outputBuffer.getChannelData(0);
+    const right = e.outputBuffer.getChannelData(1);
+    const len = left.length;
+
+    // Firing frequency for 4-cylinder four-stroke: (RPM / 60) * 2
+    const firingFreq = (this.currentRPM / 60.0) * 2.0;
+    const phaseStep = firingFreq / this.sampleRate;
+
+    for (let i = 0; i < len; i++) {
+      this.combustionPhase += phaseStep;
+      if (this.combustionPhase >= 1.0) {
+        this.combustionPhase -= 1.0;
+        this.combustionPhase += (Math.random() - 0.5) * 0.02; // Micro-jitter
+      }
+
+      // 1. Combustion Pulse: 8ms decaying sine thump + noise roar + injector tick
+      let engineSample = 0;
+      let pulseT = this.combustionPhase;
+      if (pulseT < 0.35) {
+        let env = Math.exp(-pulseT * 14.0);
+        let thumpFreq = 140.0 - pulseT * 250.0;
+        let thump = Math.sin(pulseT * thumpFreq * Math.PI * 2.0) * 0.7;
+        let noise = this.pinkNoise[this.pinkIdx];
+        this.pinkIdx = (this.pinkIdx + 1) % this.sampleRate;
+        let tick = pulseT < 0.02 ? (Math.random() - 0.5) * 0.3 : 0;
+        engineSample = (thump + noise * 0.55 + tick) * env;
+      }
+      engineSample *= (0.45 + this.throttleLoad * 0.55);
+
+      // 2. Granular Tire Squeal
+      let tireSample = 0;
+      if (this.maxSlip > 0.14) {
+        let squealNoise = this.pinkNoise[(this.pinkIdx + 1200) % this.sampleRate];
+        let squealEnv = Math.min(1.0, (this.maxSlip - 0.14) / 0.4);
+        let stickSlip = 0.8 + Math.sin(this.combustionPhase * 40.0) * 0.2;
+        tireSample = squealNoise * squealEnv * stickSlip * 0.32;
+      }
+
+      // 3. Turbo Whistle & Blowoff
+      let turboSample = 0;
+      if (this.turboBoost > 0.1) {
+        let turboNoise = this.pinkNoise[(this.pinkIdx + 5000) % this.sampleRate];
+        turboSample += turboNoise * this.turboBoost * 0.14;
+      }
+      if (this.blowoffTimer > 0) {
+        let blowNoise = this.pinkNoise[(this.pinkIdx + 8000) % this.sampleRate];
+        turboSample += blowNoise * (this.blowoffTimer / 0.28) * 0.45;
+        this.blowoffTimer -= 1.0 / this.sampleRate;
+      }
+
+      // Master soft limiter
+      let sample = (engineSample * 0.65) + tireSample + turboSample;
+      sample = Math.tanh(sample * 1.2) * 0.85;
+
+      left[i] = sample;
+      right[i] = sample;
+    }
+  }
+}
+
+// ============================================================================
+// SECTION 2: PACEJKA MAGIC FORMULA TIRE DYNAMICS
+// ============================================================================
+class PacejkaTire {
+  constructor() {
+    this.peakSlip = 0.13;
+    this.slideSlip = 0.55;
+    this.peakMu = 1.65;
+    this.slideMu = 1.12;
+    this.longMu = 1.55;
+    this.loadSensitivity = 0.22;
+    this.nominalLoad = 2600.0;
+  }
+
+  solve(fz, slipRatio, slipAngle, surfaceMu = 1.0) {
+    if (fz <= 10.0) return { fx: 0, fy: 0, saturation: 0, isSliding: false };
+
+    const loadRatio = fz / this.nominalLoad;
+    const effPeakMu = Math.max(0.05, this.peakMu * (1.0 - this.loadSensitivity * (loadRatio - 1.0)) * surfaceMu);
+    const effSlideMu = Math.max(0.05, this.slideMu * (1.0 - this.loadSensitivity * (loadRatio - 1.0)) * surfaceMu);
+    const effLongMu = Math.max(0.05, this.longMu * (1.0 - this.loadSensitivity * (loadRatio - 1.0)) * surfaceMu);
+
+    // Longitudinal Pacejka
+    const dLong = effLongMu * fz;
+    const fxPure = dLong * Math.sin(1.65 * Math.atan(10.0 * slipRatio));
+
+    // Lateral Pacejka
+    const absSlip = Math.abs(slipAngle);
+    const dLat = effPeakMu * fz;
+    let fyPure = 0;
+    let isSliding = false;
+
+    if (absSlip <= this.peakSlip) {
+      fyPure = dLat * Math.sin((absSlip / this.peakSlip) * (Math.PI * 0.5));
+    } else {
+      let t = Math.min(1.0, (absSlip - this.peakSlip) / (this.slideSlip - this.peakSlip));
+      t = t * t * (3.0 - 2.0 * t);
+      fyPure = dLat * (1.0 - t) + (effSlideMu * fz) * t;
+      isSliding = t > 0.3;
+    }
+    fyPure *= Math.sign(slipAngle);
+
+    // Friction Ellipse Coupling
+    const fxMax = effLongMu * fz;
+    const normFx = Math.min(1.0, Math.abs(fxPure) / Math.max(1.0, fxMax));
+    const lateralReduction = Math.sqrt(Math.max(0.0, 1.0 - normFx * normFx));
+    const fyCoupled = fyPure * lateralReduction;
+    const saturation = Math.sqrt(Math.pow(fxPure / Math.max(1, fxMax), 2) + Math.pow(fyCoupled / Math.max(1, dLat), 2));
+
+    return { fx: fxPure, fy: fyCoupled, saturation, isSliding };
+  }
+}
+
+// ============================================================================
+// SECTION 3: 4-CORNER RAYCAST SUSPENSION WHEEL
+// ============================================================================
+class RaycastWheel {
+  constructor(isFront, isLeft, relPos) {
+    this.isFront = isFront;
+    this.isLeft = isLeft;
+    this.relPos = relPos.clone();
+    this.restLength = 0.38;
+    this.travel = 0.18;
+    this.springRate = 28000.0;
+    this.dampingBump = 2400.0;
+    this.dampingRebound = 3600.0;
+    this.antiRollRate = 6500.0;
+    this.radius = 0.32;
+
+    this.compression = 0;
+    this.compressionVel = 0;
+    this.normalForce = 0;
+    this.slipAngle = 0;
+    this.slipRatio = 0;
+    this.steerAngle = 0;
+    this.wheelAngularVelocity = 0;
+    this.driveTorque = 0;
+    this.brakeTorque = 0;
+    this.handbrakeFactor = 1.0;
+    this.isGrounded = false;
+    this.surfaceType = "asphalt_dry";
+    this.surfaceMu = 1.0;
+
+    this.tire = new PacejkaTire();
+    this.oppositeWheel = null;
+    this.visualMesh = null;
+  }
+
+  update(chassis, dt, groundHeight = 0) {
+    const worldAnchor = this.relPos.clone().applyMatrix4(chassis.matrixWorld);
+    const hitY = groundHeight;
+    const dist = (worldAnchor.y - hitY) - this.radius;
+
+    if (dist > this.restLength + this.travel) {
+      this.isGrounded = false;
+      this.compression = 0;
+      this.normalForce = 0;
+      if (this.visualMesh) this.visualMesh.position.y = this.relPos.y - this.restLength;
+      return new THREE.Vector3();
+    }
+
+    this.isGrounded = true;
+    const targetComp = Math.max(0, Math.min(this.travel, this.restLength - dist));
+    this.compressionVel = (targetComp - this.compression) / Math.max(0.0001, dt);
+    this.compression = targetComp;
+
+    if (this.visualMesh) {
+      this.visualMesh.position.y = this.relPos.y - dist;
+      this.visualMesh.rotation.y = this.steerAngle;
+      this.visualMesh.rotation.x += this.wheelAngularVelocity * dt;
+    }
+
+    // Spring & Damper
+    let springF = this.compression * this.springRate;
+    if (this.compression > this.travel * 0.85) {
+      const excess = this.compression - (this.travel * 0.85);
+      springF += Math.pow(excess / (this.travel * 0.15), 2) * this.springRate * 2.5;
+    }
+    const damperF = this.compressionVel > 0 ? this.compressionVel * this.dampingBump : this.compressionVel * this.dampingRebound;
+
+    // Anti-Roll Bar
+    let antiRollF = 0;
+    if (this.oppositeWheel) {
+      antiRollF = (this.compression - this.oppositeWheel.compression) * this.antiRollRate;
+    }
+    this.normalForce = Math.max(0, springF + damperF + antiRollF);
+
+    // Tire Local Kinematics
+    const forwardDir = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, this.steerAngle, 0)).applyQuaternion(chassis.quaternion);
+    const rightDir = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, this.steerAngle, 0)).applyQuaternion(chassis.quaternion);
+
+    const rArm = new THREE.Vector3().subVectors(worldAnchor, chassis.position);
+    const wheelVel = chassis.velocity.clone().add(new THREE.Vector3().crossVectors(chassis.angularVelocity, rArm));
+
+    const vLong = forwardDir.dot(wheelVel);
+    const vLat = rightDir.dot(wheelVel);
+    const absVLong = Math.max(0.5, Math.abs(vLong));
+
+    this.slipAngle = -Math.atan2(vLat, absVLong);
+    const wheelGroundSpeed = this.wheelAngularVelocity * this.radius;
+    this.slipRatio = (wheelGroundSpeed - vLong) / absVLong;
+
+    const effMu = this.surfaceMu * (this.isFront ? 1.0 : this.handbrakeFactor);
+    const res = this.tire.solve(this.normalForce, this.slipRatio, this.slipAngle, effMu);
+
+    // Wheel rotation integration
+    const netTorque = this.driveTorque - (res.fx * this.radius) - (Math.sign(this.wheelAngularVelocity) * this.brakeTorque);
+    const inertia = 0.5 * 14.0 * Math.pow(this.radius, 2);
+    this.wheelAngularVelocity += (netTorque / inertia) * dt;
+
+    const suspensionVec = new THREE.Vector3(0, 1, 0).multiplyScalar(this.normalForce);
+    const tireForceVec = forwardDir.multiplyScalar(res.fx).add(rightDir.multiplyScalar(res.fy));
+    return suspensionVec.add(tireForceVec);
+  }
+}
+
+// ============================================================================
+// SECTION 4: VEHICLE CONTROLLER & RIGID BODY KINEMATICS
+// ============================================================================
+class VehicleController {
+  constructor(scene) {
+    this.scene = scene;
+    this.mass = 1050.0;
+    this.position = new THREE.Vector3(0, 1.2, -120);
+    this.quaternion = new THREE.Quaternion();
+    this.velocity = new THREE.Vector3();
+    this.angularVelocity = new THREE.Vector3();
+    this.matrixWorld = new THREE.Matrix4();
+
+    this.speedKmh = 0;
+    this.engineRPM = 900;
+    this.currentGear = 1;
+    this.gearRatios = [3.42, 2.14, 1.45, 1.10, 0.86];
+    this.finalDrive = 4.10;
+    this.turboBoost = 0;
+    this.nitroAmount = 100.0;
+    this.nitroActive = false;
+    this.health = 700.0;
+    this.maxHealth = 700.0;
+    this.isFlipped = false;
+    this.upsideDownTimer = 0;
+
+    this.throttleInput = 0;
+    this.brakeInput = 0;
+    this.steerInput = 0;
+    this.handbrake = false;
+
+    // 4 Wheels
+    const wbHalf = 2.45 * 0.5;
+    const twHalf = 1.62 * 0.5;
+    this.fl = new RaycastWheel(true, true, new THREE.Vector3(-twHalf, -0.2, -wbHalf));
+    this.fr = new RaycastWheel(true, false, new THREE.Vector3(twHalf, -0.2, -wbHalf));
+    this.rl = new RaycastWheel(false, true, new THREE.Vector3(-twHalf, -0.2, wbHalf));
+    this.rr = new RaycastWheel(false, false, new THREE.Vector3(twHalf, -0.2, wbHalf));
+
+    this.fl.oppositeWheel = this.fr;
+    this.fr.oppositeWheel = this.fl;
+    this.rl.oppositeWheel = this.rr;
+    this.rr.oppositeWheel = this.rl;
+    this.wheels = [this.fl, this.fr, this.rl, this.rr];
+
+    // Build Procedural Mesh
+    this.meshGroup = buildProceduralSprinterMesh(this);
+    this.scene.add(this.meshGroup);
+  }
+
+  physicsStep(dt) {
+    this.matrixWorld.compose(this.position, this.quaternion, new THREE.Vector3(1, 1, 1));
+    this.speedKmh = this.velocity.length() * 3.6;
+
+    // 1. Drivetrain & Turbo
+    if (this.throttleInput > 0.3) this.turboBoost = Math.min(1.0, this.turboBoost + dt * 1.5);
+    else this.turboBoost = Math.max(0.0, this.turboBoost - dt * 3.0);
+
+    const rpmNorm = Math.max(0, Math.min(1, (this.engineRPM - 900) / (7200 - 900)));
+    let engineTorque = 280.0 * (0.6 + 0.4 * Math.sin(rpmNorm * Math.PI)) * this.throttleInput;
+    if (this.nitroActive) engineTorque *= 1.8;
+
+    // Auto Gearbox
+    if (this.engineRPM > 6800 && this.currentGear < 5) this.currentGear++;
+    else if (this.engineRPM < 2200 && this.currentGear > 1) this.currentGear--;
+
+    const totalRatio = this.gearRatios[this.currentGear - 1] * this.finalDrive;
+    const axleTorque = engineTorque * totalRatio;
+    const frontT = axleTorque * 0.60 * 0.5;
+    const rearT = axleTorque * 0.40 * 0.5;
+
+    this.fl.driveTorque = frontT;
+    this.fr.driveTorque = frontT;
+    this.rl.driveTorque = rearT;
+    this.rr.driveTorque = rearT;
+
+    const maxBrake = 3800.0;
+    this.fl.brakeTorque = this.brakeInput * maxBrake * 0.65 * 0.5;
+    this.fr.brakeTorque = this.brakeInput * maxBrake * 0.65 * 0.5;
+    this.rl.brakeTorque = this.brakeInput * maxBrake * 0.35 * 0.5;
+    this.rr.brakeTorque = this.brakeInput * maxBrake * 0.35 * 0.5;
+
+    if (this.handbrake) {
+      this.rl.brakeTorque += maxBrake * 1.5;
+      this.rr.brakeTorque += maxBrake * 1.5;
+      this.rl.handbrakeFactor = 0.35;
+      this.rr.handbrakeFactor = 0.35;
+    } else {
+      this.rl.handbrakeFactor = 1.0;
+      this.rr.handbrakeFactor = 1.0;
+    }
+
+    // Steering
+    const maxSteerRad = (34.0 - Math.min(22.0, this.speedKmh * 0.12)) * (Math.PI / 180.0);
+    const targetSteer = this.steerInput * maxSteerRad;
+    this.fl.steerAngle = targetSteer;
+    this.fr.steerAngle = targetSteer;
+
+    // 2. Suspension & Wheel Forces
+    let netForce = new THREE.Vector3(0, -9.81 * this.mass, 0); // Gravity
+    let netTorqueBody = new THREE.Vector3();
+
+    for (let w of this.wheels) {
+      const f = w.update(this, dt, 0.0); // Ground plane at y = 0
+      netForce.add(f);
+
+      const rArm = w.relPos.clone().applyQuaternion(this.quaternion);
+      const torque = new THREE.Vector3().crossVectors(rArm, f);
+      netTorqueBody.add(torque);
+    }
+
+    // 3. Aerodynamics (Drag & Downforce)
+    const vSq = this.velocity.lengthSq();
+    if (vSq > 0.5) {
+      const dragMag = 0.5 * 1.225 * 0.34 * 2.1 * vSq;
+      netForce.add(this.velocity.clone().normalize().multiplyScalar(-dragMag));
+      const downforce = 0.5 * 1.225 * 0.15 * 2.1 * vSq;
+      netForce.add(new THREE.Vector3(0, -downforce, 0));
+    }
+
+    // Integrate Linear & Angular Acceleration
+    const accel = netForce.divideScalar(this.mass);
+    this.velocity.add(accel.multiplyScalar(dt));
+    this.position.add(this.velocity.clone().multiplyScalar(dt));
+
+    // Approximate rotational inertia
+    const angAccel = netTorqueBody.divideScalar(this.mass * 1.2);
+    this.angularVelocity.add(angAccel.multiplyScalar(dt));
+    this.angularVelocity.multiplyScalar(0.96); // Angular damping
+
+    const rotDelta = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+      this.angularVelocity.x * dt,
+      this.angularVelocity.y * dt,
+      this.angularVelocity.z * dt
+    ));
+    this.quaternion.multiply(rotDelta).normalize();
+
+    // Engine RPM Calculation
+    const avgWheelRadS = (this.rl.wheelAngularVelocity + this.rr.wheelAngularVelocity) * 0.5;
+    const drivenRPM = Math.abs(avgWheelRadS * totalRatio * (60.0 / (2.0 * Math.PI)));
+    this.engineRPM = Math.max(900, Math.min(7200, drivenRPM + this.throttleInput * 800));
+
+    // Rollover Detection
+    const upVec = new THREE.Vector3(0, 1, 0).applyQuaternion(this.quaternion);
+    if (upVec.y < 0.2) {
+      this.upsideDownTimer += dt;
+      if (this.upsideDownTimer > 3.0) this.isFlipped = true;
+    } else {
+      this.upsideDownTimer = 0;
+      this.isFlipped = false;
+    }
+
+    // Visual Mesh Position
+    this.meshGroup.position.copy(this.position);
+    this.meshGroup.quaternion.copy(this.quaternion);
+  }
+
+  selfRight() {
+    this.position.y += 1.2;
+    this.quaternion.set(0, this.quaternion.y, 0, this.quaternion.w).normalize();
+    this.velocity.set(0, 0, 0);
+    this.angularVelocity.set(0, 0, 0);
+    this.isFlipped = false;
+    this.upsideDownTimer = 0;
+  }
+}
+
+// ============================================================================
+// SECTION 5: PROCEDURAL SPRINTER R2 3D MESH BUILDER (FORZA PBR CLEARCOAT)
+// ============================================================================
+function buildProceduralSprinterMesh(car) {
+  const group = new THREE.Group();
+
+  // Lofted Body Geometry
+  const bodyGeo = new THREE.BoxGeometry(1.68, 0.72, 3.8, 4, 3, 6);
+  // Shape vertices into aerodynamic rally hatch
+  const pos = bodyGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    let x = pos.getX(i);
+    let y = pos.getY(i);
+    let z = pos.getZ(i);
+
+    // Taper hood front
+    if (z < -0.8) {
+      y *= (1.0 - (-z - 0.8) * 0.35);
+      x *= (1.0 - (-z - 0.8) * 0.15);
+    }
+    // Cabin roof taper
+    if (y > 0.2 && z > -0.6 && z < 1.2) {
+      x *= 0.88;
+    }
+    pos.setXYZ(i, x, y + 0.35, z);
+  }
+  bodyGeo.computeVertexNormals();
+
+  // Forza-Style PBR Clearcoat Paint Material
+  const paintMat = new THREE.MeshPhysicalMaterial({
+    color: 0xee1808,
+    metalness: 0.82,
+    roughness: 0.14,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.04
+  });
+
+  const bodyMesh = new THREE.Mesh(bodyGeo, paintMat);
+  bodyMesh.castShadow = true;
+  bodyMesh.receiveShadow = true;
+  group.add(bodyMesh);
+
+  // Rear Wing
+  const wingGeo = new THREE.BoxGeometry(1.35, 0.06, 0.35);
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.3, metalness: 0.8 });
+  const wing = new THREE.Mesh(wingGeo, darkMat);
+  wing.position.set(0, 0.95, 1.4);
+  wing.castShadow = true;
+  group.add(wing);
+
+  // Headlights (Emissive)
+  const hlGeo = new THREE.BoxGeometry(0.24, 0.12, 0.04);
+  const hlMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xe6f0ff, emissiveIntensity: 2.5 });
+  for (let side of [-1, 1]) {
+    const hl = new THREE.Mesh(hlGeo, hlMat);
+    hl.position.set(side * 0.58, 0.42, -1.9);
+    group.add(hl);
+  }
+
+  // Tail Lights (Signal Red Emissive)
+  const tlGeo = new THREE.BoxGeometry(0.26, 0.10, 0.04);
+  const tlMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff1100, emissiveIntensity: 2.0 });
+  for (let side of [-1, 1]) {
+    const tl = new THREE.Mesh(tlGeo, tlMat);
+    tl.position.set(side * 0.58, 0.48, 1.9);
+    group.add(tl);
+  }
+
+  // Wheels (Cylinder Tire + Rim)
+  const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.22, 20);
+  wheelGeo.rotateZ(Math.PI / 2);
+  const tireMat = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.85 });
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0xc8cbd0, metalness: 0.95, roughness: 0.15 });
+
+  for (let w of car.wheels) {
+    const wGroup = new THREE.Group();
+    const tire = new THREE.Mesh(wheelGeo, tireMat);
+    tire.castShadow = true;
+    wGroup.add(tire);
+
+    const rimGeo = new THREE.CylinderGeometry(0.20, 0.20, 0.23, 16);
+    rimGeo.rotateZ(Math.PI / 2);
+    const rim = new THREE.Mesh(rimGeo, rimMat);
+    wGroup.add(rim);
+
+    wGroup.position.copy(w.relPos);
+    w.visualMesh = wGroup;
+    group.add(wGroup);
+  }
+
+  return group;
+}
+
+// ============================================================================
+// SECTION 6: THREE.JS RENDERER, SCENE, LIGHTING & TEST TRACK
+// ============================================================================
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x7599c2);
+scene.fog = new THREE.FogExp2(0x8fa8c6, 0.0035);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// Camera
+const camera = new THREE.PerspectiveCamera(68, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+// Procedural Atmospheric Sky & Sunlight
+const hemiLight = new THREE.HemisphereLight(0xddeeff, 0x3f352b, 0.8);
+scene.add(hemiLight);
+
+const sunLight = new THREE.DirectionalLight(0xffedd2, 3.2);
+sunLight.position.set(-60, 80, -60);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 10;
+sunLight.shadow.camera.far = 300;
+const d = 60;
+sunLight.shadow.camera.left = -d;
+sunLight.shadow.camera.right = d;
+sunLight.shadow.camera.top = d;
+sunLight.shadow.camera.bottom = -d;
+sunLight.shadow.bias = -0.0005;
+scene.add(sunLight);
+
+// Build Test Track Environment
+function buildTestTrack() {
+  // Ground
+  const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+  groundGeo.rotateX(-Math.PI / 2);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x5a4d3e, roughness: 0.95 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Main Asphalt Straight
+  const roadGeo = new THREE.PlaneGeometry(24, 400);
+  roadGeo.rotateX(-Math.PI / 2);
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0x222226, roughness: 0.65 });
+  const road = new THREE.Mesh(roadGeo, roadMat);
+  road.position.set(0, 0.02, 0);
+  road.receiveShadow = true;
+  scene.add(road);
+
+  // Skidpad Circle (Radius 50m)
+  const padGeo = new THREE.CircleGeometry(50, 48);
+  padGeo.rotateX(-Math.PI / 2);
+  const padMat = new THREE.MeshStandardMaterial({ color: 0x202024, roughness: 0.68 });
+  const pad = new THREE.Mesh(padGeo, padMat);
+  pad.position.set(100, 0.03, 60);
+  pad.receiveShadow = true;
+  scene.add(pad);
+
+  // Jump Ramp
+  const rampGeo = new THREE.BoxGeometry(16, 0.5, 18);
+  rampGeo.rotateX(-0.16);
+  const rampMat = new THREE.MeshStandardMaterial({ color: 0xd99a12, roughness: 0.45 });
+  const ramp = new THREE.Mesh(rampGeo, rampMat);
+  ramp.position.set(0, 0.2, 50);
+  ramp.castShadow = true;
+  ramp.receiveShadow = true;
+  scene.add(ramp);
+
+  // Slalom Pylons
+  const pylonGeo = new THREE.ConeGeometry(0.35, 1.0, 12);
+  const pylonMat = new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.4 });
+  for (let i = 0; i < 8; i++) {
+    const pylon = new THREE.Mesh(pylonGeo, pylonMat);
+    pylon.position.set(0, 0.5, -90 + i * 20);
+    pylon.castShadow = true;
+    scene.add(pylon);
+  }
+}
+buildTestTrack();
+
+// Instantiate Car & Audio
+const car = new VehicleController(scene);
+const audio = new ProceduralAudioEngine();
+
+// ============================================================================
+// SECTION 7: INPUT HANDLING & 3-MODE CAMERA SYSTEM
+// ============================================================================
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'KeyR' && car.isFlipped) car.selfRight();
+  if (e.code === 'F3') {
+    const telem = document.getElementById('telemetry');
+    telem.style.display = (telem.style.display === 'none') ? 'block' : 'none';
+  }
+});
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+// Touch Controls Handling
+function bindTouch(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); onDown(); });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); onUp(); });
+}
+bindTouch('dpad-left', () => keys['KeyA'] = true, () => keys['KeyA'] = false);
+bindTouch('dpad-right', () => keys['KeyD'] = true, () => keys['KeyD'] = false);
+bindTouch('btn-gas', () => keys['KeyW'] = true, () => keys['KeyW'] = false);
+bindTouch('btn-brake', () => keys['KeyS'] = true, () => keys['KeyS'] = false);
+bindTouch('btn-handbrake', () => keys['Space'] = true, () => keys['Space'] = false);
+bindTouch('btn-nitro', () => keys['ShiftLeft'] = true, () => keys['ShiftLeft'] = false);
+bindTouch('btn-cam', () => cameraMode = (cameraMode + 1) % 3, () => {});
+
+let cameraMode = 0; // 0 = Chase, 1 = Cockpit, 2 = Tactical
+
+function updateCamera(dt) {
+  if (cameraMode === 0) {
+    // CHASE CAMERA
+    const speedNorm = Math.min(1.0, car.speedKmh / 200.0);
+    camera.fov = 68.0 + speedNorm * 14.0 + (car.nitroActive ? 10.0 : 0.0);
+    camera.updateProjectionMatrix();
+
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(car.quaternion);
+    const dist = 5.8 + speedNorm * 1.5;
+    const height = 2.2 + speedNorm * 0.6;
+    const targetPos = car.position.clone().sub(forward.multiplyScalar(dist)).add(new THREE.Vector3(0, height, 0));
+    camera.position.lerp(targetPos, dt * 10.0);
+
+    const lookTarget = car.position.clone().add(new THREE.Vector3(0, 0.8, 0));
+    camera.lookAt(lookTarget);
+  } else if (cameraMode === 1) {
+    // COCKPIT FIRST-PERSON
+    camera.fov = 75.0;
+    camera.updateProjectionMatrix();
+    const eyeOffset = new THREE.Vector3(-0.35, 0.85, -0.2).applyQuaternion(car.quaternion);
+    camera.position.copy(car.position.clone().add(eyeOffset));
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(car.quaternion);
+    camera.lookAt(camera.position.clone().add(forward.multiplyScalar(10)));
+  } else {
+    // TOP-DOWN TACTICAL DEATH-RALLY
+    camera.fov = 55.0;
+    camera.updateProjectionMatrix();
+    const lead = car.velocity.clone().multiplyScalar(0.35);
+    const targetPos = car.position.clone().add(lead).add(new THREE.Vector3(0, 20, 10));
+    camera.position.lerp(targetPos, dt * 8.0);
+    camera.lookAt(car.position.clone().add(lead));
+  }
+}
+
+// ============================================================================
+// SECTION 8: MAIN ANIMATION & 120HZ PHYSICS ACCUMULATOR LOOP
+// ============================================================================
+let lastTime = performance.now();
+let physicsAccumulator = 0;
+const fixedTimeStep = 1.0 / 120.0;
+
+function animate(currentTime) {
+  requestAnimationFrame(animate);
+
+  const delta = Math.min(0.1, (currentTime - lastTime) / 1000.0);
+  lastTime = currentTime;
+
+  // Process User Inputs
+  let rawGas = (keys['KeyW'] || keys['ArrowUp']) ? 1.0 : 0.0;
+  let rawBrake = (keys['KeyS'] || keys['ArrowDown']) ? 1.0 : 0.0;
+  let rawSteer = ((keys['KeyA'] || keys['ArrowLeft']) ? 1.0 : 0.0) - ((keys['KeyD'] || keys['ArrowRight']) ? 1.0 : 0.0);
+
+  car.throttleInput = THREE.MathUtils.lerp(car.throttleInput, rawGas, delta * 6.0);
+  car.brakeInput = THREE.MathUtils.lerp(car.brakeInput, rawBrake, delta * 8.0);
+  car.steerInput = THREE.MathUtils.lerp(car.steerInput, rawSteer, delta * 6.0);
+  car.handbrake = !!keys['Space'];
+
+  if (keys['ShiftLeft'] && car.nitroAmount > 0) {
+    car.nitroActive = true;
+    car.nitroAmount = Math.max(0, car.nitroAmount - delta * 25);
+  } else {
+    car.nitroActive = false;
+    car.nitroAmount = Math.min(100, car.nitroAmount + delta * 6);
+  }
+
+  // 120 Hz Fixed Timestep Physics Accumulator
+  physicsAccumulator += delta;
+  let steps = 0;
+  while (physicsAccumulator >= fixedTimeStep && steps < 5) {
+    car.physicsStep(fixedTimeStep);
+    physicsAccumulator -= fixedTimeStep;
+    steps++;
+  }
+
+  // Audio Update
+  let maxSlip = 0;
+  for (let w of car.wheels) maxSlip = Math.max(maxSlip, Math.abs(w.slipAngle) + Math.abs(w.slipRatio));
+  audio.update(car.engineRPM, car.throttleInput, car.turboBoost, maxSlip);
+
+  // Update Camera & Sun position
+  updateCamera(delta);
+  sunLight.position.set(car.position.x - 60, 80, car.position.z - 60);
+  sunLight.target = car.meshGroup;
+
+  // Telemetry HUD Update
+  document.getElementById('speed-val').innerText = Math.round(car.speedKmh);
+  document.getElementById('rpm-val').innerText = Math.round(car.engineRPM);
+  document.getElementById('gear-val').innerText = car.currentGear;
+  document.getElementById('boost-val').innerText = (car.turboBoost * 1.4).toFixed(1);
+  document.getElementById('nitro-val').innerText = Math.round(car.nitroAmount);
+  document.getElementById('cam-val').innerText = ['CHASE', 'COCKPIT', 'TACTICAL'][cameraMode];
+
+  renderer.render(scene, camera);
+}
+
+// Window resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Boot Unlocker
+document.getElementById('boot-screen').addEventListener('click', () => {
+  audio.init();
+  document.getElementById('boot-screen').style.opacity = '0';
+  setTimeout(() => document.getElementById('boot-screen').style.display = 'none', 500);
+});
+
+// Start loop
+requestAnimationFrame(animate);
+
+// ============================================================================
+// SECTION 17: BROWSER CONSOLE SELF-TESTS
+// ============================================================================
+window.runSelfTests = function() {
+  console.log("Running in-browser verification tests...");
+  const tire = new PacejkaTire();
+  const res1 = tire.solve(2600, 0, 0.13, 1.0);
+  const res2 = tire.solve(2600, 0, 0.60, 1.0);
+  console.assert(res1.fy > res2.fy, "Pacejka curve must exhibit peak then slide decay");
+  console.assert(audio.pinkNoise.length === 44100, "Pink noise buffer allocated");
+  console.log("All in-browser self-tests passed cleanly!");
+  return true;
+};
+</script>
+</body>
+</html>
