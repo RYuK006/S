@@ -30,6 +30,9 @@ var nitro_capacity: float = 100.0
 var nitro_amount: float = 100.0
 var health: float = 700.0
 var max_health: float = 700.0
+var is_wrecked: bool = false
+var respawn_timer: float = 0.0
+var has_revenge_against = null
 
 # Rollover timer
 var upside_down_timer: float = 0.0
@@ -248,3 +251,38 @@ func self_right_car():
 	angular_velocity = Vector3.ZERO
 	is_flipped = false
 	upside_down_timer = 0.0
+
+func apply_damage(amount: float, hit_point: Vector3, attacker = null):
+	if is_wrecked:
+		return
+	health = max(0.0, health - amount)
+	
+	# Apply vertex dent to mesh
+	if car_mesh_instance and car_mesh_instance.has_method("apply_dent"):
+		var local_hit = car_mesh_instance.global_transform.affine_inverse() * hit_point
+		car_mesh_instance.apply_dent(local_hit, amount * 25.0)
+		
+	# Revenge system: if player damages this AI, set revenge target
+	if attacker and attacker != self:
+		has_revenge_against = attacker
+		
+	if health <= 0.0:
+		_wreck_car()
+
+func _wreck_car():
+	is_wrecked = true
+	respawn_timer = 3.0
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	
+	# Darken mesh into charred wreck
+	if car_mesh_instance and car_mesh_instance.body_mesh_instance:
+		var wreck_mat = StandardMaterial3D.new()
+		wreck_mat.albedo_color = Color(0.05, 0.05, 0.05)
+		wreck_mat.roughness = 0.95
+		car_mesh_instance.body_mesh_instance.material_override = wreck_mat
+
+func apply_repair(amount: float):
+	health = min(max_health, health + amount)
+	if health > 0.0 and is_wrecked:
+		is_wrecked = false
