@@ -3,7 +3,7 @@
 extends Node3D
 
 const WeaponData = preload("res://scripts/weapons/weapon_data.gd")
-const WeaponSystem = preload("res://src/weapons/weapon_system.gd")
+const WeaponSystem = preload("res://scripts/weapons/weapon_system.gd")
 const Projectile = preload("res://scripts/weapons/projectile.gd")
 const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 
