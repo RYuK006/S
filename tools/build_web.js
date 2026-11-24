@@ -13,12 +13,15 @@ console.log("Building standalone self-contained index.html from web modules...")
 const modules = [
   'audio.js',
   'physics.js',
-  'vehicles.js',
+  'cars_data.js',
+  'economy.js',
   'weapons.js',
+  'vehicles.js',
   'tracks.js',
   'combat.js',
   'ai.js',
   'ui.js',
+  'garage.js',
   'main.js'
 ];
 
