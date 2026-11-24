@@ -104,18 +104,24 @@ func fire_front():
 		is_overheated["FRONT"] = true
 		
 	# Recoil impulse
-	var forward = -vehicle.global_transform.basis.z.normalized()
+	var v_trans = vehicle.global_transform if vehicle.is_inside_tree() else vehicle.transform
+	var forward = -v_trans.basis.z.normalized()
 	vehicle.apply_central_impulse(-forward * 120.0)
 	
 	# Auto-aim assist: check for enemy inside forward cone
 	var fire_dir = forward
 	var nearest_enemy = _find_nearest_target(data.range_m, deg_to_rad(14.0))
 	if nearest_enemy:
-		fire_dir = (nearest_enemy.global_position - global_position).normalized()
+		var enemy_pos = nearest_enemy.global_position if nearest_enemy.is_inside_tree() else nearest_enemy.position
+		var my_pos = global_position if is_inside_tree() else position
+		fire_dir = (enemy_pos - my_pos).normalized()
 		
 	# Raycast hitscan test
+	if not is_inside_tree() or not get_world_3d():
+		return
+		
 	var space_state = get_world_3d().direct_space_state
-	var start_pos = front_mesh.global_position
+	var start_pos = front_mesh.global_position if front_mesh.is_inside_tree() else front_mesh.position
 	var end_pos = start_pos + (fire_dir * data.range_m)
 	
 	var query = PhysicsRayQueryParameters3D.create(start_pos, end_pos)
@@ -176,13 +182,18 @@ func fire_rear():
 	get_tree().root.add_child(mine)
 
 func _find_nearest_target(max_range: float, max_angle: float):
-	var forward = -vehicle.global_transform.basis.z.normalized()
+	if not is_inside_tree() or not get_tree():
+		return null
+	var v_trans = vehicle.global_transform if vehicle.is_inside_tree() else vehicle.transform
+	var forward = -v_trans.basis.z.normalized()
+	var my_pos = global_position if is_inside_tree() else position
 	var best_car = null
 	var min_dist = max_range
 	
 	for node in get_tree().get_nodes_in_group("vehicles"):
 		if node != vehicle and node is VehicleController:
-			var to_node = node.global_position - global_position
+			var n_pos = node.global_position if node.is_inside_tree() else node.position
+			var to_node = n_pos - my_pos
 			var d = to_node.length()
 			if d < min_dist:
 				var angle = forward.angle_to(to_node.normalized())
