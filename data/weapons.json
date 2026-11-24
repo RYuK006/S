@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "weapons": [
+    { "id": "twin_mg", "name": "Twin Machine Guns", "slot": "primary", "damage": 22.0, "fire_rate": 10.0, "range": 180.0, "heat_per_shot": 0.05, "cooldown_rate": 0.45, "price": 0 },
+    { "id": "heavy_mg", "name": "Heavy .50 Cal MG", "slot": "primary", "damage": 48.0, "fire_rate": 5.5, "range": 220.0, "heat_per_shot": 0.09, "cooldown_rate": 0.40, "price": 12500 },
+    { "id": "shotgun_cannon", "name": "Auto Flak Cannon", "slot": "primary", "damage": 120.0, "fire_rate": 2.2, "range": 90.0, "heat_per_shot": 0.22, "cooldown_rate": 0.35, "price": 28000 },
+    { "id": "flamethrower", "name": "Hellfire Projector", "slot": "primary", "damage": 16.0, "fire_rate": 25.0, "range": 45.0, "heat_per_shot": 0.03, "cooldown_rate": 0.30, "price": 34000 },
+    { "id": "plasma_cannon", "name": "Ion Pulse Blaster", "slot": "primary", "damage": 160.0, "fire_rate": 1.6, "range": 160.0, "heat_per_shot": 0.30, "cooldown_rate": 0.25, "price": 62000 },
+    { "id": "railgun", "name": "Hyper-Velocity Railgun", "slot": "primary", "damage": 350.0, "fire_rate": 0.7, "range": 320.0, "heat_per_shot": 0.65, "cooldown_rate": 0.20, "price": 95000 },
+    { "id": "rocket_pod", "name": "Swarm Rocket Pod", "slot": "roof", "damage": 140.0, "fire_rate": 1.4, "max_ammo": 24, "blast_radius": 8.0, "homing": false, "price": 18000 },
+    { "id": "homing_missile", "name": "Viper Homing Salvo", "slot": "roof", "damage": 220.0, "fire_rate": 0.9, "max_ammo": 16, "blast_radius": 10.0, "homing": true, "price": 45000 },
+    { "id": "harpoon_launcher", "name": "Tether Harpoon", "slot": "roof", "damage": 85.0, "fire_rate": 0.8, "max_ammo": 12, "blast_radius": 3.0, "homing": false, "price": 26000 },
+    { "id": "minigun_turret", "name": "Roof Gatling 360", "slot": "roof", "damage": 28.0, "fire_rate": 18.0, "max_ammo": 350, "blast_radius": 1.0, "homing": false, "price": 52000 },
+    { "id": "cluster_rocket", "name": "Mirv Cluster Mortar", "slot": "roof", "damage": 320.0, "fire_rate": 0.5, "max_ammo": 10, "blast_radius": 16.0, "homing": false, "price": 85000 },
+    { "id": "emp_pulse", "name": "EMP Shock Discharger", "slot": "roof", "damage": 50.0, "fire_rate": 0.4, "max_ammo": 8, "blast_radius": 22.0, "homing": false, "price": 68000 },
+    { "id": "mine_dropper", "name": "Proximity Blast Mine", "slot": "rear", "damage": 240.0, "fire_rate": 1.0, "max_ammo": 12, "blast_radius": 7.5, "price": 14000 },
+    { "id": "oil_slick", "name": "Polymer Oil Slick", "slot": "rear", "damage": 0.0, "fire_rate": 1.2, "max_ammo": 18, "blast_radius": 6.0, "price": 8500 },
+    { "id": "spike_strip", "name": "Caltrop Spike Strip", "slot": "rear", "damage": 90.0, "fire_rate": 1.0, "max_ammo": 15, "blast_radius": 5.0, "price": 16000 },
+    { "id": "smoke_screen", "name": "IR Obscurant Smoke", "slot": "rear", "damage": 0.0, "fire_rate": 0.8, "max_ammo": 14, "blast_radius": 12.0, "price": 11000 },
+    { "id": "napalm_drop", "name": "Napalm Trail Burner", "slot": "rear", "damage": 180.0, "fire_rate": 0.7, "max_ammo": 10, "blast_radius": 8.0, "price": 38000 },
+    { "id": "saw_blades", "name": "Kinetic Rotary Blades", "slot": "passive", "damage": 120.0, "ram_multiplier": 1.6, "price": 22000 },
+    { "id": "side_spikes", "name": "Tungsten Side Spikes", "slot": "passive", "damage": 95.0, "ram_multiplier": 1.4, "price": 16500 },
+    { "id": "wheel_blades", "name": "Scythe Axle Cutters", "slot": "passive", "damage": 75.0, "ram_multiplier": 1.3, "price": 14000 },
+    { "id": "shield_generator", "name": "Aegis Energy Shield", "slot": "passive", "damage": 0.0, "damage_reduction": 0.28, "price": 54000 },
+    { "id": "repair_drone", "name": "Nanite Repair Pod", "slot": "passive", "damage": 0.0, "heal_per_sec": 18.0, "price": 48000 },
+    { "id": "nitro_tank", "name": "Dual Stage Nitro Pack", "slot": "passive", "damage": 0.0, "capacity_bonus": 0.50, "price": 24000 },
+    { "id": "ram_plate", "name": "Reinforced Ram Prow", "slot": "passive", "damage": 150.0, "ram_multiplier": 2.0, "price": 19000 },
+    { "id": "armour_plating", "name": "Composite Chobham Armour", "slot": "passive", "damage": 0.0, "health_bonus": 300.0, "price": 27000 },
+    { "id": "countermeasures", "name": "Chaff & Flare Pod", "slot": "passive", "damage": 0.0, "decoy_chance": 0.75, "price": 31000 }
+  ]
+}
