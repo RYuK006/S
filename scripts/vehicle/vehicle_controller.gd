@@ -158,6 +158,7 @@ func _bind_model_wheels(root: Node3D):
 	if rr: _attach_wheel_visual(rear_right_wheel, rr)
 
 func _attach_wheel_visual(wheel: RaycastWheel, visual_node: Node3D):
+	visual_node.owner = null
 	if visual_node.get_parent():
 		visual_node.get_parent().remove_child(visual_node)
 	wheel.add_child(visual_node)
