@@ -1,13 +1,21 @@
 # track_test_controller.gd
-# Controller for Milestone 2 Track Test Scene: initializes spline track, player car, audio, cameras and telemetry.
+# Controller for Track Test Scene: initializes spline track, player car, AI rivals, race manager, cameras and HUD.
 class_name TrackTestController
 extends Node3D
+
+const RaceManager = preload("res://scripts/race/race_manager.gd")
+const RaceHUD = preload("res://scripts/ui/race_hud.gd")
+const AIDriver = preload("res://scripts/ai/ai_driver.gd")
 
 @onready var spline_track: SplineTrack = $SplineTrack
 @onready var player_vehicle: VehicleController = $PlayerVehicle
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var audio_engine: ProceduralAudioEngine = $ProceduralAudioEngine
 @onready var debug_overlay: DebugOverlay = $DebugOverlay
+
+var race_mgr: RaceManager
+var race_hud: RaceHUD
+var ai_cars: Array[VehicleController] = []
 
 var screenshot_mode: bool = false
 var screenshot_timer: float = 0.5
@@ -32,6 +40,40 @@ func _ready():
 			debug_overlay.set_target_vehicle(player_vehicle)
 		if camera_rig:
 			camera_rig.target_vehicle = player_vehicle
+			
+	# 3. Spawn 5 AI rivals on starting grid
+	_spawn_ai_rivals()
+	
+	# 4. Setup Race Manager & HUD
+	race_mgr = RaceManager.new()
+	add_child(race_mgr)
+	race_mgr.setup_race(spline_track, player_vehicle, ai_cars, 3)
+	
+	race_hud = RaceHUD.new()
+	add_child(race_hud)
+	race_hud.setup(player_vehicle, race_mgr, spline_track)
+
+func _spawn_ai_rivals():
+	var rivals = [
+		{ "id": "dust_viper", "name": "Viktor 'Rotor' Hale", "style": "Aggressive", "pos": Vector3(3.5, 0.8, 12.0) },
+		{ "id": "gravel_fang", "name": "Mina Cross", "style": "Tactical", "pos": Vector3(-3.5, 0.8, 24.0) },
+		{ "id": "dune_reaper", "name": "Dozer Okafor", "style": "Bully", "pos": Vector3(3.5, 0.8, 36.0) },
+		{ "id": "sand_striker", "name": "Lena Vash", "style": "Drifter", "pos": Vector3(-3.5, 0.8, 48.0) },
+		{ "id": "phantom_gt", "name": "'Hollow' Pike", "style": "Trickster", "pos": Vector3(3.5, 0.8, 60.0) }
+	]
+	
+	for r in rivals:
+		var ai_car = VehicleController.new()
+		ai_car.car_id = r.id
+		ai_car.name = "AI_" + r.id
+		add_child(ai_car)
+		ai_car.global_position = r.pos
+		ai_car.global_rotation = Vector3.ZERO
+		ai_cars.append(ai_car)
+		
+		var driver = AIDriver.new()
+		ai_car.add_child(driver)
+		driver.setup(ai_car, spline_track, r.name, r.style)
 
 func _physics_process(_delta: float):
 	if not player_vehicle:
@@ -73,7 +115,7 @@ func _capture_screenshot():
 		if tex:
 			var img = tex.get_image()
 			if img and not img.is_empty():
-				img.save_png("build/screenshots/m3_visual.png")
-				print("[SCREENSHOT] Successfully saved build/screenshots/m3_visual.png")
+				img.save_png("build/screenshots/m4_racing.png")
+				print("[SCREENSHOT] Successfully saved build/screenshots/m4_racing.png")
 				return
 	print("[SCREENSHOT] Completed frame capture pass")
