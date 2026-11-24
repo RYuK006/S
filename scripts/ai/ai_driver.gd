@@ -86,7 +86,7 @@ func _physics_process(delta: float):
 
 func _update_target_waypoint():
 	var num_pts = track.track_points.size()
-	var car_pos = car.global_position
+	var car_pos = car.global_position if car.is_inside_tree() else car.position
 	
 	# Look ahead proportional to speed
 	var lookahead_steps = int(clamp(car.speed_kmh * 0.12, 6.0, 22.0))
@@ -108,7 +108,7 @@ func _drive_towards_waypoint(delta: float):
 	var target_pos = target_pt.pos + (target_pt.right * (lane_offset * target_pt.width * 0.35))
 	
 	# Compute local angle to target point
-	var car_trans = car.global_transform
+	var car_trans = car.global_transform if car.is_inside_tree() else car.transform
 	var local_target = car_trans.affine_inverse() * target_pos
 	var angle_to_target = atan2(local_target.x, -local_target.z)
 	
