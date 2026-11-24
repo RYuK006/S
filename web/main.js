@@ -70,6 +70,12 @@ window.bossController = bossController;
 const netManager = new NetworkManager(scene, playerCar);
 window.netManager = netManager;
 
+const musicSequencer = new ProceduralMusicSequencer(audio);
+window.musicSequencer = musicSequencer;
+
+const telemetry = new TelemetryController(renderer, playerCar, combatManager);
+window.telemetry = telemetry;
+
 let currentBiomeGrip = 1.0;
 
 function startCampaignRace(raceConfig) {
@@ -157,7 +163,9 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'F3') { e.preventDefault(); telemetry.toggle(); }
   if (e.code === 'F4') { e.preventDefault(); cheatMenu.toggle(); }
+  if (e.code === 'KeyM') { musicSequencer.toggle(); }
   if (e.code === 'KeyG') {
     const gModal = document.getElementById('garage-modal');
     if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
@@ -365,6 +373,7 @@ function animate(currentTime) {
 
   // UI & HUD Update
   updateHUD(playerCar, allCars, carProgress, currentLapTime, bestLapTime, totalLaps, camera);
+  telemetry.update(delta);
 
   renderer.render(scene, camera);
 }
