@@ -376,7 +376,7 @@ func _wreck_car():
 	angular_velocity = Vector3.ZERO
 	
 	# Darken mesh into charred wreck
-	if car_mesh_instance and car_mesh_instance.body_mesh_instance:
+	if car_mesh_instance and "body_mesh_instance" in car_mesh_instance and car_mesh_instance.body_mesh_instance:
 		var wreck_mat = StandardMaterial3D.new()
 		wreck_mat.albedo_color = Color(0.05, 0.05, 0.05)
 		wreck_mat.roughness = 0.95
