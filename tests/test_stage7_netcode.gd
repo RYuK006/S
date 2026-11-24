@@ -1,7 +1,7 @@
 # tests/test_stage7_netcode.gd
 extends Node
 
-const NetSnapshot = preload("res://src/net/net_snapshot.gd")
+const NetSnapshot = preload("res://scripts/net/net_snapshot.gd")
 
 func _ready():
 	print("\n=======================================================")
