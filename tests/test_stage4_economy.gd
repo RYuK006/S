@@ -1,8 +1,8 @@
 # tests/test_stage4_economy.gd
 extends Node
 
-const GarageData = preload("res://src/garage/garage_data.gd")
-const SaveManager = preload("res://src/garage/save_manager.gd")
+const GarageData = preload("res://scripts/core/garage_data.gd")
+const SaveManager = preload("res://scripts/core/save_manager.gd")
 
 func _ready():
 	print("\n=======================================================")
