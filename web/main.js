@@ -67,6 +67,9 @@ const pickupManager = new TrackPickupManager(scene);
 const bossController = new BossController(scene);
 window.bossController = bossController;
 
+const netManager = new NetworkManager(scene, playerCar);
+window.netManager = netManager;
+
 let currentBiomeGrip = 1.0;
 
 function startCampaignRace(raceConfig) {
@@ -316,6 +319,7 @@ function animate(currentTime) {
   combatManager.update(delta, allCars);
   pickupManager.update(delta, allCars);
   bossController.update(delta, playerCar, combatManager);
+  netManager.update(delta);
 
   // Checkpoint & Leaderboard Progression
   if (raceState === "RACING") {
