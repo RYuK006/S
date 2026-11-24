@@ -13,6 +13,7 @@ const TestM6GarageBench = preload("res://tests/test_m6_garage_bench.gd")
 const TestM7CampaignBench = preload("res://tests/test_m7_campaign_bench.gd")
 const TestM8ProgressionBench = preload("res://tests/test_m8_progression_bench.gd")
 const TestM9NetcodeBench = preload("res://tests/test_m9_netcode_bench.gd")
+const TestM10FinalBench = preload("res://tests/test_m10_final_bench.gd")
 
 func _init():
 	print("\n=======================================================")
@@ -54,9 +55,12 @@ func _init():
 	if not TestM9NetcodeBench.run():
 		all_pass = false
 		
+	if not TestM10FinalBench.run():
+		all_pass = false
+		
 	print("\n-------------------------------------------------------")
 	if all_pass:
-		print("RESULTS: ALL HEADLESS TESTS PASSED (11/11)")
+		print("RESULTS: ALL HEADLESS TESTS PASSED (12/12)")
 		print("-------------------------------------------------------\n")
 		quit(0)
 	else:
