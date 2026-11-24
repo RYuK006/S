@@ -1,0 +1,176 @@
+[gd_scene load_steps=8 format=3 uid="uid://b8garage01scene"]
+
+[ext_resource type="Script" path="res://scripts/ui/garage_controller.gd" id="1_controller"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.12, 0.14, 0.18, 1)
+sky_horizon_color = Color(0.25, 0.28, 0.35, 1)
+ground_bottom_color = Color(0.08, 0.08, 0.1, 1)
+ground_horizon_color = Color(0.18, 0.2, 0.25, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_color = Color(0.4, 0.45, 0.55, 1)
+ambient_light_energy = 0.8
+tonemap_mode = 3
+ssao_enabled = true
+glow_enabled = true
+glow_intensity = 0.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tt"]
+top_radius = 4.2
+bottom_radius = 4.5
+height = 0.35
+radial_segments = 48
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tt"]
+albedo_color = Color(0.15, 0.16, 0.2, 1)
+metallic = 0.85
+roughness = 0.25
+
+[sub_resource type="TorusMesh" id="TorusMesh_ring"]
+inner_radius = 4.3
+outer_radius = 4.4
+rings = 48
+ring_segments = 8
+
+[node name="Garage" type="Node3D" node_paths=PackedStringArray("turntable_node", "camera_node", "car_mount")]
+script = ExtResource("1_controller")
+turntable_node = NodePath("Turntable")
+camera_node = NodePath("Camera3D")
+car_mount = NodePath("Turntable/CarMount")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 10, 15, 10)
+light_color = Color(1, 0.95, 0.9, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 6, 0)
+light_color = Color(0.9, 0.95, 1, 1)
+light_energy = 4.0
+spot_range = 10.0
+spot_angle = 45.0
+
+[node name="Turntable" type="Node3D" parent="."]
+
+[node name="PlatformMesh" type="MeshInstance3D" parent="Turntable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.175, 0)
+mesh = SubResource("CylinderMesh_tt")
+surface_material_override/0 = SubResource("StandardMaterial3D_tt")
+
+[node name="CarMount" type="Node3D" parent="Turntable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.8, 5.2)
+current = true
+fov = 55.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TopBar" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/TopBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 25
+
+[node name="LabelTitle" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0, 1)
+text = "GRIDLETHAL GARAGE"
+
+[node name="LabelCarTitle" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SPRINTER R2 [RALLY CLASS]"
+
+[node name="LabelCash" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 0.4, 1)
+text = "CASH: $25,000"
+
+[node name="LabelGold" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0, 1)
+text = "GOLD: 50"
+
+[node name="LabelScrap" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.8, 1, 1)
+text = "SCRAP: 150"
+
+[node name="NavHBox" type="HBoxContainer" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 70.0
+offset_right = -20.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+
+[node name="BtnShowroom" type="Button" parent="CanvasLayer/NavHBox"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "SHOWROOM"
+
+[node name="BtnUpgrades" type="Button" parent="CanvasLayer/NavHBox"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "UPGRADES"
+
+[node name="BtnCustomise" type="Button" parent="CanvasLayer/NavHBox"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "CUSTOMISE"
+
+[node name="BtnDrivers" type="Button" parent="CanvasLayer/NavHBox"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "DRIVERS"
+
+[node name="MainPanel" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -260.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ScrollContainer" type="ScrollContainer" parent="CanvasLayer/MainPanel"]
+layout_mode = 2
+
+[node name="ContentVBox" type="VBoxContainer" parent="CanvasLayer/MainPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[connection signal="pressed" from="CanvasLayer/NavHBox/BtnShowroom" to="." method="_render_showroom_tab"]
+[connection signal="pressed" from="CanvasLayer/NavHBox/BtnUpgrades" to="." method="_render_upgrades_tab"]
+[connection signal="pressed" from="CanvasLayer/NavHBox/BtnCustomise" to="." method="_render_customise_tab"]
+[connection signal="pressed" from="CanvasLayer/NavHBox/BtnDrivers" to="." method="_render_drivers_tab"]
