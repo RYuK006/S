@@ -72,6 +72,7 @@ func _setup_audio_generator():
 	generator.mix_rate = SAMPLE_RATE
 	generator.buffer_length = 0.1
 	audio_stream_player.stream = generator
+	audio_stream_player.bus = "Engine"
 	add_child(audio_stream_player)
 	audio_stream_player.play()
 	playback = audio_stream_player.get_stream_playback()
