@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GRIDLETHAL — Next-Gen Vehicular Combat Racing Engine</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body, html { width: 100%; height: 100%; overflow: hidden; background: #08080a; font-family: 'Segoe UI', Bahnschrift, 'Roboto Condensed', sans-serif; color: #fff; }
+  #canvas-container { position: absolute; inset: 0; width: 100%; height: 100%; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* HUD Root */
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  
+  /* Top-Left: Position, Lap, Timers */
+  #race-stats { position: absolute; top: 20px; left: 24px; display: flex; flex-direction: column; gap: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+  #pos-badge { font-size: 48px; font-weight: 900; color: #ff8800; letter-spacing: 2px; }
+  #pos-badge span { font-size: 24px; color: #ccc; }
+  #lap-info { font-size: 22px; font-weight: bold; color: #eee; }
+  #time-info { font-size: 15px; color: #a0c0e0; font-family: monospace; }
+
+  /* Top-Center: Kill Feed / Battle Announcements */
+  #battle-feed { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 40; pointer-events: none; }
+  .feed-item { background: rgba(18, 22, 28, 0.88); border-left: 3px solid #ff3300; padding: 6px 16px; border-radius: 4px; font-size: 14px; font-weight: bold; letter-spacing: 1px; color: #fff; text-shadow: 0 1px 3px #000; animation: fadeSlide 3.5s forwards; }
+  @keyframes fadeSlide { 0% { opacity: 0; transform: translateY(-8px); } 10% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-12px); } }
+
+  /* Bottom-Left: Armour & Combat Status */
+  #combat-cluster { position: absolute; bottom: 24px; left: 24px; display: flex; flex-direction: column; gap: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+  .bar-label { font-size: 12px; font-weight: bold; letter-spacing: 1px; color: #bbb; display: flex; justify-content: space-between; }
+  #health-bar-container { width: 240px; height: 14px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.25); }
+  #health-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff2200, #ff8800, #00dd55); transition: width 0.08s; }
+  
+  #weapons-dock { display: flex; gap: 10px; margin-top: 4px; }
+  .weapon-card { background: rgba(12, 16, 22, 0.85); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 6px 12px; min-width: 72px; text-align: center; }
+  .weapon-card.active { border-color: #ff6600; box-shadow: 0 0 10px rgba(255,100,0,0.4); }
+  .w-type { font-size: 10px; color: #889; text-transform: uppercase; letter-spacing: 1px; }
+  .w-name { font-size: 13px; font-weight: bold; color: #fff; margin: 2px 0; }
+  .w-ammo { font-size: 12px; color: #ffaa00; font-family: monospace; font-weight: bold; }
+
+  /* Bottom-Right: Speedometer, Tachometer, Nitro */
+  #speed-cluster { position: absolute; bottom: 24px; right: 28px; text-align: right; text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+  #speed-num { font-size: 64px; font-weight: 900; color: #00e5ff; line-height: 1; }
+  #speed-unit { font-size: 16px; color: #88a; margin-left: 4px; }
+  #rpm-gauge { font-size: 18px; color: #ffb700; font-weight: bold; margin-top: 4px; }
+  #nitro-bar-container { width: 240px; height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; margin-top: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+  #nitro-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #00bbff, #00ffaa); transition: width 0.05s; }
+
+  /* Top-Right: 2D Minimap Radar */
+  #minimap-canvas { position: absolute; top: 20px; right: 24px; width: 180px; height: 180px; border-radius: 50%; background: rgba(10, 14, 20, 0.85); border: 2px solid rgba(255, 120, 0, 0.4); box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+
+  /* Target Crosshair / Reticle */
+  #target-reticle { position: absolute; width: 44px; height: 44px; border: 2px solid rgba(255, 60, 0, 0.8); border-radius: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; transition: transform 0.05s ease-out; }
+  #target-reticle::before { content: ''; position: absolute; top: 50%; left: -6px; right: -6px; height: 2px; background: rgba(255, 60, 0, 0.8); }
+  #target-reticle::after { content: ''; position: absolute; left: 50%; top: -6px; bottom: -6px; width: 2px; background: rgba(255, 60, 0, 0.8); }
+  #target-dist { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: bold; color: #ff3300; font-family: monospace; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+
+  /* Center Screen: Countdown Overlay */
+  #countdown-banner { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 900; text-shadow: 0 0 30px rgba(255,100,0,0.8); color: #ff6600; display: none; }
+
+  /* Results Modal */
+  #results-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(12, 14, 18, 0.96); border: 2px solid #ff7700; border-radius: 8px; padding: 28px 40px; text-align: center; display: none; pointer-events: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9); z-index: 50; min-width: 380px; }
+  #results-modal h2 { font-size: 38px; color: #ffaa00; margin-bottom: 12px; }
+  #results-standings { font-size: 16px; text-align: left; margin: 16px 0; line-height: 1.8; color: #ddd; }
+  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; }
+  .btn-restart:hover { background: #ff7722; }
+
+  /* Controls Hint */
+  #controls-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.85); padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 12px; color: #bbb; display: flex; gap: 14px; white-space: nowrap; }
+  .key { background: #222; border: 1px solid #444; border-bottom: 2px solid #555; padding: 2px 6px; border-radius: 3px; color: #ff9900; font-weight: bold; }
+
+  /* Mobile Touch Controls */
+  #touch-controls { position: absolute; inset: 0; pointer-events: none; display: none; }
+  .touch-btn { position: absolute; width: 68px; height: 68px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.25); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; pointer-events: auto; touch-action: none; color: #fff; }
+  .touch-btn:active { background: rgba(255, 120, 0, 0.4); border-color: #ff7700; }
+  #btn-gas { bottom: 24px; right: 24px; width: 80px; height: 80px; background: rgba(0, 220, 100, 0.2); }
+  #btn-brake { bottom: 24px; right: 115px; width: 68px; height: 68px; background: rgba(220, 50, 50, 0.2); }
+  #btn-fire { bottom: 115px; right: 24px; width: 72px; height: 72px; background: rgba(255, 80, 0, 0.3); border-color: #ff6600; }
+  #btn-rocket { bottom: 115px; right: 105px; width: 68px; height: 68px; background: rgba(255, 180, 0, 0.25); }
+  #btn-mine { bottom: 195px; right: 24px; width: 60px; height: 60px; background: rgba(200, 0, 255, 0.25); }
+  #btn-nitro { bottom: 195px; right: 95px; width: 60px; height: 60px; }
+  #dpad-left { bottom: 36px; left: 24px; }
+  #dpad-right { bottom: 36px; left: 104px; }
+
+  /* Boot Overlay */
+  #boot-screen { position: absolute; inset: 0; background: #0a0b0e; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; cursor: pointer; transition: opacity 0.5s; }
+  #boot-screen h1 { font-size: 54px; letter-spacing: 6px; color: #fff; text-transform: uppercase; font-weight: 900; }
+  #boot-screen h1 span { color: #ff6600; text-shadow: 0 0 20px rgba(255, 102, 0, 0.6); }
+  #boot-screen p { color: #889; margin-top: 14px; font-size: 15px; letter-spacing: 2px; }
+  .press-start { margin-top: 36px; padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border-radius: 4px; letter-spacing: 2px; text-transform: uppercase; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.75; transform: scale(0.98); } }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- In-Race HUD -->
+<div id="hud">
+  <!-- Top-Left: Position, Lap, Timers -->
+  <div id="race-stats">
+    <div id="pos-badge">1<span>ST / 6</span></div>
+    <div id="lap-info">LAP 1 / 3</div>
+    <div id="time-info">TIME: 0:00.00 | BEST: --:--.--</div>
+  </div>
+
+  <!-- Top-Center: Battle Announcements Feed -->
+  <div id="battle-feed"></div>
+
+  <!-- 2D Minimap Radar -->
+  <canvas id="minimap-canvas" width="180" height="180"></canvas>
+
+  <!-- 3D Target Reticle Screen Overlay -->
+  <div id="target-reticle">
+    <div id="target-dist">LOCK 35M</div>
+  </div>
+
+  <!-- Countdown Banner -->
+  <div id="countdown-banner">3</div>
+
+  <!-- Bottom-Left: Armour & Combat Dock -->
+  <div id="combat-cluster">
+    <div class="bar-label">
+      <span>ARMOUR INTEGRITY</span>
+      <span id="health-num">700 / 700</span>
+    </div>
+    <div id="health-bar-container">
+      <div id="health-fill"></div>
+    </div>
+    <div id="weapons-dock">
+      <div class="weapon-card active" id="card-primary">
+        <div class="w-type">PRIMARY [J]</div>
+        <div class="w-name">TWIN MG</div>
+        <div class="w-ammo" id="ammo-primary">INF</div>
+      </div>
+      <div class="weapon-card" id="card-roof">
+        <div class="w-type">ROOF [K]</div>
+        <div class="w-name">ROCKETS</div>
+        <div class="w-ammo" id="ammo-roof">6 / 6</div>
+      </div>
+      <div class="weapon-card" id="card-rear">
+        <div class="w-type">REAR [E]</div>
+        <div class="w-name">MINES</div>
+        <div class="w-ammo" id="ammo-rear">3 / 3</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom-Right: Speedometer & Nitro -->
+  <div id="speed-cluster">
+    <div id="speed-num">0<span id="speed-unit">KM/H</span></div>
+    <div id="rpm-gauge">GEAR 1 | 900 RPM</div>
+    <div id="nitro-bar-container">
+      <div id="nitro-fill"></div>
+    </div>
+  </div>
+
+  <!-- Controls Hint -->
+  <div id="controls-hint">
+    <div><span class="key">W</span>/<span class="key">S</span> Drive</div>
+    <div><span class="key">A</span>/<span class="key">D</span> Steer</div>
+    <div><span class="key">L-CLICK</span>/<span class="key">J</span> Twin MG</div>
+    <div><span class="key">R-CLICK</span>/<span class="key">K</span> Rockets</div>
+    <div><span class="key">E</span> Drop Mine</div>
+    <div><span class="key">SPACE</span> Drift</div>
+    <div><span class="key">SHIFT</span> Nitro</div>
+    <div><span class="key">C</span> Cam</div>
+  </div>
+</div>
+
+<!-- Results Panel -->
+<div id="results-modal">
+  <h2>RACE COMPLETE</h2>
+  <div id="results-standings"></div>
+  <button class="btn-restart" onclick="location.reload()">Restart Race</button>
+</div>
+
+<!-- Mobile Touch Controls -->
+<div id="touch-controls">
+  <div id="dpad-left" class="touch-btn">◀</div>
+  <div id="dpad-right" class="touch-btn">▶</div>
+  <div id="btn-gas" class="touch-btn">GAS</div>
+  <div id="btn-brake" class="touch-btn">BRK</div>
+  <div id="btn-fire" class="touch-btn">MG</div>
+  <div id="btn-rocket" class="touch-btn">RCKT</div>
+  <div id="btn-mine" class="touch-btn">MINE</div>
+  <div id="btn-nitro" class="touch-btn">NITRO</div>
+</div>
+
+<!-- Boot Splash / Audio Unlocker -->
+<div id="boot-screen">
+  <h1>GRID<span>LETHAL</span></h1>
+  <p>STAGE 3 — ARMED VEHICULAR COMBAT & 3-LAP CIRCUIT RACE</p>
+  <div class="press-start">Click to Enter Grid & Arm Weapons</div>
+</div>
+
+<script>
+/* === BUNDLED_SCRIPTS === */
+</script>
+</body>
+</html>
