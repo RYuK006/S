@@ -3,6 +3,9 @@
 class_name RaycastWheel
 extends Node3D
 
+const GameConstants = preload("res://src/core/constants.gd")
+const PacejkaTire = preload("res://src/physics/pacejka_tire.gd")
+
 @export var is_front: bool = false
 @export var is_left: bool = true
 
