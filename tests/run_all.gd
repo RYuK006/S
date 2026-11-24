@@ -5,6 +5,7 @@ extends SceneTree
 const TestDataValidation = preload("res://tests/test_data_validation.gd")
 const TestPhysicsBench = preload("res://tests/test_physics_bench.gd")
 const TestAudioBench = preload("res://tests/test_audio_bench.gd")
+const TestM2DrivingBench = preload("res://tests/test_m2_driving_bench.gd")
 
 func _init():
 	print("\n=======================================================")
@@ -22,9 +23,12 @@ func _init():
 	if not TestAudioBench.run():
 		all_pass = false
 		
+	if not TestM2DrivingBench.run():
+		all_pass = false
+		
 	print("\n-------------------------------------------------------")
 	if all_pass:
-		print("RESULTS: ALL HEADLESS TESTS PASSED (3/3)")
+		print("RESULTS: ALL HEADLESS TESTS PASSED (4/4)")
 		print("-------------------------------------------------------\n")
 		quit(0)
 	else:
