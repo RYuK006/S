@@ -146,3 +146,56 @@ This document specifies the public API, signals, data shapes, and cross-module c
   - `toggle_visible()`
   - `set_target_vehicle(vehicle: Node3D)`
 - **Called by**: `MainScene`.
+
+---
+
+## 4. Weapons, Combat & Progression Modules
+
+### `WeaponSystem` (`scripts/weapons/weapon_system.gd`) & `Projectile` (`scripts/weapons/projectile.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Modular combat manager supporting 26 weapons across FRONT, ROOF, REAR, MELEE, and DEFENSIVE slots, with sub-stepped ballistic rockets, raycast hitscans, proximity mines, and auto-aim assistance.
+- **Called by**: `VehicleController`, `TrackTestController`.
+
+### `GarageController` (`scripts/ui/garage_controller.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: 3D showroom with rotating turntable platform, car inspection, 10 upgrade systems x 5 tiers, paint customization (metallic, gloss, satin, matte, pearl), and driver specialist perks.
+- **Called by**: `scenes/garage.tscn`.
+
+### `BiomeManager` (`scripts/race/biome_manager.gd`)
+- **Inherits**: `Node`
+- **Purpose**: Controls active biome lighting, atmosphere, and surface grip scaling across Dust Bowl, Neon Docks, Frozen Pass, and Volcano Ridge.
+- **Called by**: `TrackTestController`, `RaceManager`.
+
+### `BossManager` (`scripts/race/boss_manager.gd`)
+- **Inherits**: `RefCounted`
+- **Purpose**: Orchestrates 4 multi-phase boss encounters with phase transition thresholds and escalating attack patterns.
+- **Called by**: `RaceManager`, `TestM7CampaignBench`.
+
+### `ProgressionSystem` (`scripts/core/progression_system.gd`)
+- **Inherits**: `RefCounted`
+- **Purpose**: 100-level non-linear XP curve, 60 career achievements, and economy pacing simulation.
+- **Called by**: `GarageController`, `RaceManager`.
+
+### `CheatConsole` (`scripts/ui/cheat_console.gd`)
+- **Inherits**: `CanvasLayer`
+- **Purpose**: Developer cheat terminal toggled with <kbd>F4</kbd> (cash, level, god mode, unlock all vehicles and weapons).
+- **Called by**: `TrackTestController`, `GarageController`.
+
+---
+
+## 5. Netcode, Audio Synthesis & Final Shipped Build
+
+### `NetworkManager` (`scripts/net/network_manager.gd`) & `NetSnapshot` (`scripts/net/net_snapshot.gd`)
+- **Inherits**: `Node`
+- **Purpose**: ENet client/server multiplayer, 24-byte binary snapshot codec, and 100ms jitter buffer entity interpolation.
+- **Called by**: `MainScene`, dedicated relay runner (`--server`).
+
+### `MusicSequencer` (`scripts/audio/music_sequencer.gd`) & `AnnouncerSystem` (`scripts/audio/announcer_system.gd`)
+- **Inherits**: `Node`
+- **Purpose**: Procedural 135 BPM cyber-rock drum sequencer (Anti-Buzz zero DC pink noise synthesis) and announcer voiceover/combat stingers.
+- **Called by**: `RaceManager`, `MainScene`.
+
+### `SettingsManager` (`scripts/core/settings_manager.gd`)
+- **Inherits**: `RefCounted`
+- **Purpose**: Atomic settings persistence in `user://settings.json` for audio volumes, graphics DRS, screen shake, and colorblind filters.
+- **Called by**: `MainScene`, `GarageController`.
