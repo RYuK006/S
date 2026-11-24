@@ -121,16 +121,27 @@ func _build_body():
 	for i in range(mdt.get_vertex_count()):
 		original_vertices.append(mdt.get_vertex(i))
 	
-	# Forza-Quality PBR Clearcoat Material
-	var paint_mat = StandardMaterial3D.new()
-	paint_mat.albedo_color = Color(0.88, 0.15, 0.08, 1.0) # Radiant Racing Crimson
-	paint_mat.metallic = 0.85
-	paint_mat.roughness = 0.12
-	paint_mat.clearcoat_enabled = true
-	paint_mat.clearcoat = 1.0
-	paint_mat.clearcoat_roughness = 0.04
-	
-	body_mesh_instance.material_override = paint_mat
+	# Forza-Quality PBR Clearcoat Material with Metallic Flake & Pearl Shift
+	var paint_shader = load("res://shaders/car_paint.gdshader") as Shader
+	if paint_shader:
+		var paint_mat = ShaderMaterial.new()
+		paint_mat.shader = paint_shader
+		paint_mat.set_shader_parameter("base_color", Color(0.88, 0.15, 0.08, 1.0))
+		paint_mat.set_shader_parameter("pearl_color", Color(0.96, 0.65, 0.12, 1.0))
+		paint_mat.set_shader_parameter("metallic", 0.88)
+		paint_mat.set_shader_parameter("roughness", 0.10)
+		paint_mat.set_shader_parameter("clearcoat", 1.0)
+		paint_mat.set_shader_parameter("clearcoat_roughness", 0.03)
+		body_mesh_instance.material_override = paint_mat
+	else:
+		var paint_mat = StandardMaterial3D.new()
+		paint_mat.albedo_color = Color(0.88, 0.15, 0.08, 1.0) # Radiant Racing Crimson
+		paint_mat.metallic = 0.85
+		paint_mat.roughness = 0.12
+		paint_mat.clearcoat_enabled = true
+		paint_mat.clearcoat = 1.0
+		paint_mat.clearcoat_roughness = 0.04
+		body_mesh_instance.material_override = paint_mat
 	add_child(body_mesh_instance)
 
 func _build_details():
