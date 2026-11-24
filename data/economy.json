@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "xp_curve": {
+    "base_multiplier": 250,
+    "exponent": 1.45,
+    "max_level": 100
+  },
+  "race_purses": {
+    "1st": 4500,
+    "2nd": 2800,
+    "3rd": 1800,
+    "4th": 1100,
+    "5th": 700,
+    "6th": 400
+  },
+  "combat_bounties": {
+    "kill": 850,
+    "wreck_assist": 350,
+    "revenge_kill": 1200,
+    "first_blood": 500,
+    "clean_lap": 400
+  },
+  "repair_cost_per_hp": 3.5,
+  "gold_conversion_rate": 1000
+}
