@@ -11,6 +11,7 @@ const TestM4RacingBench = preload("res://tests/test_m4_racing_bench.gd")
 const TestM5CombatBench = preload("res://tests/test_m5_combat_bench.gd")
 const TestM6GarageBench = preload("res://tests/test_m6_garage_bench.gd")
 const TestM7CampaignBench = preload("res://tests/test_m7_campaign_bench.gd")
+const TestM8ProgressionBench = preload("res://tests/test_m8_progression_bench.gd")
 
 func _init():
 	print("\n=======================================================")
@@ -46,9 +47,12 @@ func _init():
 	if not TestM7CampaignBench.run():
 		all_pass = false
 		
+	if not TestM8ProgressionBench.run():
+		all_pass = false
+		
 	print("\n-------------------------------------------------------")
 	if all_pass:
-		print("RESULTS: ALL HEADLESS TESTS PASSED (9/9)")
+		print("RESULTS: ALL HEADLESS TESTS PASSED (10/10)")
 		print("-------------------------------------------------------\n")
 		quit(0)
 	else:
