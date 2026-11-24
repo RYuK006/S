@@ -202,6 +202,8 @@
     <div><span class="key">SPACE</span> Drift</div>
     <div><span class="key">SHIFT</span> Nitro</div>
     <div><span class="key">C</span> Cam</div>
+    <div onclick="window.musicSequencer.toggle()" style="cursor:pointer;"><span class="key">M</span> Music</div>
+    <div onclick="window.telemetry.toggle()" style="cursor:pointer;"><span class="key">F3</span> Telemetry</div>
     <div onclick="window.garage.openGarageUI()" style="cursor:pointer;"><span class="key">G</span> Garage</div>
     <div onclick="window.cheatMenu.toggle()" style="cursor:pointer;"><span class="key">F4</span> Cheats</div>
   </div>
@@ -2587,6 +2589,242 @@ function fmtTime(sec) {
 
 
 // ============================================================================
+// MODULE: MUSIC_SEQUENCER.JS
+// ============================================================================
+// web/music_sequencer.js
+// Procedural Industrial-Rock Music Synthesizer (Zero External Audio Files)
+// Synthesizes drums (kick, snare, hi-hat), overdriven bass riffs and cyber leads at 135 BPM.
+
+class ProceduralMusicSequencer {
+  constructor(audioEngine) {
+    this.audio = audioEngine;
+    this.isPlaying = false;
+    this.bpm = 135;
+    this.step = 0;
+    this.timer = null;
+    this.bassNotes = [36.7, 43.65, 41.2, 49.0]; // D, F, E, G
+    this.leadScale = [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392.0];
+  }
+
+  toggle() {
+    if (this.isPlaying) {
+      this.stop();
+    } else {
+      this.start();
+    }
+    return this.isPlaying;
+  }
+
+  start() {
+    if (!this.audio.ctx) this.audio.init();
+    if (!this.audio.ctx || this.isPlaying) return;
+    this.isPlaying = true;
+
+    const stepInterval = (60.0 / this.bpm) / 4.0 * 1000.0; // 16th notes
+    this.timer = setInterval(() => this.tick(), stepInterval);
+    if (window.addBattleFeed) window.addBattleFeed("SOUNDTRACK: INDUSTRIAL COMBAT SEQUENCER ACTIVE");
+  }
+
+  stop() {
+    this.isPlaying = false;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  tick() {
+    if (!this.audio.ctx) return;
+    const now = this.audio.ctx.currentTime;
+    const s = this.step % 16;
+
+    // 1. Kick on beats 0, 4, 8, 12
+    if (s % 4 === 0) {
+      this.playKick(now);
+    }
+
+    // 2. Snare on beats 4, 12
+    if (s === 4 || s === 12) {
+      this.playSnare(now);
+    }
+
+    // 3. Hi-hat on 8th notes
+    if (s % 2 === 0) {
+      this.playHat(now, s % 4 === 2 ? 0.35 : 0.2);
+    }
+
+    // 4. Overdriven Bass riff
+    if (s % 2 === 0) {
+      const noteIdx = Math.floor(this.step / 16) % this.bassNotes.length;
+      const freq = this.bassNotes[noteIdx];
+      this.playBass(now, freq);
+    }
+
+    // 5. Melodic lead riff variation
+    if (s === 2 || s === 7 || s === 10 || s === 14) {
+      const leadFreq = this.leadScale[Math.floor(Math.random() * this.leadScale.length)];
+      this.playLead(now, leadFreq);
+    }
+
+    this.step++;
+  }
+
+  playKick(now) {
+    const osc = this.audio.ctx.createOscillator();
+    const gain = this.audio.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(36, now + 0.12);
+    gain.gain.setValueAtTime(0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    osc.connect(gain);
+    gain.connect(this.audio.compressor);
+    osc.start(now);
+    osc.stop(now + 0.14);
+  }
+
+  playSnare(now) {
+    // Noise snap
+    const buf = this.audio.ctx.createBuffer(1, 44100 * 0.12, 44100);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (44100 * 0.025));
+    const src = this.audio.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.audio.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 1200;
+    const gain = this.audio.ctx.createGain();
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audio.compressor);
+    src.start(now);
+  }
+
+  playHat(now, vol = 0.2) {
+    const buf = this.audio.ctx.createBuffer(1, 44100 * 0.04, 44100);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (44100 * 0.008));
+    const src = this.audio.ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = this.audio.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 6500;
+    const gain = this.audio.ctx.createGain();
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audio.compressor);
+    src.start(now);
+  }
+
+  playBass(now, freq) {
+    const osc = this.audio.ctx.createOscillator();
+    const gain = this.audio.ctx.createGain();
+    const filter = this.audio.ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(freq, now);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(320, now);
+    filter.Q.value = 4.0;
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audio.compressor);
+    osc.start(now);
+    osc.stop(now + 0.16);
+  }
+
+  playLead(now, freq) {
+    const osc = this.audio.ctx.createOscillator();
+    const gain = this.audio.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, now);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.connect(gain);
+    gain.connect(this.audio.compressor);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  }
+}
+
+
+// ============================================================================
+// MODULE: TELEMETRY.JS
+// ============================================================================
+// web/telemetry.js
+// F3 Telemetry HUD & Dynamic Resolution Scaling (DRS)
+
+class TelemetryController {
+  constructor(renderer, playerCar, combatMgr) {
+    this.renderer = renderer;
+    this.playerCar = playerCar;
+    this.combatMgr = combatMgr;
+    this.isVisible = false;
+
+    this.frameCount = 0;
+    this.lastFpsUpdate = performance.now();
+    this.currentFps = 60;
+    this.frameTimeMs = 16.6;
+    this.renderScale = 1.0;
+    this.basePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+    this.overlay = document.createElement('div');
+    this.overlay.id = 'telemetry-overlay';
+    this.overlay.style.cssText = "position:absolute; top:20px; left:24px; background:rgba(8,10,14,0.92); border:1px solid #00f0ff; border-radius:4px; padding:12px 18px; font-family:monospace; font-size:12px; color:#00f0ff; z-index:200; display:none; pointer-events:none; line-height:1.6; text-shadow:0 1px 2px #000;";
+    document.body.appendChild(this.overlay);
+  }
+
+  toggle() {
+    this.isVisible = !this.isVisible;
+    this.overlay.style.display = this.isVisible ? 'block' : 'none';
+  }
+
+  update(dt) {
+    this.frameCount++;
+    const now = performance.now();
+    this.frameTimeMs = dt * 1000.0;
+
+    if (now - this.lastFpsUpdate >= 1000) {
+      this.currentFps = Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate));
+      this.frameCount = 0;
+      this.lastFpsUpdate = now;
+
+      // Automatic Dynamic Resolution Scaling (DRS)
+      if (this.currentFps < 50 && this.renderScale > 0.60) {
+        this.renderScale = Math.max(0.60, this.renderScale - 0.05);
+        this.renderer.setPixelRatio(this.basePixelRatio * this.renderScale);
+      } else if (this.currentFps > 58 && this.renderScale < 1.0) {
+        this.renderScale = Math.min(1.0, this.renderScale + 0.05);
+        this.renderer.setPixelRatio(this.basePixelRatio * this.renderScale);
+      }
+    }
+
+    if (this.isVisible && this.playerCar) {
+      const p = this.playerCar;
+      const numProj = this.combatMgr ? this.combatMgr.projectiles.length : 0;
+      const numMines = this.combatMgr ? this.combatMgr.mines.length : 0;
+
+      this.overlay.innerHTML = `
+        <strong style="color:#ffaa00;">GRIDLETHAL TELEMETRY (F3)</strong><br>
+        FPS: <span style="color:${this.currentFps < 50 ? '#ff3300' : '#00ff88'};">${this.currentFps}</span> (${this.frameTimeMs.toFixed(1)} ms)<br>
+        DRS Scale: ${(this.renderScale * 100).toFixed(0)}% (Pixel Ratio: ${(this.basePixelRatio * this.renderScale).toFixed(2)})<br>
+        Speed: ${Math.round(p.speedKmh)} km/h | Gear: ${p.currentGear}<br>
+        RPM: ${Math.round(p.engineRPM)} / 7200 | Boost: ${(p.turboBoost * 100).toFixed(0)}%<br>
+        Armour: ${Math.round(p.health)} / ${p.maxHealth} HP<br>
+        Active Projectiles: ${numProj} | Active Mines: ${numMines}<br>
+        Physics Step: 120 Hz Sub-stepped (Fixed 8.33ms)
+      `;
+    }
+  }
+}
+
+
+// ============================================================================
 // MODULE: NET_SNAPSHOT.JS
 // ============================================================================
 // web/net_snapshot.js
@@ -3433,6 +3671,12 @@ window.bossController = bossController;
 const netManager = new NetworkManager(scene, playerCar);
 window.netManager = netManager;
 
+const musicSequencer = new ProceduralMusicSequencer(audio);
+window.musicSequencer = musicSequencer;
+
+const telemetry = new TelemetryController(renderer, playerCar, combatManager);
+window.telemetry = telemetry;
+
 let currentBiomeGrip = 1.0;
 
 function startCampaignRace(raceConfig) {
@@ -3520,7 +3764,9 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'F3') { e.preventDefault(); telemetry.toggle(); }
   if (e.code === 'F4') { e.preventDefault(); cheatMenu.toggle(); }
+  if (e.code === 'KeyM') { musicSequencer.toggle(); }
   if (e.code === 'KeyG') {
     const gModal = document.getElementById('garage-modal');
     if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
@@ -3728,6 +3974,7 @@ function animate(currentTime) {
 
   // UI & HUD Update
   updateHUD(playerCar, allCars, carProgress, currentLapTime, bestLapTime, totalLaps, camera);
+  telemetry.update(delta);
 
   renderer.render(scene, camera);
 }
