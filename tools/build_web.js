@@ -16,6 +16,7 @@ const modules = [
   'cars_data.js',
   'economy.js',
   'campaign_data.js',
+  'progression.js',
   'weapons.js',
   'vehicles.js',
   'tracks.js',
@@ -23,6 +24,7 @@ const modules = [
   'boss_controller.js',
   'ai.js',
   'ui.js',
+  'cheat_menu.js',
   'garage.js',
   'main.js'
 ];
