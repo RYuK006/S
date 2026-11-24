@@ -18,6 +18,7 @@ func _init():
 	# Test 1: Catmull-Rom Spline Track Generation
 	total_tests += 1
 	var track = SplineTrack.new()
+	root.add_child(track)
 	track.setup_circuit()
 	
 	if track.track_points.size() == 180 and track.total_length > 800.0 and track.checkpoints.size() == 18:
@@ -31,10 +32,15 @@ func _init():
 	# Test 2: Race State Machine & Countdown Progression
 	total_tests += 1
 	var race_mgr = RaceManager.new()
+	root.add_child(race_mgr)
+	
 	var player = VehicleController.new()
 	player.car_id = "sprinter_r2"
+	root.add_child(player)
+	
 	var ai1 = VehicleController.new()
 	ai1.car_id = "sprinter_r2"
+	root.add_child(ai1)
 	
 	race_mgr.setup_race(track, player, [ai1], 3)
 	
@@ -66,9 +72,9 @@ func _init():
 		
 	# Test 4: Dynamic Leaderboard Position Sorting
 	total_tests += 1
-	# Advance AI to gate 2 so AI is ahead of player
-	ai1.global_position = track.checkpoints[2].global_position
-	race_mgr.car_progress[ai1].next_checkpoint = 3
+	# Advance AI to gate 4 so AI is definitively ahead of player (who is at gate 1)
+	ai1.global_position = track.checkpoints[4].global_position
+	race_mgr.car_progress[ai1].next_checkpoint = 5
 	race_mgr._physics_process(1.0 / 120.0)
 	
 	var player_pos = race_mgr.get_player_position()
@@ -81,6 +87,7 @@ func _init():
 	# Test 5: AI Navigation & Curvature Braking
 	total_tests += 1
 	var ai_driver = AIDriver.new()
+	root.add_child(ai_driver)
 	ai_driver.setup(ai1, track, "Viktor 'Rotor' Hale", "Aggressive")
 	ai1.speed_kmh = 160.0
 	ai_driver._physics_process(1.0 / 120.0)
@@ -91,12 +98,12 @@ func _init():
 	else:
 		printerr("[FAIL] Test 5: AI Driver navigation failed!")
 		
-	# Cleanup
-	track.free()
-	race_mgr.free()
-	player.free()
-	ai1.free()
-	ai_driver.free()
+	# Cleanup nodes from root
+	track.queue_free()
+	race_mgr.queue_free()
+	player.queue_free()
+	ai1.queue_free()
+	ai_driver.queue_free()
 	
 	print("\n-------------------------------------------------------")
 	print("STAGE 2 RESULTS: %d / %d TESTS PASSED" % [passed_tests, total_tests])
