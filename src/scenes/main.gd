@@ -3,6 +3,13 @@
 class_name MainGame
 extends Node3D
 
+const VehicleController = preload("res://src/vehicles/vehicle_controller.gd")
+const ProceduralCarMesh = preload("res://src/vehicles/procedural_car_mesh.gd")
+const ProceduralAudioEngine = preload("res://src/audio/procedural_audio_engine.gd")
+const CameraRig = preload("res://src/core/camera_rig.gd")
+const DebugOverlay = preload("res://src/ui/debug_overlay.gd")
+const TestTrack = preload("res://src/scenes/test_track.gd")
+
 var car: VehicleController
 var car_mesh: ProceduralCarMesh
 var audio_engine: ProceduralAudioEngine
