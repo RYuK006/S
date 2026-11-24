@@ -157,7 +157,7 @@ func _capture_screenshot():
 		if tex:
 			var img = tex.get_image()
 			if img and not img.is_empty():
-				img.save_png("build/screenshots/m5_combat.png")
-				print("[SCREENSHOT] Successfully saved build/screenshots/m5_combat.png")
+				img.save_png("build/screenshots/m7_biome.png")
+				print("[SCREENSHOT] Successfully saved build/screenshots/m7_biome.png")
 				return
 	print("[SCREENSHOT] Completed frame capture pass")
