@@ -14,7 +14,7 @@ if (fs.existsSync(zipPath)) {
   fs.unlinkSync(zipPath);
 }
 
-const cmd = `powershell -Command "Compress-Archive -Path '${rootDir}\\src', '${rootDir}\\tests', '${rootDir}\\tools', '${rootDir}\\index.html', '${rootDir}\\project.godot' -DestinationPath '${zipPath}' -Force"`;
+const cmd = `powershell -Command "Compress-Archive -Path '${rootDir}\\src', '${rootDir}\\tests', '${rootDir}\\tools', '${rootDir}\\web', '${rootDir}\\index.html', '${rootDir}\\project.godot' -DestinationPath '${zipPath}' -Force"`;
 
 try {
   execSync(cmd, { stdio: 'inherit' });
