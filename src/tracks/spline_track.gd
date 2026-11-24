@@ -177,7 +177,9 @@ func _generate_checkpoints(num_gates: int):
 		col.shape = box
 		gate.add_child(col)
 		
-		gate.look_at(gate.position + pt.forward, Vector3.UP)
+		# Set gate transform safely without requiring scene tree
+		var gate_basis = Basis().looking_at(pt.forward, Vector3.UP)
+		gate.transform = Transform3D(gate_basis, pt.pos + Vector3(0, 2.0, 0))
 		gate.set_meta("gate_index", g)
 		add_child(gate)
 		checkpoints.append(gate)
