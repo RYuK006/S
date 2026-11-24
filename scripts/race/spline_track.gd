@@ -148,12 +148,21 @@ func _generate_road_mesh():
 	var mesh_inst = MeshInstance3D.new()
 	mesh_inst.mesh = road_mesh
 	
-	# PBR Asphalt & Kerb Material
-	var mat = StandardMaterial3D.new()
-	mat.albedo_color = Color(0.20, 0.20, 0.22) # Dark worn asphalt
-	mat.roughness = 0.65
-	mat.metallic = 0.05
-	mesh_inst.material_override = mat
+	# High-Fidelity Wet Asphalt & Kerb Material
+	var road_shader = load("res://shaders/wet_road.gdshader") as Shader
+	if road_shader:
+		var road_mat = ShaderMaterial.new()
+		road_mat.shader = road_shader
+		road_mat.set_shader_parameter("asphalt_color", Color(0.20, 0.20, 0.22, 1.0))
+		road_mat.set_shader_parameter("wet_color", Color(0.08, 0.08, 0.09, 1.0))
+		road_mat.set_shader_parameter("wetness", 0.65)
+		mesh_inst.material_override = road_mat
+	else:
+		var mat = StandardMaterial3D.new()
+		mat.albedo_color = Color(0.20, 0.20, 0.22) # Dark worn asphalt
+		mat.roughness = 0.65
+		mat.metallic = 0.05
+		mesh_inst.material_override = mat
 	static_body.add_child(mesh_inst)
 	
 	# Trimesh collision
