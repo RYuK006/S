@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "engine",
+      "name": "Engine Block & Cams",
+      "tiers": [
+        { "tier": 1, "cost": 3500, "hp_mult": 1.08, "torque_mult": 1.06 },
+        { "tier": 2, "cost": 8500, "hp_mult": 1.18, "torque_mult": 1.15 },
+        { "tier": 3, "cost": 19000, "hp_mult": 1.30, "torque_mult": 1.25 },
+        { "tier": 4, "cost": 38000, "hp_mult": 1.45, "torque_mult": 1.38 },
+        { "tier": 5, "cost": 75000, "hp_mult": 1.65, "torque_mult": 1.55 }
+      ]
+    },
+    {
+      "id": "turbo",
+      "name": "Forced Induction",
+      "tiers": [
+        { "tier": 1, "cost": 4200, "boost_bar": 0.4, "lag_sec": 0.35 },
+        { "tier": 2, "cost": 9800, "boost_bar": 0.8, "lag_sec": 0.28 },
+        { "tier": 3, "cost": 22000, "boost_bar": 1.2, "lag_sec": 0.22 },
+        { "tier": 4, "cost": 44000, "boost_bar": 1.7, "lag_sec": 0.16 },
+        { "tier": 5, "cost": 88000, "boost_bar": 2.3, "lag_sec": 0.10 }
+      ]
+    },
+    {
+      "id": "transmission",
+      "name": "Gearbox & Diff",
+      "tiers": [
+        { "tier": 1, "cost": 2800, "shift_ms": 160, "diff_lock": 0.25 },
+        { "tier": 2, "cost": 6500, "shift_ms": 120, "diff_lock": 0.45 },
+        { "tier": 3, "cost": 15000, "shift_ms": 80, "diff_lock": 0.65 },
+        { "tier": 4, "cost": 32000, "shift_ms": 50, "diff_lock": 0.85 },
+        { "tier": 5, "cost": 64000, "shift_ms": 25, "diff_lock": 1.00 }
+      ]
+    },
+    {
+      "id": "brakes",
+      "name": "Brakes & Cooling",
+      "tiers": [
+        { "tier": 1, "cost": 2200, "torque_nm": 3200, "bias": 0.60 },
+        { "tier": 2, "cost": 5400, "torque_nm": 4500, "bias": 0.62 },
+        { "tier": 3, "cost": 12500, "torque_nm": 6000, "bias": 0.64 },
+        { "tier": 4, "cost": 26000, "torque_nm": 7800, "bias": 0.65 },
+        { "tier": 5, "cost": 52000, "torque_nm": 9800, "bias": 0.66 }
+      ]
+    },
+    {
+      "id": "suspension",
+      "name": "Dampers & Sway Bars",
+      "tiers": [
+        { "tier": 1, "cost": 3100, "stiffness_n_m": 42000, "anti_roll": 1800 },
+        { "tier": 2, "cost": 7200, "stiffness_n_m": 50000, "anti_roll": 2600 },
+        { "tier": 3, "cost": 16500, "stiffness_n_m": 58000, "anti_roll": 3600 },
+        { "tier": 4, "cost": 34000, "stiffness_n_m": 68000, "anti_roll": 4800 },
+        { "tier": 5, "cost": 70000, "stiffness_n_m": 80000, "anti_roll": 6200 }
+      ]
+    },
+    {
+      "id": "tyres",
+      "name": "Compound & Tread",
+      "tiers": [
+        { "tier": 1, "cost": 2900, "grip_mult": 1.06 },
+        { "tier": 2, "cost": 6800, "grip_mult": 1.14 },
+        { "tier": 3, "cost": 15500, "grip_mult": 1.22 },
+        { "tier": 4, "cost": 33000, "grip_mult": 1.32 },
+        { "tier": 5, "cost": 68000, "grip_mult": 1.45 }
+      ]
+    },
+    {
+      "id": "armour",
+      "name": "Plating & Reinforcement",
+      "tiers": [
+        { "tier": 1, "cost": 3800, "health_add": 150, "mass_add": 40 },
+        { "tier": 2, "cost": 8800, "health_add": 350, "mass_add": 90 },
+        { "tier": 3, "cost": 20000, "health_add": 650, "mass_add": 160 },
+        { "tier": 4, "cost": 42000, "health_add": 1050, "mass_add": 250 },
+        { "tier": 5, "cost": 85000, "health_add": 1600, "mass_add": 360 }
+      ]
+    },
+    {
+      "id": "nitro_tank",
+      "name": "Nitro Reservoir",
+      "tiers": [
+        { "tier": 1, "cost": 2400, "capacity": 120, "flow_mult": 1.10 },
+        { "tier": 2, "cost": 5800, "capacity": 150, "flow_mult": 1.25 },
+        { "tier": 3, "cost": 13500, "capacity": 190, "flow_mult": 1.45 },
+        { "tier": 4, "cost": 29000, "capacity": 240, "flow_mult": 1.70 },
+        { "tier": 5, "cost": 58000, "capacity": 300, "flow_mult": 2.00 }
+      ]
+    },
+    {
+      "id": "cooling",
+      "name": "Radiator & Weapon Vents",
+      "tiers": [
+        { "tier": 1, "cost": 2100, "heat_dissip_mult": 1.15 },
+        { "tier": 2, "cost": 5000, "heat_dissip_mult": 1.35 },
+        { "tier": 3, "cost": 11500, "heat_dissip_mult": 1.60 },
+        { "tier": 4, "cost": 24000, "heat_dissip_mult": 1.90 },
+        { "tier": 5, "cost": 48000, "heat_dissip_mult": 2.30 }
+      ]
+    },
+    {
+      "id": "weight_reduction",
+      "name": "Carbon Chassis Stripping",
+      "tiers": [
+        { "tier": 1, "cost": 3600, "mass_mult": 0.95 },
+        { "tier": 2, "cost": 8400, "mass_mult": 0.90 },
+        { "tier": 3, "cost": 19500, "mass_mult": 0.84 },
+        { "tier": 4, "cost": 41000, "mass_mult": 0.77 },
+        { "tier": 5, "cost": 82000, "mass_mult": 0.70 }
+      ]
+    }
+  ]
+}
