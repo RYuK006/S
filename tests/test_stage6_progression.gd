@@ -1,7 +1,7 @@
 # tests/test_stage6_progression.gd
 extends Node
 
-const ProgressionSystem = preload("res://src/progression/progression_system.gd")
+const ProgressionSystem = preload("res://scripts/core/progression_system.gd")
 
 func _ready():
 	print("\n=======================================================")
