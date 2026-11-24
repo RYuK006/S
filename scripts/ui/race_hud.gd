@@ -128,7 +128,7 @@ func _process(_delta: float):
 	# Update Gauges
 	speed_label.text = "%d KM/H" % int(player_car.speed_kmh)
 	var gear_str = "R" if player_car.current_gear == 0 else str(player_car.current_gear)
-	rpm_gear_label.text = "GEAR %s | %d RPM | NITRO %d%%" % [gear_str, int(player_car.engineRPM), int(player_car.nitro_amount)]
+	rpm_gear_label.text = "GEAR %s | %d RPM | NITRO %d%%" % [gear_str, int(player_car.engine_rpm), int(player_car.nitro_amount)]
 	
 	# Update Position & Laps
 	var pos = race_mgr.get_player_position()
