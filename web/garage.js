@@ -69,7 +69,9 @@ class GarageController {
     if (!content) return;
     content.innerHTML = "";
 
-    if (tab === "showroom") {
+    if (tab === "campaign") {
+      this.renderCampaign(content);
+    } else if (tab === "showroom") {
       this.renderShowroom(content);
     } else if (tab === "upgrades") {
       this.renderUpgrades(content);
@@ -82,6 +84,59 @@ class GarageController {
     } else if (tab === "profile") {
       this.renderProfile(content);
     }
+  }
+
+  renderCampaign(container) {
+    const s = this.saveManager.state;
+    let html = `<div style="display:flex; flex-direction:column; gap:16px;">`;
+
+    for (let bKey of Object.keys(BIOMES)) {
+      const bio = BIOMES[bKey];
+      const bRaces = CAMPAIGN_RACES.filter(r => r.region === bKey);
+
+      html += `
+        <div style="background:#131720; border:1px solid #2a3242; border-radius:6px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:6px;">
+            <div>
+              <strong style="font-size:16px; color:#ff8800; letter-spacing:1px; text-transform:uppercase;">${bio.name}</strong>
+              <span style="font-size:12px; color:#889; margin-left:8px;">${bio.theme}</span>
+            </div>
+            <span class="g-badge" style="background:#0099ff;">GRIP x${bio.surfaceGrip}</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">
+      `;
+
+      for (let r of bRaces) {
+        const isLocked = (s.player_level || 1) < r.level_req;
+        const isBoss = r.mode === "boss_duel";
+        html += `
+          <div style="background:#181e28; border:1px solid ${isBoss ? '#ff3300' : '#222'}; border-radius:4px; padding:10px; opacity:${isLocked ? '0.6' : '1.0'};">
+            <div style="display:flex; justify-content:space-between;">
+              <strong>#${r.id} ${r.name}</strong>
+              <span style="font-size:10px; color:#ffaa00; text-transform:uppercase; font-weight:bold;">${r.mode}</span>
+            </div>
+            <div style="font-size:11px; color:#aaa; margin:6px 0;">
+              Laps: ${r.laps} | Rivals: ${r.cars} | Weather: ${r.weather}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <span style="font-size:11px; color:#00ff88; font-weight:bold;">+$${r.reward_cash.toLocaleString()}</span>
+              ${isLocked ? `<span style="font-size:10px; color:#ff4444;">LVL ${r.level_req} REQ</span>` :
+                `<button class="btn-sm buy" onclick="window.garage.launchCampaignRace(${r.id})">LAUNCH EVENT ▶</button>`}
+            </div>
+          </div>
+        `;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  launchCampaignRace(raceId) {
+    const race = CAMPAIGN_RACES.find(r => r.id === raceId);
+    if (!race) return;
+    this.closeGarageUI();
+    if (window.startCampaignRace) window.startCampaignRace(race);
   }
 
   renderShowroom(container) {
