@@ -115,8 +115,10 @@ func _drive_towards_waypoint(delta: float):
 	# Steer towards target
 	var steer = clamp(angle_to_target * 1.8, -1.0, 1.0)
 	car.steer_input = move_toward(car.steer_input, steer, delta * 6.0)
-	car.front_left_wheel.steer_angle = car.steer_input * deg_to_rad(28.0)
-	car.front_right_wheel.steer_angle = car.steer_input * deg_to_rad(28.0)
+	if car.front_left_wheel:
+		car.front_left_wheel.steer_angle = car.steer_input * deg_to_rad(28.0)
+	if car.front_right_wheel:
+		car.front_right_wheel.steer_angle = car.steer_input * deg_to_rad(28.0)
 	
 	# Curvature profile: compute track angle deviation further ahead
 	var num_pts = track.track_points.size()
