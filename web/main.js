@@ -46,6 +46,12 @@ scene.add(ground);
 buildTrackRoad(scene);
 
 // Subsystems
+const saveManager = new SaveManager();
+window.saveManager = saveManager;
+
+const garage = new GarageController(scene, saveManager);
+window.garage = garage;
+
 const combatManager = new CombatManager(scene);
 window.spawnExplosion = (pos) => combatManager.spawnExplosion(pos);
 window.spawnSmoke = (pos) => combatManager.spawnSmoke(pos);
@@ -95,6 +101,11 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'KeyG') {
+    const gModal = document.getElementById('garage-modal');
+    if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
+    else garage.openGarageUI();
+  }
   if (e.code === 'KeyE' || e.code === 'KeyL') triggerDropMine();
   if (e.code === 'KeyK') triggerFireRocket();
 });
@@ -280,6 +291,9 @@ function animate(currentTime) {
     allCars.sort((a, b) => carProgress.get(b).score - carProgress.get(a).score);
   }
 
+  // Turntable & Garage Update
+  garage.update(delta);
+
   // Audio Update
   let maxSlip = 0;
   for (let w of playerCar.wheels) maxSlip = Math.max(maxSlip, Math.abs(w.slipAngle) + Math.abs(w.slipRatio));
@@ -321,7 +335,10 @@ window.addEventListener('resize', () => {
 document.getElementById('boot-screen').addEventListener('click', () => {
   audio.init();
   document.getElementById('boot-screen').style.opacity = '0';
-  setTimeout(() => document.getElementById('boot-screen').style.display = 'none', 500);
+  setTimeout(() => {
+    document.getElementById('boot-screen').style.display = 'none';
+    garage.openGarageUI();
+  }, 400);
 });
 
 requestAnimationFrame(animate);
