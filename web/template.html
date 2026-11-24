@@ -62,8 +62,44 @@
   #results-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(12, 14, 18, 0.96); border: 2px solid #ff7700; border-radius: 8px; padding: 28px 40px; text-align: center; display: none; pointer-events: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9); z-index: 50; min-width: 380px; }
   #results-modal h2 { font-size: 38px; color: #ffaa00; margin-bottom: 12px; }
   #results-standings { font-size: 16px; text-align: left; margin: 16px 0; line-height: 1.8; color: #ddd; }
-  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; }
+  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin: 4px; }
   .btn-restart:hover { background: #ff7722; }
+
+  /* Garage Modal */
+  #garage-modal { position: absolute; inset: 0; background: rgba(10, 12, 16, 0.96); z-index: 60; display: none; flex-direction: column; padding: 20px 30px; pointer-events: auto; }
+  #garage-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff6600; padding-bottom: 12px; margin-bottom: 14px; }
+  #garage-header h2 { font-size: 28px; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+  #garage-header h2 span { color: #ff6600; }
+  .g-econ-pill { background: #161a22; border: 1px solid #333; padding: 6px 14px; border-radius: 4px; font-size: 14px; font-weight: bold; color: #00ffaa; margin-left: 8px; }
+  .g-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .g-tab-btn { background: #181c24; border: 1px solid #333; color: #bbb; padding: 8px 18px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+  .g-tab-btn.active, .g-tab-btn:hover { background: #ff5500; color: #fff; border-color: #ff7722; }
+  #garage-tab-content { flex: 1; overflow-y: auto; background: #0c0e12; border: 1px solid #222; border-radius: 4px; padding: 18px; }
+
+  /* Garage Component Cards */
+  .g-car-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .g-car-card { background: #141820; border: 1px solid #282e3a; border-radius: 6px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+  .g-car-card.selected { border-color: #00e5ff; box-shadow: 0 0 12px rgba(0, 229, 255, 0.3); }
+  .g-card-header { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
+  .g-badge { font-size: 11px; background: #ff5500; color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+  .g-stats-mini { font-size: 12px; color: #aaa; line-height: 1.6; font-family: monospace; }
+  .g-perk-text { font-size: 11px; color: #ffaa00; margin: 8px 0; }
+  .btn-sm { padding: 6px 12px; background: #283040; color: #fff; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+  .btn-sm.active { background: #00cc66; border-color: #00ff88; }
+  .btn-sm.buy { background: #ff6600; border-color: #ff8822; }
+  .btn-sm:hover { filter: brightness(1.15); }
+
+  .g-upgrade-row { display: flex; justify-content: space-between; align-items: center; background: #141820; border: 1px solid #262c38; padding: 10px 16px; border-radius: 4px; margin-bottom: 8px; }
+  .g-tier-tag { font-size: 11px; color: #ffaa00; font-weight: bold; margin-left: 8px; }
+  .g-upg-desc { font-size: 12px; color: #889; margin-top: 2px; }
+  .max-badge { color: #00ff88; font-weight: bold; font-size: 12px; }
+
+  .g-driver-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .g-driver-card { background: #141820; border: 1px solid #282e3a; border-radius: 6px; padding: 14px; text-align: center; }
+  .g-driver-card.selected { border-color: #ff8800; box-shadow: 0 0 10px rgba(255, 120, 0, 0.4); }
+  .d-avatar { width: 54px; height: 54px; border-radius: 50%; background: #263040; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #ff8800; border: 2px solid #ff6600; }
+  .d-title { font-size: 11px; color: #889; text-transform: uppercase; margin-bottom: 6px; }
+  .d-perk { font-size: 12px; color: #ffaa00; margin-bottom: 12px; }
 
   /* Controls Hint */
   #controls-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.85); padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 12px; color: #bbb; display: flex; gap: 14px; white-space: nowrap; }
@@ -166,14 +202,45 @@
     <div><span class="key">SPACE</span> Drift</div>
     <div><span class="key">SHIFT</span> Nitro</div>
     <div><span class="key">C</span> Cam</div>
+    <div onclick="window.garage.openGarageUI()" style="cursor:pointer;"><span class="key">G</span> Garage</div>
   </div>
+</div>
+
+<!-- Garage Modal Hub -->
+<div id="garage-modal">
+  <div id="garage-header">
+    <div>
+      <h2>GRID<span>LETHAL</span> WORKSHOP</h2>
+      <div style="font-size:12px; color:#889; margin-top:4px;">TUNING DOCK & VEHICLE ARSENAL</div>
+    </div>
+    <div style="display:flex; align-items:center;">
+      <span class="g-econ-pill" id="garage-cash">$25,000</span>
+      <span class="g-econ-pill" id="garage-gold" style="color:#ffbb00;">50 GOLD</span>
+      <span class="g-econ-pill" id="garage-class-badge" style="color:#ff6600;">CLASS D</span>
+      <button class="btn-restart" onclick="window.garage.closeGarageUI()" style="margin-left:18px;">RACE NOW ▶</button>
+    </div>
+  </div>
+
+  <div class="g-tabs">
+    <button class="g-tab-btn active" data-tab="showroom" onclick="window.garage.setTab('showroom')">12 Cars Showroom</button>
+    <button class="g-tab-btn" data-tab="upgrades" onclick="window.garage.setTab('upgrades')">Upgrade Workshop (10 Tiers)</button>
+    <button class="g-tab-btn" data-tab="customise" onclick="window.garage.setTab('customise')">Paint & Finish</button>
+    <button class="g-tab-btn" data-tab="weapons" onclick="window.garage.setTab('weapons')">Weapon Bay</button>
+    <button class="g-tab-btn" data-tab="driver" onclick="window.garage.setTab('driver')">Driver Roster (6 Perks)</button>
+    <button class="g-tab-btn" data-tab="profile" onclick="window.garage.setTab('profile')">Profiles & Cloud Save</button>
+  </div>
+
+  <div id="garage-tab-content"></div>
 </div>
 
 <!-- Results Panel -->
 <div id="results-modal">
   <h2>RACE COMPLETE</h2>
   <div id="results-standings"></div>
-  <button class="btn-restart" onclick="location.reload()">Restart Race</button>
+  <div style="display:flex; justify-content:center; gap:10px;">
+    <button class="btn-restart" onclick="location.reload()">Restart Race</button>
+    <button class="btn-restart" style="background:#0099ff;" onclick="document.getElementById('results-modal').style.display='none'; window.garage.openGarageUI();">Garage Workshop</button>
+  </div>
 </div>
 
 <!-- Mobile Touch Controls -->
@@ -191,8 +258,8 @@
 <!-- Boot Splash / Audio Unlocker -->
 <div id="boot-screen">
   <h1>GRID<span>LETHAL</span></h1>
-  <p>STAGE 3 — ARMED VEHICULAR COMBAT & 3-LAP CIRCUIT RACE</p>
-  <div class="press-start">Click to Enter Grid & Arm Weapons</div>
+  <p>STAGE 4 — 12 CARS, 10 UPGRADES, 6 DRIVERS & 3D GARAGE WORKSHOP</p>
+  <div class="press-start">Click to Enter Garage & Grid</div>
 </div>
 
 <script>
