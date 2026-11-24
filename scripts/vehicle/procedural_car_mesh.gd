@@ -26,9 +26,11 @@ func _build_body():
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
-	var length = car_recipe.wheelbase + 1.6
-	var half_len = length * 0.5
-	var width = car_recipe.track_width + 0.1
+	var wb: float = float(car_recipe.get("wheelbase", 2.5))
+	var tw: float = float(car_recipe.get("track_width", 1.8))
+	var length: float = wb + 1.6
+	var half_len: float = length * 0.5
+	var width: float = tw + 0.1
 	var height = 1.35
 	
 	# Profile stations (Z from front to rear)
@@ -169,13 +171,15 @@ func _build_details():
 	wing.material_override = wing_mat
 	add_child(wing)
 	
+	var wb: float = float(car_recipe.get("wheelbase", 2.5))
+	
 	# 3. Headlights (High-intensity emissive)
 	for side in [-1.0, 1.0]:
 		var hl = MeshInstance3D.new()
 		var hl_box = BoxMesh.new()
 		hl_box.size = Vector3(0.24, 0.12, 0.05)
 		hl.mesh = hl_box
-		hl.position = Vector3(side * 0.55, 0.45, -car_recipe.wheelbase * 0.5 - 0.78)
+		hl.position = Vector3(side * 0.55, 0.45, -wb * 0.5 - 0.78)
 		var hl_mat = StandardMaterial3D.new()
 		hl_mat.albedo_color = Color(0.9, 0.95, 1.0)
 		hl_mat.emission_enabled = true
@@ -190,7 +194,7 @@ func _build_details():
 		var tl_box = BoxMesh.new()
 		tl_box.size = Vector3(0.28, 0.10, 0.05)
 		tl.mesh = tl_box
-		tl.position = Vector3(side * 0.55, 0.52, car_recipe.wheelbase * 0.5 + 0.78)
+		tl.position = Vector3(side * 0.55, 0.52, wb * 0.5 + 0.78)
 		var tl_mat = StandardMaterial3D.new()
 		tl_mat.albedo_color = Color(0.9, 0.05, 0.05)
 		tl_mat.emission_enabled = true
@@ -201,10 +205,12 @@ func _build_details():
 
 func _build_wheels():
 	# Builds visual lathe wheels with rubber tire profile and spoked rims
-	var wb_half = car_recipe.wheelbase * 0.5
-	var tw_half = car_recipe.track_width * 0.5
-	var r = car_recipe.wheel_radius
-	var w = car_recipe.wheel_width
+	var wb: float = float(car_recipe.get("wheelbase", 2.5))
+	var tw: float = float(car_recipe.get("track_width", 1.8))
+	var wb_half: float = wb * 0.5
+	var tw_half: float = tw * 0.5
+	var r: float = float(car_recipe.get("wheel_radius", 0.35))
+	var w: float = float(car_recipe.get("wheel_width", 0.24))
 	
 	var wheel_positions = [
 		Vector3(-tw_half, 0, -wb_half),
