@@ -7,6 +7,8 @@
 # Build outputs
 build/windows/*.pck
 build/windows/*.exe
+build/windows/*.zip
+*.zip
 build/android/
 build/ios/
 build/screenshots/*.png
