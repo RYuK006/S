@@ -222,10 +222,11 @@
   </div>
 
   <div class="g-tabs">
-    <button class="g-tab-btn active" data-tab="showroom" onclick="window.garage.setTab('showroom')">12 Cars Showroom</button>
+    <button class="g-tab-btn active" data-tab="campaign" onclick="window.garage.setTab('campaign')">28 Campaign Missions</button>
+    <button class="g-tab-btn" data-tab="showroom" onclick="window.garage.setTab('showroom')">12 Cars Showroom</button>
     <button class="g-tab-btn" data-tab="upgrades" onclick="window.garage.setTab('upgrades')">Upgrade Workshop (10 Tiers)</button>
     <button class="g-tab-btn" data-tab="customise" onclick="window.garage.setTab('customise')">Paint & Finish</button>
-    <button class="g-tab-btn" data-tab="weapons" onclick="window.garage.setTab('weapons')">Weapon Bay</button>
+    <button class="g-tab-btn" data-tab="weapons" onclick="window.garage.setTab('weapons')">Weapon Bay (26 Arsenal)</button>
     <button class="g-tab-btn" data-tab="driver" onclick="window.garage.setTab('driver')">Driver Roster (6 Perks)</button>
     <button class="g-tab-btn" data-tab="profile" onclick="window.garage.setTab('profile')">Profiles & Cloud Save</button>
   </div>
@@ -1012,138 +1013,242 @@ class SaveManager {
 
 
 // ============================================================================
+// MODULE: CAMPAIGN_DATA.JS
+// ============================================================================
+// web/campaign_data.js
+// 4 Regional Biomes, Dynamic Weather Profiles & 28 Campaign Missions
+
+const BIOMES = {
+  dust_bowl: {
+    id: "dust_bowl", name: "Dust Bowl", theme: "Desert Salvage Country",
+    skyColor: 0x9e8060, fogColor: 0xb59a7a, groundColor: 0x5a4d3e,
+    ambientLight: 0xffeedd, sunColor: 0xffe0b0,
+    surfaceGrip: 1.0, weather: "clear",
+    desc: "Sun-bleached salvage yards, dry riverbeds and heat-baked asphalt."
+  },
+  neon_docks: {
+    id: "neon_docks", name: "Neon Docks", theme: "Rain-Slick Industrial Port",
+    skyColor: 0x060c14, fogColor: 0x0f1824, groundColor: 0x141820,
+    ambientLight: 0x334466, sunColor: 0x88ccff,
+    surfaceGrip: 0.72, weather: "rain",
+    desc: "High-contrast night racing through container terminals and wet docks."
+  },
+  frozen_pass: {
+    id: "frozen_pass", name: "Frozen Pass", theme: "Alpine Mountain Pass",
+    skyColor: 0xc8d8ea, fogColor: 0xd8e4f0, groundColor: 0xdee4ea,
+    ambientLight: 0xeef4ff, sunColor: 0xffffff,
+    surfaceGrip: 0.42, weather: "snow",
+    desc: "Sheer cliff roads, snow drifts, icy hairpins and blinding blizzards."
+  },
+  volcano_ridge: {
+    id: "volcano_ridge", name: "Volcano Ridge", theme: "Lava-Lit Highlands",
+    skyColor: 0x240606, fogColor: 0x380d0d, groundColor: 0x1a0505,
+    ambientLight: 0x551111, sunColor: 0xff4400,
+    surfaceGrip: 0.85, weather: "ash",
+    desc: "Active tectonic caldera with magma rivers, ash fall and crumbling bridges."
+  }
+};
+
+const CAMPAIGN_RACES = [
+  // --- DUST BOWL (Races 1 to 7) ---
+  { id: 1, name: "Rust Gate Sprint", region: "dust_bowl", mode: "classic", laps: 3, cars: 6, weather: "clear", time: "noon", level_req: 1, reward_cash: 2500, reward_xp: 150 },
+  { id: 2, name: "Tumbleweed Loop", region: "dust_bowl", mode: "classic", laps: 3, cars: 6, weather: "clear", time: "golden", level_req: 2, reward_cash: 3200, reward_xp: 200 },
+  { id: 3, name: "Scrapyard Derby", region: "dust_bowl", mode: "derby", laps: 1, cars: 8, weather: "clear", time: "noon", level_req: 4, reward_cash: 4500, reward_xp: 280 },
+  { id: 4, name: "Salt Flat Time Trial", region: "dust_bowl", mode: "time_attack", laps: 2, cars: 1, weather: "clear", time: "noon", level_req: 6, reward_cash: 4000, reward_xp: 250 },
+  { id: 5, name: "Windmill Rush", region: "dust_bowl", mode: "checkpoint_rush", laps: 1, cars: 1, weather: "sandstorm", time: "dusk", level_req: 8, reward_cash: 5200, reward_xp: 320 },
+  { id: 6, name: "Dry River Elimination", region: "dust_bowl", mode: "elimination", laps: 5, cars: 6, weather: "clear", time: "dusk", level_req: 10, reward_cash: 6000, reward_xp: 380 },
+  { id: 7, name: "BOSS: The Hauler", region: "dust_bowl", mode: "boss_duel", laps: 3, cars: 2, weather: "sandstorm", time: "dusk", level_req: 12, reward_cash: 15000, reward_xp: 1000, boss_name: "The Hauler", boss_hp: 3000 },
+
+  // --- NEON DOCKS (Races 8 to 14) ---
+  { id: 8, name: "Container Run", region: "neon_docks", mode: "classic", laps: 4, cars: 6, weather: "rain", time: "night", level_req: 13, reward_cash: 7500, reward_xp: 450 },
+  { id: 9, name: "Crane Alley", region: "neon_docks", mode: "survival", laps: 1, cars: 8, weather: "rain", time: "night", level_req: 15, reward_cash: 8800, reward_xp: 520 },
+  { id: 10, name: "Harbour Dash", region: "neon_docks", mode: "time_attack", laps: 2, cars: 1, weather: "rain", time: "night", level_req: 17, reward_cash: 8000, reward_xp: 480 },
+  { id: 11, name: "Rail Yard Rumble", region: "neon_docks", mode: "classic", laps: 3, cars: 6, weather: "fog", time: "night", level_req: 19, reward_cash: 9500, reward_xp: 580 },
+  { id: 12, name: "Sodium Strip", region: "neon_docks", mode: "elimination", laps: 5, cars: 6, weather: "rain", time: "night", level_req: 21, reward_cash: 11000, reward_xp: 650 },
+  { id: 13, name: "Drydock Arena", region: "neon_docks", mode: "derby", laps: 1, cars: 8, weather: "rain", time: "night", level_req: 23, reward_cash: 12500, reward_xp: 720 },
+  { id: 14, name: "BOSS: Black Tide", region: "neon_docks", mode: "boss_duel", laps: 3, cars: 2, weather: "rain", time: "night", level_req: 24, reward_cash: 25000, reward_xp: 1800, boss_name: "Black Tide", boss_hp: 4500 },
+
+  // --- FROZEN PASS (Races 15 to 21) ---
+  { id: 15, name: "Whiteout Run", region: "frozen_pass", mode: "classic", laps: 3, cars: 6, weather: "snow", time: "day", level_req: 25, reward_cash: 14000, reward_xp: 800 },
+  { id: 16, name: "Ice Road Escort", region: "frozen_pass", mode: "escort", laps: 1, cars: 6, weather: "snow", time: "day", level_req: 27, reward_cash: 16000, reward_xp: 920 },
+  { id: 17, name: "Avalanche Alley", region: "frozen_pass", mode: "checkpoint_rush", laps: 1, cars: 1, weather: "blizzard", time: "day", level_req: 29, reward_cash: 15500, reward_xp: 890 },
+  { id: 18, name: "Switchback Sprint", region: "frozen_pass", mode: "time_attack", laps: 2, cars: 1, weather: "snow", time: "day", level_req: 31, reward_cash: 15000, reward_xp: 850 },
+  { id: 19, name: "Glacier Derby", region: "frozen_pass", mode: "derby", laps: 1, cars: 8, weather: "ice", time: "aurora", level_req: 33, reward_cash: 18000, reward_xp: 1050 },
+  { id: 20, name: "Tunnel Gauntlet", region: "frozen_pass", mode: "classic", laps: 4, cars: 6, weather: "snow", time: "day", level_req: 35, reward_cash: 20000, reward_xp: 1200 },
+  { id: 21, name: "BOSS: Frostbite", region: "frozen_pass", mode: "boss_duel", laps: 3, cars: 2, weather: "blizzard", time: "aurora", level_req: 38, reward_cash: 40000, reward_xp: 2500, boss_name: "Frostbite", boss_hp: 6000 },
+
+  // --- VOLCANO RIDGE (Races 22 to 28) ---
+  { id: 22, name: "Ash Highway", region: "volcano_ridge", mode: "classic", laps: 4, cars: 6, weather: "ash", time: "day", level_req: 39, reward_cash: 24000, reward_xp: 1400 },
+  { id: 23, name: "Lava Crossing", region: "volcano_ridge", mode: "checkpoint_rush", laps: 1, cars: 1, weather: "ash", time: "dusk", level_req: 42, reward_cash: 26000, reward_xp: 1550 },
+  { id: 24, name: "Magma Escort", region: "volcano_ridge", mode: "escort", laps: 1, cars: 6, weather: "ash", time: "dusk", level_req: 46, reward_cash: 28000, reward_xp: 1700 },
+  { id: 25, name: "Caldera Survival", region: "volcano_ridge", mode: "survival", laps: 1, cars: 8, weather: "ash", time: "night", level_req: 50, reward_cash: 32000, reward_xp: 1950 },
+  { id: 26, name: "Obsidian Elimination", region: "volcano_ridge", mode: "elimination", laps: 5, cars: 6, weather: "ash", time: "night", level_req: 54, reward_cash: 35000, reward_xp: 2200 },
+  { id: 27, name: "Final Time Attack", region: "volcano_ridge", mode: "time_attack", laps: 2, cars: 1, weather: "ash", time: "night", level_req: 58, reward_cash: 40000, reward_xp: 2600 },
+  { id: 28, name: "FINAL BOSS: The Warden", region: "volcano_ridge", mode: "boss_duel", laps: 4, cars: 2, weather: "ash", time: "night", level_req: 60, reward_cash: 100000, reward_xp: 5000, boss_name: "The Warden", boss_hp: 10000 }
+];
+
+
+// ============================================================================
 // MODULE: WEAPONS.JS
 // ============================================================================
 // web/weapons.js
-// Stage 3 Vehicular Combat Arsenal: 10 Weapons & Vehicle Weapon System
+// Complete 26-Item Vehicular Combat Arsenal & Multi-Slot Weapon Management
 
 const WEAPONS = {
-  // --- PRIMARY FRONT WEAPONS ---
+  // --- FRONT GUNS & CANNONS (1 - 7) ---
   twin_mg: {
-    id: "twin_mg",
-    name: "Twin MG",
-    slot: "primary",
-    damage: 12.0,
-    fireRate: 12.5, // 0.08s cooldown
-    range: 120.0,
-    velocity: 340.0,
-    heatPerShot: 0.012,
-    maxAmmo: 999, // Infinite for player in Stage 3
-    isBallistic: false,
+    id: "twin_mg", name: "Twin MG", slot: "primary",
+    damage: 12.0, fireRate: 14.0, range: 90.0, velocity: 340.0,
+    heatPerShot: 0.012, maxAmmo: 999,
     description: "Rapid-fire twin kinetic machine guns mounted on front quarter panels."
   },
   heavy_mg: {
-    id: "heavy_mg",
-    name: "Heavy MG",
-    slot: "primary",
-    damage: 26.0,
-    fireRate: 6.5,
-    range: 150.0,
-    velocity: 380.0,
-    heatPerShot: 0.024,
-    maxAmmo: 300,
-    isBallistic: false,
+    id: "heavy_mg", name: "Heavy MG", slot: "primary",
+    damage: 26.0, fireRate: 8.0, range: 110.0, velocity: 380.0,
+    heatPerShot: 0.024, maxAmmo: 300,
     description: "High-calibre armour-piercing rounds with heavy kinetic impact."
   },
   shotgun_cannon: {
-    id: "shotgun_cannon",
-    name: "Shotgun Cannon",
-    slot: "primary",
-    damage: 9.0, // per pellet (8 pellets = 72 dmg)
-    pellets: 8,
-    fireRate: 1.8,
-    range: 50.0,
-    velocity: 280.0,
-    spreadAngle: 0.14,
-    heatPerShot: 0.08,
-    maxAmmo: 45,
-    isBallistic: false,
-    description: "8-pellet buckshot blast devastating in close bumper-to-bumper combat."
+    id: "shotgun_cannon", name: "Shotgun Cannon", slot: "primary",
+    damage: 9.0, pellets: 12, fireRate: 1.4, range: 35.0, velocity: 280.0,
+    spreadAngle: 0.16, heatPerShot: 0.08, maxAmmo: 45,
+    description: "12-pellet buckshot blast devastating in close bumper-to-bumper combat."
+  },
+  flamethrower: {
+    id: "flamethrower", name: "Flamethrower", slot: "primary",
+    damage: 6.0, fireRate: 20.0, range: 18.0, velocity: 45.0,
+    heatPerShot: 0.01, maxAmmo: 200, isFire: true,
+    description: "Stream of burning napalm that coats targets in persistent flame and ignites oil."
+  },
+  plasma_cannon: {
+    id: "plasma_cannon", name: "Plasma Cannon", slot: "primary",
+    damage: 85.0, fireRate: 1.0, range: 80.0, velocity: 90.0,
+    blastRadius: 4.0, heatPerShot: 0.25, maxAmmo: 30,
+    description: "High-energy superheated plasma bolt that melts through reinforced armour plating."
+  },
+  railgun: {
+    id: "railgun", name: "Railgun", slot: "primary",
+    damage: 420.0, fireRate: 0.25, range: 300.0, velocity: 1200.0,
+    isHitscan: true, heatPerShot: 0.65, maxAmmo: 12,
+    description: "Hyper-velocity electromagnetic slug capable of piercing multiple vehicles."
+  },
+  harpoon_launcher: {
+    id: "harpoon_launcher", name: "Harpoon Launcher", slot: "primary",
+    damage: 40.0, fireRate: 0.2, range: 60.0, velocity: 110.0,
+    tetherDuration: 5.0, maxAmmo: 6,
+    description: "Pneumatic barbed spear that tethers an enemy car and reels it into melee range."
   },
 
-  // --- ROOF WEAPONS ---
+  // --- ROOF TURRETS (8 - 12) ---
   rocket_pod: {
-    id: "rocket_pod",
-    name: "Rocket Pod",
-    slot: "roof",
-    damage: 48.0,
-    blastRadius: 5.5,
-    fireRate: 1.25, // 0.8s cooldown
-    velocity: 160.0,
-    range: 160.0,
-    salvoCount: 1,
-    maxAmmo: 18,
-    isHoming: false,
+    id: "rocket_pod", name: "Rocket Pod", slot: "roof",
+    damage: 70.0, blastRadius: 5.5, fireRate: 1.25, velocity: 160.0,
+    range: 150.0, maxAmmo: 18, isHoming: false,
     description: "High-velocity unguided ballistic rockets with explosive blast radius."
   },
   homing_missile: {
-    id: "homing_missile",
-    name: "Homing Missile",
-    slot: "roof",
-    damage: 85.0,
-    blastRadius: 6.5,
-    fireRate: 0.75, // 1.33s cooldown
-    velocity: 130.0,
-    range: 180.0,
-    turnRate: 6.0, // rad/s
-    lockAngle: 0.61, // ~35 degrees
-    maxAmmo: 6,
-    isHoming: true,
+    id: "homing_missile", name: "Homing Missile", slot: "roof",
+    damage: 110.0, blastRadius: 6.5, fireRate: 0.75, velocity: 130.0,
+    range: 250.0, turnRate: 6.0, lockAngle: 0.61, maxAmmo: 10, isHoming: true,
     description: "Laser-guided tracking missile with terminal seeking and devastating splash."
   },
+  minigun_turret: {
+    id: "minigun_turret", name: "Minigun Turret", slot: "roof",
+    damage: 9.0, fireRate: 40.0, range: 100.0, velocity: 360.0,
+    spinUpTime: 0.4, heatPerShot: 0.005, maxAmmo: 600,
+    description: "Motorized 6-barrel rotary cannon delivering overwhelming suppressive firepower."
+  },
+  cluster_rocket: {
+    id: "cluster_rocket", name: "Cluster Rocket", slot: "roof",
+    damage: 260.0, blastRadius: 8.0, fireRate: 0.3, velocity: 140.0,
+    range: 200.0, bomblets: 8, maxAmmo: 8,
+    description: "Heavy warhead that splits mid-flight into 8 anti-vehicle bomblets."
+  },
+  emp_pulse: {
+    id: "emp_pulse", name: "EMP Pulse", slot: "roof",
+    damage: 0.0, blastRadius: 25.0, fireRate: 0.1, maxAmmo: 6,
+    empDuration: 4.0,
+    description: "Electromagnetic burst disabling enemy electronics, nitro, and lock-on tracking for 4s."
+  },
 
-  // --- REAR WEAPONS ---
+  // --- REAR WEAPONS (13 - 17) ---
   mine_dropper: {
-    id: "mine_dropper",
-    name: "Mine Dropper",
-    slot: "rear",
-    damage: 120.0,
-    blastRadius: 6.0,
-    armDelay: 0.8,
-    triggerRadius: 3.5,
-    fireRate: 0.65,
-    maxAmmo: 6,
-    impulse: 18000.0,
+    id: "mine_dropper", name: "Mine Dropper", slot: "rear",
+    damage: 180.0, blastRadius: 6.0, armDelay: 0.8, triggerRadius: 3.5,
+    fireRate: 0.65, maxAmmo: 12, impulse: 18000.0,
     description: "Magnetic proximity contact mines that launch tailgating rivals airborne."
   },
   oil_slick: {
-    id: "oil_slick",
-    name: "Oil Slick",
-    slot: "rear",
-    damage: 0.0,
-    duration: 12.0,
-    triggerRadius: 3.2,
-    slipMu: 0.20,
-    slipDuration: 4.0,
-    fireRate: 0.5,
-    maxAmmo: 4,
+    id: "oil_slick", name: "Oil Slick", slot: "rear",
+    damage: 0.0, duration: 12.0, triggerRadius: 3.2, slipMu: 0.20,
+    fireRate: 0.4, maxAmmo: 10,
     description: "Viscous synthetic lubricant puddle that induces severe loss of control."
   },
-
-  // --- PASSIVE WEAPONS ---
-  ram_plate: {
-    id: "ram_plate",
-    name: "Ram Plate",
-    slot: "passive",
-    collisionDmgMult: 2.4,
-    selfDamageReduction: 0.60,
-    description: "Reinforced front-end cow-catcher doubling ramming damage while reducing self damage."
+  spike_strip: {
+    id: "spike_strip", name: "Spike Strip", slot: "rear",
+    damage: 50.0, triggerRadius: 2.8, fireRate: 0.5, maxAmmo: 6,
+    shredsTyres: true,
+    description: "Hollow steel quills that immediately deflate and shred tires on contact."
   },
+  smoke_screen: {
+    id: "smoke_screen", name: "Smoke Screen", slot: "rear",
+    damage: 0.0, duration: 8.0, triggerRadius: 4.0, fireRate: 0.3, maxAmmo: 8,
+    blocksLock: true,
+    description: "Dense chemical aerosol cloud obscuring vision and breaking incoming missile locks."
+  },
+  napalm_drop: {
+    id: "napalm_drop", name: "Napalm Drop", slot: "rear",
+    damage: 112.0, blastRadius: 5.5, duration: 6.0, fireRate: 0.25, maxAmmo: 5,
+    description: "Incendiary gel canister creating a persistent wall of fire on the tarmac."
+  },
+
+  // --- MELEE & MACHINERY (18 - 21) ---
+  ram_plate: {
+    id: "ram_plate", name: "Ram Plate", slot: "passive",
+    collisionDmgMult: 2.4, selfDamageReduction: 0.60, weight: 45.0,
+    description: "Reinforced front-end cow-catcher doubling ramming damage while absorbing impact."
+  },
+  saw_blades: {
+    id: "saw_blades", name: "Saw Blades", slot: "passive",
+    contactDmgPerSec: 350.0, weight: 40.0,
+    description: "High-speed spinning circular saw discs mounted on wheel hubs grinding armor."
+  },
+  side_spikes: {
+    id: "side_spikes", name: "Side Spikes", slot: "passive",
+    contactDmgPerSec: 250.0, weight: 30.0,
+    description: "Hardened titanium side skirts that punish aggressive side-swipers."
+  },
+  wheel_blades: {
+    id: "wheel_blades", name: "Wheel Blades", slot: "passive",
+    contactDmgPerSec: 150.0, shredsTyres: true, weight: 32.0,
+    description: "Concealed scythe blades extending from axle caps to rupture adjacent tires."
+  },
+
+  // --- DEFENSIVE (22 - 26) ---
   armour_plating: {
-    id: "armour_plating",
-    name: "Armour Plating",
-    slot: "passive",
-    bonusHealth: 250.0,
-    damageResistance: 0.25,
+    id: "armour_plating", name: "Armour Plating", slot: "passive",
+    bonusHealth: 250.0, damageResistance: 0.25, weight: 80.0,
     description: "Hardened composite panels granting +250 HP and 25% damage mitigation."
   },
+  shield_generator: {
+    id: "shield_generator", name: "Shield Generator", slot: "passive",
+    shieldCapacity: 200.0, rechargeRate: 10.0, weight: 45.0,
+    description: "High-voltage kinetic barrier absorbing 200 damage before recharging."
+  },
+  repair_drone: {
+    id: "repair_drone", name: "Repair Drone", slot: "passive",
+    healPerSec: 3.0, maxHealRatio: 0.50, weight: 20.0,
+    description: "Autonomous micro-drone orbiting the car to patch hull punctures over time."
+  },
   countermeasures: {
-    id: "countermeasures",
-    name: "Countermeasures",
-    slot: "passive",
-    cooldown: 8.0,
-    range: 30.0,
+    id: "countermeasures", name: "Countermeasures", slot: "passive",
+    cooldown: 8.0, range: 30.0, maxAmmo: 4, weight: 8.0,
     description: "Automated flare decoys disrupting incoming homing missile guidance."
+  },
+  nitro_tank: {
+    id: "nitro_tank", name: "Nitro Tank", slot: "passive",
+    nitroCapacityBonus: 50.0, rechargeRateBonus: 0.30, weight: 25.0,
+    description: "Auxiliary nitrous oxide reservoir delivering extended boost duration."
   }
 };
 
@@ -1178,6 +1283,13 @@ class WeaponSystem {
     if (this.heat > 0) {
       this.heat = Math.max(0, this.heat - dt * 0.35);
       if (this.isOverheated && this.heat < 0.25) this.isOverheated = false;
+    }
+
+    // Passive repair drone effect
+    if (this.passiveWeapon && this.passiveWeapon.id === 'repair_drone' && !this.vehicle.isWrecked) {
+      if (this.vehicle.health < this.vehicle.maxHealth * 0.5) {
+        this.vehicle.health = Math.min(this.vehicle.maxHealth * 0.5, this.vehicle.health + dt * 3.0);
+      }
     }
 
     // Auto-aim target acquisition in forward cone
@@ -2039,6 +2151,105 @@ class CombatManager {
 
 
 // ============================================================================
+// MODULE: BOSS_CONTROLLER.JS
+// ============================================================================
+// web/boss_controller.js
+// Multi-Phase Boss Duel Encounter Controller & Boss Health UI
+
+class BossController {
+  constructor(scene) {
+    this.scene = scene;
+    this.bossCar = null;
+    this.bossName = "";
+    this.maxHealth = 3000.0;
+    this.currentHealth = 3000.0;
+    this.currentPhase = 1;
+    this.totalPhases = 3;
+    this.isActive = false;
+
+    // Create Boss HUD Element
+    this.container = document.createElement('div');
+    this.container.id = 'boss-hud';
+    this.container.style.cssText = "position:absolute; top:24px; left:50%; transform:translateX(-50%); width:460px; display:none; flex-direction:column; align-items:center; z-index:45; text-shadow:0 2px 4px #000;";
+    this.container.innerHTML = `
+      <div id="boss-name" style="font-size:18px; font-weight:900; color:#ff3300; letter-spacing:2px; text-transform:uppercase;">BOSS: THE HAULER</div>
+      <div id="boss-phase" style="font-size:12px; color:#ffaa00; font-weight:bold; margin-bottom:4px;">PHASE 1 / 3</div>
+      <div style="width:100%; height:14px; background:rgba(0,0,0,0.7); border:2px solid #ff3300; border-radius:4px; overflow:hidden;">
+        <div id="boss-hp-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #ff0000, #ff8800); transition:width 0.1s;"></div>
+      </div>
+    `;
+    document.body.appendChild(this.container);
+  }
+
+  startBossEncounter(bossCar, name, hp, phases = 3) {
+    this.bossCar = bossCar;
+    this.bossName = name;
+    this.maxHealth = hp;
+    this.currentHealth = hp;
+    this.currentPhase = 1;
+    this.totalPhases = phases;
+    this.isActive = true;
+
+    bossCar.health = hp;
+    bossCar.maxHealth = hp;
+    bossCar.driverName = name;
+
+    this.container.style.display = 'flex';
+    document.getElementById('boss-name').innerText = name;
+    this.updateHUD();
+
+    if (window.addBattleFeed) {
+      window.addBattleFeed(`WARNING: ${name} ENTERED THE CIRCUIT!`);
+    }
+  }
+
+  update(dt, playerCar, combatMgr) {
+    if (!this.isActive || !this.bossCar) return;
+
+    this.currentHealth = this.bossCar.health;
+    const hpRatio = this.currentHealth / this.maxHealth;
+
+    // Check Phase Transitions
+    let targetPhase = 1;
+    if (this.totalPhases === 4) {
+      if (hpRatio < 0.25) targetPhase = 4;
+      else if (hpRatio < 0.50) targetPhase = 3;
+      else if (hpRatio < 0.75) targetPhase = 2;
+    } else {
+      if (hpRatio < 0.33) targetPhase = 3;
+      else if (hpRatio < 0.66) targetPhase = 2;
+    }
+
+    if (targetPhase > this.currentPhase) {
+      this.currentPhase = targetPhase;
+      if (window.addBattleFeed) {
+        window.addBattleFeed(`${this.bossName} ENRAGED! ENTERING PHASE ${this.currentPhase}!`);
+      }
+      if (window.audio) window.audio.playExplosion();
+    }
+
+    this.updateHUD();
+
+    if (this.currentHealth <= 0) {
+      this.isActive = false;
+      this.container.style.display = 'none';
+      if (window.addBattleFeed) {
+        window.addBattleFeed(`${this.bossName} DESTROYED! CAMPAIGN BOUNTY CLAIMED!`);
+      }
+    }
+  }
+
+  updateHUD() {
+    const pct = Math.max(0, (this.currentHealth / this.maxHealth) * 100);
+    const fill = document.getElementById('boss-hp-fill');
+    const phaseLabel = document.getElementById('boss-phase');
+    if (fill) fill.style.width = `${pct}%`;
+    if (phaseLabel) phaseLabel.innerText = `PHASE ${this.currentPhase} / ${this.totalPhases}`;
+  }
+}
+
+
+// ============================================================================
 // MODULE: AI.JS
 // ============================================================================
 // web/ai.js
@@ -2325,7 +2536,9 @@ class GarageController {
     if (!content) return;
     content.innerHTML = "";
 
-    if (tab === "showroom") {
+    if (tab === "campaign") {
+      this.renderCampaign(content);
+    } else if (tab === "showroom") {
       this.renderShowroom(content);
     } else if (tab === "upgrades") {
       this.renderUpgrades(content);
@@ -2338,6 +2551,59 @@ class GarageController {
     } else if (tab === "profile") {
       this.renderProfile(content);
     }
+  }
+
+  renderCampaign(container) {
+    const s = this.saveManager.state;
+    let html = `<div style="display:flex; flex-direction:column; gap:16px;">`;
+
+    for (let bKey of Object.keys(BIOMES)) {
+      const bio = BIOMES[bKey];
+      const bRaces = CAMPAIGN_RACES.filter(r => r.region === bKey);
+
+      html += `
+        <div style="background:#131720; border:1px solid #2a3242; border-radius:6px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:6px;">
+            <div>
+              <strong style="font-size:16px; color:#ff8800; letter-spacing:1px; text-transform:uppercase;">${bio.name}</strong>
+              <span style="font-size:12px; color:#889; margin-left:8px;">${bio.theme}</span>
+            </div>
+            <span class="g-badge" style="background:#0099ff;">GRIP x${bio.surfaceGrip}</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">
+      `;
+
+      for (let r of bRaces) {
+        const isLocked = (s.player_level || 1) < r.level_req;
+        const isBoss = r.mode === "boss_duel";
+        html += `
+          <div style="background:#181e28; border:1px solid ${isBoss ? '#ff3300' : '#222'}; border-radius:4px; padding:10px; opacity:${isLocked ? '0.6' : '1.0'};">
+            <div style="display:flex; justify-content:space-between;">
+              <strong>#${r.id} ${r.name}</strong>
+              <span style="font-size:10px; color:#ffaa00; text-transform:uppercase; font-weight:bold;">${r.mode}</span>
+            </div>
+            <div style="font-size:11px; color:#aaa; margin:6px 0;">
+              Laps: ${r.laps} | Rivals: ${r.cars} | Weather: ${r.weather}
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+              <span style="font-size:11px; color:#00ff88; font-weight:bold;">+${r.reward_cash.toLocaleString()}</span>
+              ${isLocked ? `<span style="font-size:10px; color:#ff4444;">LVL ${r.level_req} REQ</span>` :
+                `<button class="btn-sm buy" onclick="window.garage.launchCampaignRace(${r.id})">LAUNCH EVENT ▶</button>`}
+            </div>
+          </div>
+        `;
+      }
+      html += `</div></div>`;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  launchCampaignRace(raceId) {
+    const race = CAMPAIGN_RACES.find(r => r.id === raceId);
+    if (!race) return;
+    this.closeGarageUI();
+    if (window.startCampaignRace) window.startCampaignRace(race);
   }
 
   renderShowroom(container) {
@@ -2629,6 +2895,53 @@ window.spawnSmoke = (pos) => combatManager.spawnSmoke(pos);
 
 const pickupManager = new TrackPickupManager(scene);
 
+const bossController = new BossController(scene);
+window.bossController = bossController;
+
+let currentBiomeGrip = 1.0;
+
+function startCampaignRace(raceConfig) {
+  const bio = BIOMES[raceConfig.region] || BIOMES.dust_bowl;
+  scene.background = new THREE.Color(bio.skyColor);
+  scene.fog.color = new THREE.Color(bio.fogColor);
+  ground.material.color = new THREE.Color(bio.groundColor);
+  hemiLight.color = new THREE.Color(bio.ambientLight);
+  sunLight.color = new THREE.Color(bio.sunColor);
+
+  currentBiomeGrip = bio.surfaceGrip;
+  totalLaps = raceConfig.laps || 3;
+  raceState = "COUNTDOWN";
+  countdownTimer = 3.99;
+
+  // Reset cars to starting grid
+  playerCar.position.set(-3.5, 0.6, -35.0);
+  playerCar.velocity.set(0, 0, 0);
+  playerCar.health = playerCar.maxHealth;
+  playerCar.isWrecked = false;
+
+  for (let i = 0; i < aiCars.length; i++) {
+    const ai = aiCars[i].car;
+    ai.position.copy(aiConfigs[i].pos);
+    ai.velocity.set(0, 0, 0);
+    ai.health = ai.maxHealth;
+    ai.isWrecked = false;
+  }
+
+  // Handle Boss Duel Mode
+  if (raceConfig.mode === "boss_duel") {
+    const bossRival = aiCars[aiCars.length - 1].car;
+    bossController.startBossEncounter(bossRival, raceConfig.boss_name, raceConfig.boss_hp, raceConfig.boss_hp > 8000 ? 4 : 3);
+  } else {
+    bossController.container.style.display = 'none';
+    bossController.isActive = false;
+  }
+
+  if (window.addBattleFeed) {
+    window.addBattleFeed(`LAUNCHING ${raceConfig.name.toUpperCase()} (${raceConfig.mode.toUpperCase()})`);
+  }
+}
+window.startCampaignRace = startCampaignRace;
+
 // Grid Spawn: Player + 5 AI Rivals
 const playerCar = new VehicleController(scene, 0xee1808, false, "Player");
 playerCar.position.set(-3.5, 0.6, -35.0);
@@ -2832,6 +3145,7 @@ function animate(currentTime) {
   // Update Combat Systems & Pickups
   combatManager.update(delta, allCars);
   pickupManager.update(delta, allCars);
+  bossController.update(delta, playerCar, combatManager);
 
   // Checkpoint & Leaderboard Progression
   if (raceState === "RACING") {
