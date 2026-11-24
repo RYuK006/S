@@ -5,7 +5,7 @@ extends SceneTree
 const SplineTrack = preload("res://scripts/race/spline_track.gd")
 const RaceManager = preload("res://scripts/race/race_manager.gd")
 const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
-const AIDriver = preload("res://src/ai/ai_driver.gd")
+const AIDriver = preload("res://scripts/ai/ai_driver.gd")
 
 func _init():
 	print("\n=======================================================")
