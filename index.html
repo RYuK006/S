@@ -203,6 +203,7 @@
     <div><span class="key">SHIFT</span> Nitro</div>
     <div><span class="key">C</span> Cam</div>
     <div onclick="window.garage.openGarageUI()" style="cursor:pointer;"><span class="key">G</span> Garage</div>
+    <div onclick="window.cheatMenu.toggle()" style="cursor:pointer;"><span class="key">F4</span> Cheats</div>
   </div>
 </div>
 
@@ -228,6 +229,7 @@
     <button class="g-tab-btn" data-tab="customise" onclick="window.garage.setTab('customise')">Paint & Finish</button>
     <button class="g-tab-btn" data-tab="weapons" onclick="window.garage.setTab('weapons')">Weapon Bay (26 Arsenal)</button>
     <button class="g-tab-btn" data-tab="driver" onclick="window.garage.setTab('driver')">Driver Roster (6 Perks)</button>
+    <button class="g-tab-btn" data-tab="achievements" onclick="window.garage.setTab('achievements')">60 Achievements</button>
     <button class="g-tab-btn" data-tab="profile" onclick="window.garage.setTab('profile')">Profiles & Cloud Save</button>
   </div>
 
@@ -1086,6 +1088,127 @@ const CAMPAIGN_RACES = [
   { id: 27, name: "Final Time Attack", region: "volcano_ridge", mode: "time_attack", laps: 2, cars: 1, weather: "ash", time: "night", level_req: 58, reward_cash: 40000, reward_xp: 2600 },
   { id: 28, name: "FINAL BOSS: The Warden", region: "volcano_ridge", mode: "boss_duel", laps: 4, cars: 2, weather: "ash", time: "night", level_req: 60, reward_cash: 100000, reward_xp: 5000, boss_name: "The Warden", boss_hp: 10000 }
 ];
+
+
+// ============================================================================
+// MODULE: PROGRESSION.JS
+// ============================================================================
+// web/progression.js
+// 60 Achievements, Level 1-100 Progression, Daily Missions & Local Leaderboards
+
+const ACHIEVEMENTS_DATA = [
+  // RACING (1 - 12)
+  { id: "first_win", name: "First Blood", cat: "racing", desc: "Win your first race." },
+  { id: "clean_sweep", name: "Clean Sweep", cat: "racing", desc: "Win a 3-lap race without taking hull damage." },
+  { id: "lap_record", name: "Speed Demon", cat: "racing", desc: "Set a circuit lap under 35 seconds." },
+  { id: "drifter_elite", name: "Sideways King", cat: "racing", desc: "Accumulate 10,000 meters of controlled drifts." },
+  { id: "podium_streak", name: "Consistent Podium", cat: "racing", desc: "Finish on the podium in 5 consecutive races." },
+  { id: "dust_conqueror", name: "Desert Fox", cat: "racing", desc: "Win all Dust Bowl campaign events." },
+  { id: "docks_master", name: "Harbour Master", cat: "racing", desc: "Win all Neon Docks campaign events." },
+  { id: "ice_glider", name: "Sub-Zero", cat: "racing", desc: "Win all Frozen Pass campaign events." },
+  { id: "volcano_survivor", name: "Magma Walker", cat: "racing", desc: "Win all Volcano Ridge campaign events." },
+  { id: "comeback_kid", name: "From the Ashes", cat: "racing", desc: "Win a race after being wrecked in lap 1." },
+  { id: "nitro_junky", name: "Full Throttle", cat: "racing", desc: "Burn nitro continuously for 12 seconds." },
+  { id: "derby_champ", name: "Last Car Standing", cat: "racing", desc: "Win a Demolition Derby as sole survivor." },
+
+  // COMBAT (13 - 24)
+  { id: "first_kill", name: "Scrap Metal", cat: "combat", desc: "Wreck your first rival vehicle." },
+  { id: "ramming_speed", name: "Locomotive", cat: "combat", desc: "Destroy a car purely via physical collision." },
+  { id: "rocket_sniper", name: "Direct Hit", cat: "combat", desc: "Hit an enemy with an unguided rocket beyond 80 meters." },
+  { id: "minefield", name: "Tread Carefully", cat: "combat", desc: "Wreck 3 rivals with proximity mines in one race." },
+  { id: "multi_kill", name: "Double Trouble", cat: "combat", desc: "Wreck two cars within 4 seconds of each other." },
+  { id: "hauler_down", name: "Road Train Derailed", cat: "combat", desc: "Defeat The Hauler in Dust Bowl." },
+  { id: "tide_extinguished", name: "Extinguished", cat: "combat", desc: "Defeat Black Tide in Neon Docks." },
+  { id: "frost_shattered", name: "Thawed Out", cat: "combat", desc: "Defeat Frostbite in Frozen Pass." },
+  { id: "warden_broken", name: "Prison Break", cat: "combat", desc: "Defeat The Warden in Volcano Ridge." },
+  { id: "century_kills", name: "Centurion of Carnage", cat: "combat", desc: "Wreck 100 rival vehicles total." },
+  { id: "close_call", name: "Hanging by a Thread", cat: "combat", desc: "Win a race with less than 5% health remaining." },
+  { id: "payback", name: "Revenge Served Cold", cat: "combat", desc: "Wreck a rival who damaged you within 10 seconds." },
+
+  // GARAGE & COLLECTION (25 - 36)
+  { id: "car_collector_3", name: "Triple Threat", cat: "garage", desc: "Own 3 different vehicles." },
+  { id: "car_collector_6", name: "Fleet Commander", cat: "garage", desc: "Own 6 different vehicles." },
+  { id: "car_collector_12", name: "Grand Collector", cat: "garage", desc: "Own all 12 vehicles in the showroom." },
+  { id: "first_max_car", name: "Perfectionist", cat: "garage", desc: "Max out all 10 upgrade tiers on any vehicle." },
+  { id: "full_arsenal", name: "Walking Fortress", cat: "garage", desc: "Unlock all 26 weapons." },
+  { id: "paint_customizer", name: "Fresh Coat", cat: "garage", desc: "Apply custom paint and finish to your car." },
+  { id: "all_drivers", name: "Crew Assembled", cat: "garage", desc: "Hire all 6 driver specialists." },
+  { id: "big_spender", name: "High Roller", cat: "garage", desc: "Spend over $200,000 in the workshop." },
+  { id: "scrap_hoarder", name: "Scrap Baron", cat: "garage", desc: "Accumulate 1,000 scrap parts." },
+  { id: "gold_rush", name: "Golden Garage", cat: "garage", desc: "Earn 100 gold bullion." },
+  { id: "class_s_owner", name: "Hyper-Spec", cat: "garage", desc: "Own a Class-S rated vehicle." },
+  { id: "sovereign_acquired", name: "The Crown Jewel", cat: "garage", desc: "Purchase the Gilded Sovereign." },
+
+  // MASTERY (37 - 48)
+  { id: "level_10", name: "Rookie Graduate", cat: "mastery", desc: "Reach player level 10." },
+  { id: "level_25", name: "Seasoned Merc", cat: "mastery", desc: "Reach player level 25." },
+  { id: "level_50", name: "Circuit Legend", cat: "mastery", desc: "Reach player level 50." },
+  { id: "level_100", name: "Apex Predator", cat: "mastery", desc: "Reach max level 100." },
+  { id: "all_races_gold", name: "Undefeated", cat: "mastery", desc: "Earn 1st place in all 28 campaign missions." },
+  { id: "ironman_win", "name": "Iron Driver", cat: "mastery", desc: "Win a 5-lap elimination race without repairs." },
+  { id: "pacifist_win", "name": "Ghost on the Grid", cat: "mastery", desc: "Win a classic race without firing a weapon." },
+  { id: "speed_barrier", "name": "Supersonic", cat: "mastery", desc: "Exceed 300 km/h in any vehicle." },
+  { id: "air_ace", "name": "Frequent Flyer", cat: "mastery", desc: "Spend 60 seconds total airborne from stunt ramps." },
+  { id: "perfect_shift", "name": "Gearshift God", cat: "mastery", desc: "Execute 20 perfect upshifts in one race." },
+  { id: "bounty_hunter", "name": "Bounty Claimed", cat: "mastery", desc: "Earn $50,000 purely from destruction bounties." },
+  { id: "hardcore_derby", "name": "Titanium Hull", cat: "mastery", desc: "Wreck 5 cars in a single Demolition Derby." },
+
+  // SECRET & FUN (49 - 60)
+  { id: "barrel_roll", name: "Do a Barrel Roll", cat: "secret", desc: "Complete a full 360-degree mid-air roll and land on 4 wheels." },
+  { id: "oil_slip", name: "Banana Peel", cat: "secret", desc: "Spin 720 degrees on an oil slick without wrecking." },
+  { id: "flip_recovery", name: "Turtle Power", cat: "secret", desc: "Use manual flip recovery 5 times." },
+  { id: "underdog_glory", name: "David and Goliath", cat: "secret", desc: "Wreck a Scrap Titan while driving a Sprinter R2." },
+  { id: "reverse_finish", "name": "Backwards across the Line", "cat": "secret", desc: "Cross the finish line in reverse." },
+  { id: "pylon_cleaner", "name": "Street Sweeper", "cat": "secret", desc: "Knock down 50 slalom pylons or track cones." },
+  { id: "train_close_call", "name": "Near Miss", "cat": "secret", desc: "Cross the rail yard crossing within 1 meter of the train." },
+  { id: "mine_rocket", "name": "Trick Shot", "cat": "secret", desc: "Detonate an airborne rocket using a proximity mine." },
+  { id: "zero_ammo_win", "name": "Empty Magazine", "cat": "secret", desc: "Win a race having consumed every single round of ammo." },
+  { id: "horn_spammer", "name": "Road Rage", "cat": "secret", desc: "Honk your horn 20 times in a single lap." },
+  { id: "radio_enthusiast", "name": "Audio Aficionado", "cat": "secret", desc: "Listen to all procedural rock music tracks in the garage." },
+  { id: "gridlethal_master", "name": "GRIDLETHAL Overlord", "cat": "secret", desc: "Complete all other 59 achievements." }
+];
+
+class ProgressionManager {
+  constructor(saveManager) {
+    this.saveManager = saveManager;
+  }
+
+  getXPForLevel(lvl) {
+    if (lvl <= 1) return 0;
+    return Math.floor(250 * Math.pow(lvl, 1.45));
+  }
+
+  addXP(amount) {
+    const s = this.saveManager.state;
+    s.player_xp = (s.player_xp || 0) + amount;
+    let currentLvl = s.player_level || 1;
+
+    while (currentLvl < 100) {
+      const nextReq = this.getXPForLevel(currentLvl + 1);
+      if (s.player_xp < nextReq) break;
+      currentLvl++;
+      if (window.addBattleFeed) {
+        window.addBattleFeed(`LEVEL UP! REACHED LEVEL ${currentLvl}!`);
+      }
+    }
+    s.player_level = currentLvl;
+    this.saveManager.saveSlot();
+  }
+
+  unlockAchievement(achId) {
+    const s = this.saveManager.state;
+    if (!s.achievements) s.achievements = [];
+    if (s.achievements.includes(achId)) return;
+
+    s.achievements.push(achId);
+    this.saveManager.saveSlot();
+
+    const ach = ACHIEVEMENTS_DATA.find(a => a.id === achId);
+    if (ach && window.addBattleFeed) {
+      window.addBattleFeed(`ACHIEVEMENT UNLOCKED: ${ach.name}!`);
+    }
+  }
+}
 
 
 // ============================================================================
@@ -2463,6 +2586,121 @@ function fmtTime(sec) {
 
 
 // ============================================================================
+// MODULE: CHEAT_MENU.JS
+// ============================================================================
+// web/cheat_menu.js
+// F4 Debug Cheat Console for Real-Time Testing & Economy Validation
+
+class CheatMenuController {
+  constructor(saveManager) {
+    this.saveManager = saveManager;
+    this.isVisible = false;
+    this.godMode = false;
+    this.infiniteNitro = false;
+
+    this.menuEl = document.createElement('div');
+    this.menuEl.id = 'cheat-menu';
+    this.menuEl.style.cssText = "position:absolute; top:70px; left:24px; background:rgba(15,18,24,0.96); border:2px solid #00f0ff; border-radius:8px; padding:18px 24px; z-index:150; display:none; flex-direction:column; gap:10px; box-shadow:0 0 25px rgba(0,240,255,0.4); font-family:sans-serif; color:#fff; min-width:280px;";
+    this.menuEl.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:8px;">
+        <strong style="color:#00f0ff; font-size:16px; letter-spacing:1px;">F4 DEBUG CHEAT MENU</strong>
+        <span style="font-size:11px; color:#888; cursor:pointer;" onclick="window.cheatMenu.toggle()">[ESC/F4]</span>
+      </div>
+      <button class="btn-sm" onclick="window.cheatMenu.addCash(10000)">+10,000 CASH</button>
+      <button class="btn-sm" onclick="window.cheatMenu.addGold(50)">+50 GOLD</button>
+      <button class="btn-sm" onclick="window.cheatMenu.addLevel(5)">+5 LEVELS</button>
+      <button class="btn-sm" onclick="window.cheatMenu.unlockAllCars()">UNLOCK ALL 12 CARS</button>
+      <button class="btn-sm" onclick="window.cheatMenu.unlockAllWeapons()">UNLOCK ALL 26 WEAPONS</button>
+      <button class="btn-sm" id="btn-cheat-god" onclick="window.cheatMenu.toggleGodMode()">GOD MODE: OFF</button>
+      <button class="btn-sm" id="btn-cheat-nitro" onclick="window.cheatMenu.toggleInfiniteNitro()">INFINITE NITRO: OFF</button>
+      <button class="btn-sm buy" onclick="window.cheatMenu.wreckAllRivals()">INSTANT WRECK RIVALS</button>
+      <button class="btn-sm" style="background:#551111;" onclick="window.cheatMenu.resetSave()">RESET SAVE TO DEFAULT</button>
+    `;
+    document.body.appendChild(this.menuEl);
+  }
+
+  toggle() {
+    this.isVisible = !this.isVisible;
+    this.menuEl.style.display = this.isVisible ? 'flex' : 'none';
+  }
+
+  addCash(amt) {
+    this.saveManager.state.cash = (this.saveManager.state.cash || 0) + amt;
+    this.saveManager.saveSlot();
+    if (window.garage) window.garage.renderHeader();
+    if (window.addBattleFeed) window.addBattleFeed(`CHEAT: +${amt.toLocaleString()} CASH ADDED`);
+  }
+
+  addGold(amt) {
+    this.saveManager.state.gold = (this.saveManager.state.gold || 0) + amt;
+    this.saveManager.saveSlot();
+    if (window.garage) window.garage.renderHeader();
+    if (window.addBattleFeed) window.addBattleFeed(`CHEAT: +${amt} GOLD ADDED`);
+  }
+
+  addLevel(lvls) {
+    this.saveManager.state.player_level = Math.min(100, (this.saveManager.state.player_level || 1) + lvls);
+    this.saveManager.saveSlot();
+    if (window.garage) window.garage.renderHeader();
+    if (window.addBattleFeed) window.addBattleFeed(`CHEAT: LEVEL INCREASED TO ${this.saveManager.state.player_level}`);
+  }
+
+  unlockAllCars() {
+    for (let carId of Object.keys(CAR_RECIPES)) {
+      if (!this.saveManager.state.owned_cars[carId]) {
+        this.saveManager.buyCar(carId);
+      }
+    }
+    if (window.garage) {
+      window.garage.renderHeader();
+      window.garage.renderTab(window.garage.activeTab);
+    }
+    if (window.addBattleFeed) window.addBattleFeed("CHEAT: ALL 12 CARS UNLOCKED");
+  }
+
+  unlockAllWeapons() {
+    this.saveManager.state.unlocked_weapons = Object.keys(WEAPONS);
+    this.saveManager.saveSlot();
+    if (window.addBattleFeed) window.addBattleFeed("CHEAT: ALL 26 WEAPONS UNLOCKED");
+  }
+
+  toggleGodMode() {
+    this.godMode = !this.godMode;
+    const btn = document.getElementById('btn-cheat-god');
+    if (btn) btn.innerText = `GOD MODE: ${this.godMode ? 'ON' : 'OFF'}`;
+    btn.style.borderColor = this.godMode ? '#00ff66' : '#444';
+    if (window.playerCar) {
+      window.playerCar.invulnerableTimer = this.godMode ? 999999 : 0;
+    }
+  }
+
+  toggleInfiniteNitro() {
+    this.infiniteNitro = !this.infiniteNitro;
+    const btn = document.getElementById('btn-cheat-nitro');
+    if (btn) btn.innerText = `INFINITE NITRO: ${this.infiniteNitro ? 'ON' : 'OFF'}`;
+    btn.style.borderColor = this.infiniteNitro ? '#00ff66' : '#444';
+  }
+
+  wreckAllRivals() {
+    if (window.aiCars) {
+      for (let ai of window.aiCars) {
+        ai.car.applyDamage(99999);
+      }
+    }
+    if (window.addBattleFeed) window.addBattleFeed("CHEAT: ALL RIVALS WRECKED");
+  }
+
+  resetSave() {
+    if (confirm("Reset current save profile to defaults?")) {
+      this.saveManager.state = this.saveManager.getDefaultState();
+      this.saveManager.saveSlot();
+      location.reload();
+    }
+  }
+}
+
+
+// ============================================================================
 // MODULE: GARAGE.JS
 // ============================================================================
 // web/garage.js
@@ -2550,7 +2788,36 @@ class GarageController {
       this.renderDriver(content);
     } else if (tab === "profile") {
       this.renderProfile(content);
+    } else if (tab === "achievements") {
+      this.renderAchievements(content);
     }
+  }
+
+  renderAchievements(container) {
+    const s = this.saveManager.state;
+    const unlocked = s.achievements || [];
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #333; padding-bottom:8px;">
+        <strong style="color:#ff8800; font-size:16px;">CAREER ACHIEVEMENTS</strong>
+        <span class="g-badge" style="background:#00cc66;">${unlocked.length} / 60 UNLOCKED</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;">
+    `;
+
+    for (let ach of ACHIEVEMENTS_DATA) {
+      const isUnl = unlocked.includes(ach.id);
+      html += `
+        <div style="background:#141822; border:1px solid ${isUnl ? '#00e5ff' : '#222'}; border-radius:4px; padding:10px; opacity:${isUnl ? '1.0' : '0.5'};">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:${isUnl ? '#fff' : '#888'}; font-size:13px;">${ach.name}</strong>
+            <span style="font-size:10px; color:#ffaa00; text-transform:uppercase;">${ach.cat}</span>
+          </div>
+          <p style="font-size:11px; color:#aaa; margin-top:4px;">${ach.desc}</p>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
   }
 
   renderCampaign(container) {
@@ -2886,6 +3153,12 @@ buildTrackRoad(scene);
 const saveManager = new SaveManager();
 window.saveManager = saveManager;
 
+const progression = new ProgressionManager(saveManager);
+window.progression = progression;
+
+const cheatMenu = new CheatMenuController(saveManager);
+window.cheatMenu = cheatMenu;
+
 const garage = new GarageController(scene, saveManager);
 window.garage = garage;
 
@@ -2985,6 +3258,7 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'F4') { e.preventDefault(); cheatMenu.toggle(); }
   if (e.code === 'KeyG') {
     const gModal = document.getElementById('garage-modal');
     if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
