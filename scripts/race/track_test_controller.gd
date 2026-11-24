@@ -151,13 +151,19 @@ func _capture_screenshot():
 	if not dir.dir_exists("build/screenshots"):
 		dir.make_dir_recursive("build/screenshots")
 		
+	var target_filename = "m7_biome.png"
+	for arg in OS.get_cmdline_args():
+		if arg.begins_with("--screenshot-name="):
+			target_filename = arg.substr("--screenshot-name=".length())
+		
 	var viewport = get_viewport()
 	if viewport:
 		var tex = viewport.get_texture()
 		if tex:
 			var img = tex.get_image()
 			if img and not img.is_empty():
-				img.save_png("build/screenshots/m7_biome.png")
-				print("[SCREENSHOT] Successfully saved build/screenshots/m7_biome.png")
+				var full_path = "build/screenshots/" + target_filename
+				img.save_png(full_path)
+				print("[SCREENSHOT] Successfully saved " + full_path)
 				return
 	print("[SCREENSHOT] Completed frame capture pass")
