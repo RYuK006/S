@@ -83,7 +83,36 @@ class GarageController {
       this.renderDriver(content);
     } else if (tab === "profile") {
       this.renderProfile(content);
+    } else if (tab === "achievements") {
+      this.renderAchievements(content);
     }
+  }
+
+  renderAchievements(container) {
+    const s = this.saveManager.state;
+    const unlocked = s.achievements || [];
+    let html = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid #333; padding-bottom:8px;">
+        <strong style="color:#ff8800; font-size:16px;">CAREER ACHIEVEMENTS</strong>
+        <span class="g-badge" style="background:#00cc66;">${unlocked.length} / 60 UNLOCKED</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:10px;">
+    `;
+
+    for (let ach of ACHIEVEMENTS_DATA) {
+      const isUnl = unlocked.includes(ach.id);
+      html += `
+        <div style="background:#141822; border:1px solid ${isUnl ? '#00e5ff' : '#222'}; border-radius:4px; padding:10px; opacity:${isUnl ? '1.0' : '0.5'};">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:${isUnl ? '#fff' : '#888'}; font-size:13px;">${ach.name}</strong>
+            <span style="font-size:10px; color:#ffaa00; text-transform:uppercase;">${ach.cat}</span>
+          </div>
+          <p style="font-size:11px; color:#aaa; margin-top:4px;">${ach.desc}</p>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
   }
 
   renderCampaign(container) {
