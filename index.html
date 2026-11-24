@@ -62,8 +62,44 @@
   #results-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(12, 14, 18, 0.96); border: 2px solid #ff7700; border-radius: 8px; padding: 28px 40px; text-align: center; display: none; pointer-events: auto; box-shadow: 0 0 40px rgba(0,0,0,0.9); z-index: 50; min-width: 380px; }
   #results-modal h2 { font-size: 38px; color: #ffaa00; margin-bottom: 12px; }
   #results-standings { font-size: 16px; text-align: left; margin: 16px 0; line-height: 1.8; color: #ddd; }
-  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; }
+  .btn-restart { padding: 12px 28px; background: #ff5500; color: #fff; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 15px; margin: 4px; }
   .btn-restart:hover { background: #ff7722; }
+
+  /* Garage Modal */
+  #garage-modal { position: absolute; inset: 0; background: rgba(10, 12, 16, 0.96); z-index: 60; display: none; flex-direction: column; padding: 20px 30px; pointer-events: auto; }
+  #garage-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff6600; padding-bottom: 12px; margin-bottom: 14px; }
+  #garage-header h2 { font-size: 28px; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+  #garage-header h2 span { color: #ff6600; }
+  .g-econ-pill { background: #161a22; border: 1px solid #333; padding: 6px 14px; border-radius: 4px; font-size: 14px; font-weight: bold; color: #00ffaa; margin-left: 8px; }
+  .g-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .g-tab-btn { background: #181c24; border: 1px solid #333; color: #bbb; padding: 8px 18px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+  .g-tab-btn.active, .g-tab-btn:hover { background: #ff5500; color: #fff; border-color: #ff7722; }
+  #garage-tab-content { flex: 1; overflow-y: auto; background: #0c0e12; border: 1px solid #222; border-radius: 4px; padding: 18px; }
+
+  /* Garage Component Cards */
+  .g-car-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .g-car-card { background: #141820; border: 1px solid #282e3a; border-radius: 6px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+  .g-car-card.selected { border-color: #00e5ff; box-shadow: 0 0 12px rgba(0, 229, 255, 0.3); }
+  .g-card-header { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px; }
+  .g-badge { font-size: 11px; background: #ff5500; color: #fff; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+  .g-stats-mini { font-size: 12px; color: #aaa; line-height: 1.6; font-family: monospace; }
+  .g-perk-text { font-size: 11px; color: #ffaa00; margin: 8px 0; }
+  .btn-sm { padding: 6px 12px; background: #283040; color: #fff; border: 1px solid #444; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+  .btn-sm.active { background: #00cc66; border-color: #00ff88; }
+  .btn-sm.buy { background: #ff6600; border-color: #ff8822; }
+  .btn-sm:hover { filter: brightness(1.15); }
+
+  .g-upgrade-row { display: flex; justify-content: space-between; align-items: center; background: #141820; border: 1px solid #262c38; padding: 10px 16px; border-radius: 4px; margin-bottom: 8px; }
+  .g-tier-tag { font-size: 11px; color: #ffaa00; font-weight: bold; margin-left: 8px; }
+  .g-upg-desc { font-size: 12px; color: #889; margin-top: 2px; }
+  .max-badge { color: #00ff88; font-weight: bold; font-size: 12px; }
+
+  .g-driver-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .g-driver-card { background: #141820; border: 1px solid #282e3a; border-radius: 6px; padding: 14px; text-align: center; }
+  .g-driver-card.selected { border-color: #ff8800; box-shadow: 0 0 10px rgba(255, 120, 0, 0.4); }
+  .d-avatar { width: 54px; height: 54px; border-radius: 50%; background: #263040; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #ff8800; border: 2px solid #ff6600; }
+  .d-title { font-size: 11px; color: #889; text-transform: uppercase; margin-bottom: 6px; }
+  .d-perk { font-size: 12px; color: #ffaa00; margin-bottom: 12px; }
 
   /* Controls Hint */
   #controls-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 12, 0.85); padding: 8px 20px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 12px; color: #bbb; display: flex; gap: 14px; white-space: nowrap; }
@@ -166,14 +202,45 @@
     <div><span class="key">SPACE</span> Drift</div>
     <div><span class="key">SHIFT</span> Nitro</div>
     <div><span class="key">C</span> Cam</div>
+    <div onclick="window.garage.openGarageUI()" style="cursor:pointer;"><span class="key">G</span> Garage</div>
   </div>
+</div>
+
+<!-- Garage Modal Hub -->
+<div id="garage-modal">
+  <div id="garage-header">
+    <div>
+      <h2>GRID<span>LETHAL</span> WORKSHOP</h2>
+      <div style="font-size:12px; color:#889; margin-top:4px;">TUNING DOCK & VEHICLE ARSENAL</div>
+    </div>
+    <div style="display:flex; align-items:center;">
+      <span class="g-econ-pill" id="garage-cash">$25,000</span>
+      <span class="g-econ-pill" id="garage-gold" style="color:#ffbb00;">50 GOLD</span>
+      <span class="g-econ-pill" id="garage-class-badge" style="color:#ff6600;">CLASS D</span>
+      <button class="btn-restart" onclick="window.garage.closeGarageUI()" style="margin-left:18px;">RACE NOW ▶</button>
+    </div>
+  </div>
+
+  <div class="g-tabs">
+    <button class="g-tab-btn active" data-tab="showroom" onclick="window.garage.setTab('showroom')">12 Cars Showroom</button>
+    <button class="g-tab-btn" data-tab="upgrades" onclick="window.garage.setTab('upgrades')">Upgrade Workshop (10 Tiers)</button>
+    <button class="g-tab-btn" data-tab="customise" onclick="window.garage.setTab('customise')">Paint & Finish</button>
+    <button class="g-tab-btn" data-tab="weapons" onclick="window.garage.setTab('weapons')">Weapon Bay</button>
+    <button class="g-tab-btn" data-tab="driver" onclick="window.garage.setTab('driver')">Driver Roster (6 Perks)</button>
+    <button class="g-tab-btn" data-tab="profile" onclick="window.garage.setTab('profile')">Profiles & Cloud Save</button>
+  </div>
+
+  <div id="garage-tab-content"></div>
 </div>
 
 <!-- Results Panel -->
 <div id="results-modal">
   <h2>RACE COMPLETE</h2>
   <div id="results-standings"></div>
-  <button class="btn-restart" onclick="location.reload()">Restart Race</button>
+  <div style="display:flex; justify-content:center; gap:10px;">
+    <button class="btn-restart" onclick="location.reload()">Restart Race</button>
+    <button class="btn-restart" style="background:#0099ff;" onclick="document.getElementById('results-modal').style.display='none'; window.garage.openGarageUI();">Garage Workshop</button>
+  </div>
 </div>
 
 <!-- Mobile Touch Controls -->
@@ -191,8 +258,8 @@
 <!-- Boot Splash / Audio Unlocker -->
 <div id="boot-screen">
   <h1>GRID<span>LETHAL</span></h1>
-  <p>STAGE 3 — ARMED VEHICULAR COMBAT & 3-LAP CIRCUIT RACE</p>
-  <div class="press-start">Click to Enter Grid & Arm Weapons</div>
+  <p>STAGE 4 — 12 CARS, 10 UPGRADES, 6 DRIVERS & 3D GARAGE WORKSHOP</p>
+  <div class="press-start">Click to Enter Garage & Grid</div>
 </div>
 
 <script>
@@ -583,6 +650,573 @@ class RaycastWheel {
 
 
 // ============================================================================
+// MODULE: CARS_DATA.JS
+// ============================================================================
+// web/cars_data.js
+// 12 Vehicle Specifications across 3 Classes, 10 Upgrade Categories & 6 Drivers
+
+const CAR_RECIPES = {
+  // --- RALLY CLASS ---
+  sprinter_r2: {
+    id: "sprinter_r2", name: "Sprinter R2", class: "Rally",
+    mass: 1050.0, power_kw: 140.0, top_speed: 175.0, accel_0_100: 6.8,
+    health: 700.0, price: 0, level_req: 1,
+    drivetrain: "AWD", slots: ["primary", "roof"],
+    perk: "Underdog", perk_desc: "+10% weapon damage when below half health.",
+    colorHex: 0xee1808
+  },
+  dust_viper: {
+    id: "dust_viper", name: "Dust Viper", class: "Rally",
+    mass: 1150.0, power_kw: 210.0, top_speed: 205.0, accel_0_100: 5.0,
+    health: 800.0, price: 18000, level_req: 3,
+    drivetrain: "AWD", slots: ["primary", "roof", "rear"],
+    perk: "Drift King", perk_desc: "Drifting fills nitro bar 30% faster.",
+    colorHex: 0xecb414
+  },
+  gravel_fang: {
+    id: "gravel_fang", name: "Gravel Fang", class: "Rally",
+    mass: 1200.0, power_kw: 250.0, top_speed: 215.0, accel_0_100: 4.4,
+    health: 900.0, price: 42000, level_req: 7,
+    drivetrain: "AWD", slots: ["primary", "roof", "rear", "passive"],
+    perk: "Gravel Specialist", perk_desc: "No grip loss on dirt and gravel surfaces.",
+    colorHex: 0x24d436
+  },
+  tundra_wolf: {
+    id: "tundra_wolf", name: "Tundra Wolf", class: "Rally",
+    mass: 1300.0, power_kw: 230.0, top_speed: 200.0, accel_0_100: 5.4,
+    health: 1000.0, price: 55000, level_req: 11,
+    drivetrain: "AWD", slots: ["primary", "roof", "rear", "passive"],
+    perk: "Studded", perk_desc: "Snow and ice grip equals asphalt grip.",
+    colorHex: 0xddeeff
+  },
+
+  // --- OFFROAD / MONSTER CLASS ---
+  bulldog_6x6: {
+    id: "bulldog_6x6", name: "Bulldog 6x6", class: "Offroad",
+    mass: 3600.0, power_kw: 260.0, top_speed: 150.0, accel_0_100: 9.0,
+    health: 2200.0, price: 35000, level_req: 5,
+    drivetrain: "6x6", slots: ["primary", "roof", "rear", "passive"],
+    perk: "Battering Ram", perk_desc: "Ramming damage x1.5, takes 30% less ram damage.",
+    colorHex: 0x4a5440
+  },
+  rock_crusher: {
+    id: "rock_crusher", name: "Rock Crusher", class: "Offroad",
+    mass: 2600.0, power_kw: 330.0, top_speed: 170.0, accel_0_100: 6.9,
+    health: 1800.0, price: 60000, level_req: 10,
+    drivetrain: "4x4", slots: ["primary", "roof", "rear", "passive"],
+    perk: "Crawler", perk_desc: "Can climb steep slopes, no penalty in mud.",
+    colorHex: 0xc86420
+  },
+  mud_reaper: {
+    id: "mud_reaper", name: "Mud Reaper", class: "Offroad",
+    mass: 1500.0, power_kw: 280.0, top_speed: 185.0, accel_0_100: 5.6,
+    health: 950.0, price: 48000, level_req: 8,
+    drivetrain: "RWD", slots: ["primary", "roof", "rear"],
+    perk: "Airtime", perk_desc: "Landing from jumps refills nitro.",
+    colorHex: 0x887755
+  },
+  scrap_titan: {
+    id: "scrap_titan", name: "Scrap Titan", class: "Offroad",
+    mass: 4800.0, power_kw: 450.0, top_speed: 140.0, accel_0_100: 8.2,
+    health: 3500.0, price: 110000, level_req: 18,
+    drivetrain: "4x4", slots: ["primary", "roof", "rear", "passive", "side"],
+    perk: "Juggernaut", perk_desc: "Small cars knocked aside, immune to spike strips.",
+    colorHex: 0x555555
+  },
+
+  // --- LUXURY / SUPER CLASS ---
+  aurelia_gt: {
+    id: "aurelia_gt", name: "Aurelia GT", class: "Super",
+    mass: 1600.0, power_kw: 380.0, top_speed: 285.0, accel_0_100: 4.1,
+    health: 750.0, price: 140000, level_req: 22,
+    drivetrain: "RWD", slots: ["primary", "roof", "passive"],
+    perk: "Grand Touring", perk_desc: "Stable at high speed with extra aerodynamic downforce.",
+    colorHex: 0x189bee
+  },
+  noir_phantom: {
+    id: "noir_phantom", name: "Noir Phantom", class: "Super",
+    mass: 2300.0, power_kw: 450.0, top_speed: 270.0, accel_0_100: 4.4,
+    health: 1500.0, price: 220000, level_req: 30,
+    drivetrain: "AWD", slots: ["primary", "roof", "rear", "passive"],
+    perk: "Prestige", perk_desc: "+15% reputation gain from all events.",
+    colorHex: 0x111116
+  },
+  vandal_hyper: {
+    id: "vandal_hyper", name: "Vandal Hyper", class: "Super",
+    mass: 1350.0, power_kw: 700.0, top_speed: 345.0, accel_0_100: 2.7,
+    health: 600.0, price: 380000, level_req: 42,
+    drivetrain: "AWD", slots: ["primary", "roof", "passive"],
+    perk: "Hybrid Boost", perk_desc: "Nitro bar recharges rapidly under hard braking.",
+    colorHex: 0xff0044
+  },
+  gilded_sovereign: {
+    id: "gilded_sovereign", name: "Gilded Sovereign", class: "Super",
+    mass: 3000.0, power_kw: 400.0, top_speed: 240.0, accel_0_100: 5.5,
+    health: 2000.0, price: 520000, level_req: 60,
+    drivetrain: "RWD", slots: ["primary", "roof", "rear", "passive", "side"],
+    perk: "Tax Collector", perk_desc: "+20% cash payout from all races and bounties.",
+    colorHex: 0xd4af37
+  }
+};
+
+const UPGRADE_CATEGORIES = {
+  engine: { name: "Engine", base_factor: 0.12, delta_per_tier: 0.06, desc: "Increases horsepower and top speed." },
+  turbo: { name: "Turbocharger", base_factor: 0.10, delta_per_tier: 0.04, desc: "Improves boost threshold and mid-range torque." },
+  transmission: { name: "Transmission", base_factor: 0.08, delta_per_tier: 0.07, desc: "Reduces shift times from 250ms to 80ms." },
+  brakes: { name: "Brakes", base_factor: 0.07, delta_per_tier: 0.08, desc: "Increases stopping power and reduces thermal fade." },
+  suspension: { name: "Suspension", base_factor: 0.08, delta_per_tier: 0.06, desc: "Improves body roll damping and cornering composure." },
+  tyres: { name: "Tyres", base_factor: 0.09, delta_per_tier: 0.05, desc: "Increases peak friction coefficient and slide grip." },
+  armour: { name: "Armour", base_factor: 0.11, delta_per_tier: 0.10, desc: "Reinforces chassis hit points and collision resistance." },
+  nitro: { name: "Nitro Tank", base_factor: 0.06, delta_per_tier: 0.20, desc: "Expands nitro capacity and accelerates recharge rate." },
+  cooling: { name: "Cooling System", base_factor: 0.05, delta_per_tier: 0.15, desc: "Dissipates weapon heat and prevents jamming." },
+  weight_reduction: { name: "Weight Reduction", base_factor: 0.10, delta_per_tier: -0.03, desc: "Saves weight for faster acceleration and agility." }
+};
+
+const DRIVERS = {
+  hex: { id: "hex", name: "Hex", title: "The Mechanic", perk: "-15% repair & refuel costs." },
+  duster: { id: "duster", name: "Duster", title: "The Daredevil", perk: "Jumps instantly replenish 25% nitro." },
+  kestrel: { id: "kestrel", name: "Kestrel", title: "The Gunner", perk: "+10% weapon damage across all slots." },
+  rook: { id: "rook", name: "Rook", title: "The Tank", perk: "+10% total armour integrity." },
+  vee: { id: "vee", name: "Vee", title: "The Ace", perk: "+8% tire grip on all surfaces." },
+  maddox: { id: "maddox", name: "Maddox", title: "The Scavenger", perk: "+20% cash and pickup rewards." }
+};
+
+function calculateUpgradeCost(basePrice, category, tier) {
+  const cat = UPGRADE_CATEGORIES[category] || { base_factor: 0.08 };
+  const tierMultipliers = [0.05, 0.09, 0.15, 0.25, 0.40];
+  const mult = tierMultipliers[Math.max(0, Math.min(4, tier - 1))];
+  const effBase = Math.max(basePrice, 12000);
+  return Math.round(effBase * cat.base_factor * mult * 10.0);
+}
+
+function computeCarStats(carId, upgrades = {}) {
+  const base = CAR_RECIPES[carId] || CAR_RECIPES.sprinter_r2;
+  let mass = base.mass;
+  let power = base.power_kw;
+  let topSpeed = base.top_speed;
+  let health = base.health;
+
+  for (let cat of Object.keys(upgrades)) {
+    const tier = upgrades[cat] || 0;
+    if (tier <= 0) continue;
+    const info = UPGRADE_CATEGORIES[cat];
+    if (!info) continue;
+    const delta = info.delta_per_tier;
+    if (cat === 'engine') {
+      power *= (1.0 + delta * tier);
+      topSpeed *= (1.0 + delta * 0.5 * tier);
+    } else if (cat === 'armour') {
+      health *= (1.0 + delta * tier);
+    } else if (cat === 'weight_reduction') {
+      mass *= (1.0 + delta * tier);
+    }
+  }
+
+  const ratingScore = (power * 0.4) + (health * 0.15) + (topSpeed * 0.35) - (mass * 0.05);
+  let classRating = "D";
+  if (ratingScore > 320) classRating = "S";
+  else if (ratingScore > 240) classRating = "A";
+  else if (ratingScore > 180) classRating = "B";
+  else if (ratingScore > 130) classRating = "C";
+
+  return {
+    mass: Math.round(mass),
+    power_kw: Math.round(power),
+    top_speed: Math.round(topSpeed),
+    health: Math.round(health),
+    rating_score: Math.round(ratingScore),
+    class_rating: classRating
+  };
+}
+
+
+// ============================================================================
+// MODULE: ECONOMY.JS
+// ============================================================================
+// web/economy.js
+// Versioned Save System, In-Memory Fallback, Currency & Economy Transactions
+
+class SaveManager {
+  constructor() {
+    this.SAVE_KEY = "gridlethal_save";
+    this.SAVE_VERSION = 1;
+    this.currentSlot = 1;
+    this.memorySaves = {};
+    this.state = this.loadSlot(1);
+  }
+
+  getDefaultState() {
+    return {
+      save_version: this.SAVE_VERSION,
+      player_name: "RYuK006",
+      player_level: 1,
+      player_xp: 0,
+      cash: 25000,
+      gold: 50,
+      scrap: 150,
+      selected_car: "sprinter_r2",
+      selected_driver: "hex",
+      owned_cars: {
+        sprinter_r2: {
+          paint_color: "#ee1808",
+          finish: "metallic",
+          rim_style: "spoke_5",
+          upgrades: {
+            engine: 0, turbo: 0, transmission: 0, brakes: 0,
+            suspension: 0, tyres: 0, armour: 0, nitro: 0,
+            cooling: 0, weight_reduction: 0
+          },
+          equipped_weapons: {
+            primary: "twin_mg",
+            roof: "rocket_pod",
+            rear: "mine_dropper",
+            passive: "armour_plating"
+          }
+        }
+      },
+      unlocked_weapons: ["twin_mg", "heavy_mg", "rocket_pod", "mine_dropper", "armour_plating"],
+      completed_races: [],
+      achievements: []
+    };
+  }
+
+  loadSlot(slot = 1) {
+    this.currentSlot = slot;
+    try {
+      const raw = localStorage.getItem(`${this.SAVE_KEY}_slot${slot}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return this.sanitize(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("localStorage read failed, falling back to memory:", e.message);
+    }
+
+    if (this.memorySaves[slot]) return this.memorySaves[slot];
+    const def = this.getDefaultState();
+    this.memorySaves[slot] = def;
+    return def;
+  }
+
+  saveSlot(slot = this.currentSlot) {
+    this.memorySaves[slot] = JSON.parse(JSON.stringify(this.state));
+    try {
+      localStorage.setItem(`${this.SAVE_KEY}_slot${slot}`, JSON.stringify(this.state));
+      return true;
+    } catch (e) {
+      console.warn("localStorage write failed, persistent in memory:", e.message);
+      return false;
+    }
+  }
+
+  sanitize(data) {
+    const def = this.getDefaultState();
+    for (let k of Object.keys(def)) {
+      if (data[k] === undefined) data[k] = def[k];
+    }
+    data.save_version = this.SAVE_VERSION;
+    return data;
+  }
+
+  exportBase64() {
+    try {
+      const str = JSON.stringify(this.state);
+      return btoa(str);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  importBase64(b64) {
+    try {
+      const str = atob(b64);
+      const data = JSON.parse(str);
+      if (data && typeof data === 'object') {
+        this.state = this.sanitize(data);
+        this.saveSlot(this.currentSlot);
+        return true;
+      }
+    } catch (e) {
+      console.error("Save import error:", e);
+    }
+    return false;
+  }
+
+  canAfford(amount) {
+    return (this.state.cash || 0) >= amount;
+  }
+
+  buyCar(carId) {
+    const car = CAR_RECIPES[carId];
+    if (!car || this.state.owned_cars[carId]) return false;
+    if (!this.canAfford(car.price)) return false;
+
+    this.state.cash -= car.price;
+    this.state.owned_cars[carId] = {
+      paint_color: car.colorHex ? `#${car.colorHex.toString(16).padStart(6, '0')}` : "#ff6600",
+      finish: "metallic",
+      rim_style: "default",
+      upgrades: {
+        engine: 0, turbo: 0, transmission: 0, brakes: 0,
+        suspension: 0, tyres: 0, armour: 0, nitro: 0,
+        cooling: 0, weight_reduction: 0
+      },
+      equipped_weapons: {
+        primary: "twin_mg",
+        roof: "rocket_pod",
+        rear: "mine_dropper",
+        passive: "armour_plating"
+      }
+    };
+    this.state.selected_car = carId;
+    this.saveSlot();
+    return true;
+  }
+
+  selectCar(carId) {
+    if (this.state.owned_cars[carId]) {
+      this.state.selected_car = carId;
+      this.saveSlot();
+      return true;
+    }
+    return false;
+  }
+
+  buyUpgrade(carId, category) {
+    if (!this.state.owned_cars[carId]) return false;
+    const carData = CAR_RECIPES[carId];
+    const carSave = this.state.owned_cars[carId];
+    const currentTier = carSave.upgrades[category] || 0;
+    if (currentTier >= 5) return false;
+
+    const cost = calculateUpgradeCost(carData.price, category, currentTier + 1);
+    if (!this.canAfford(cost)) return false;
+
+    this.state.cash -= cost;
+    carSave.upgrades[category] = currentTier + 1;
+    this.saveSlot();
+    return true;
+  }
+
+  selectDriver(driverId) {
+    if (DRIVERS[driverId]) {
+      this.state.selected_driver = driverId;
+      this.saveSlot();
+      return true;
+    }
+    return false;
+  }
+}
+
+
+// ============================================================================
+// MODULE: WEAPONS.JS
+// ============================================================================
+// web/weapons.js
+// Stage 3 Vehicular Combat Arsenal: 10 Weapons & Vehicle Weapon System
+
+const WEAPONS = {
+  // --- PRIMARY FRONT WEAPONS ---
+  twin_mg: {
+    id: "twin_mg",
+    name: "Twin MG",
+    slot: "primary",
+    damage: 12.0,
+    fireRate: 12.5, // 0.08s cooldown
+    range: 120.0,
+    velocity: 340.0,
+    heatPerShot: 0.012,
+    maxAmmo: 999, // Infinite for player in Stage 3
+    isBallistic: false,
+    description: "Rapid-fire twin kinetic machine guns mounted on front quarter panels."
+  },
+  heavy_mg: {
+    id: "heavy_mg",
+    name: "Heavy MG",
+    slot: "primary",
+    damage: 26.0,
+    fireRate: 6.5,
+    range: 150.0,
+    velocity: 380.0,
+    heatPerShot: 0.024,
+    maxAmmo: 300,
+    isBallistic: false,
+    description: "High-calibre armour-piercing rounds with heavy kinetic impact."
+  },
+  shotgun_cannon: {
+    id: "shotgun_cannon",
+    name: "Shotgun Cannon",
+    slot: "primary",
+    damage: 9.0, // per pellet (8 pellets = 72 dmg)
+    pellets: 8,
+    fireRate: 1.8,
+    range: 50.0,
+    velocity: 280.0,
+    spreadAngle: 0.14,
+    heatPerShot: 0.08,
+    maxAmmo: 45,
+    isBallistic: false,
+    description: "8-pellet buckshot blast devastating in close bumper-to-bumper combat."
+  },
+
+  // --- ROOF WEAPONS ---
+  rocket_pod: {
+    id: "rocket_pod",
+    name: "Rocket Pod",
+    slot: "roof",
+    damage: 48.0,
+    blastRadius: 5.5,
+    fireRate: 1.25, // 0.8s cooldown
+    velocity: 160.0,
+    range: 160.0,
+    salvoCount: 1,
+    maxAmmo: 18,
+    isHoming: false,
+    description: "High-velocity unguided ballistic rockets with explosive blast radius."
+  },
+  homing_missile: {
+    id: "homing_missile",
+    name: "Homing Missile",
+    slot: "roof",
+    damage: 85.0,
+    blastRadius: 6.5,
+    fireRate: 0.75, // 1.33s cooldown
+    velocity: 130.0,
+    range: 180.0,
+    turnRate: 6.0, // rad/s
+    lockAngle: 0.61, // ~35 degrees
+    maxAmmo: 6,
+    isHoming: true,
+    description: "Laser-guided tracking missile with terminal seeking and devastating splash."
+  },
+
+  // --- REAR WEAPONS ---
+  mine_dropper: {
+    id: "mine_dropper",
+    name: "Mine Dropper",
+    slot: "rear",
+    damage: 120.0,
+    blastRadius: 6.0,
+    armDelay: 0.8,
+    triggerRadius: 3.5,
+    fireRate: 0.65,
+    maxAmmo: 6,
+    impulse: 18000.0,
+    description: "Magnetic proximity contact mines that launch tailgating rivals airborne."
+  },
+  oil_slick: {
+    id: "oil_slick",
+    name: "Oil Slick",
+    slot: "rear",
+    damage: 0.0,
+    duration: 12.0,
+    triggerRadius: 3.2,
+    slipMu: 0.20,
+    slipDuration: 4.0,
+    fireRate: 0.5,
+    maxAmmo: 4,
+    description: "Viscous synthetic lubricant puddle that induces severe loss of control."
+  },
+
+  // --- PASSIVE WEAPONS ---
+  ram_plate: {
+    id: "ram_plate",
+    name: "Ram Plate",
+    slot: "passive",
+    collisionDmgMult: 2.4,
+    selfDamageReduction: 0.60,
+    description: "Reinforced front-end cow-catcher doubling ramming damage while reducing self damage."
+  },
+  armour_plating: {
+    id: "armour_plating",
+    name: "Armour Plating",
+    slot: "passive",
+    bonusHealth: 250.0,
+    damageResistance: 0.25,
+    description: "Hardened composite panels granting +250 HP and 25% damage mitigation."
+  },
+  countermeasures: {
+    id: "countermeasures",
+    name: "Countermeasures",
+    slot: "passive",
+    cooldown: 8.0,
+    range: 30.0,
+    description: "Automated flare decoys disrupting incoming homing missile guidance."
+  }
+};
+
+class WeaponSystem {
+  constructor(vehicle) {
+    this.vehicle = vehicle;
+    this.primaryWeapon = WEAPONS.twin_mg;
+    this.roofWeapon = WEAPONS.rocket_pod;
+    this.rearWeapon = WEAPONS.mine_dropper;
+    this.passiveWeapon = WEAPONS.armour_plating;
+
+    this.primaryCooldown = 0;
+    this.roofCooldown = 0;
+    this.rearCooldown = 0;
+    this.heat = 0;
+    this.isOverheated = false;
+
+    this.primaryAmmo = this.primaryWeapon.maxAmmo;
+    this.roofAmmo = 6;
+    this.rearAmmo = 3;
+
+    this.currentTarget = null;
+    this.targetDist = 0;
+  }
+
+  update(dt, enemyCars = []) {
+    if (this.primaryCooldown > 0) this.primaryCooldown -= dt;
+    if (this.roofCooldown > 0) this.roofCooldown -= dt;
+    if (this.rearCooldown > 0) this.rearCooldown -= dt;
+
+    // Heat dissipation
+    if (this.heat > 0) {
+      this.heat = Math.max(0, this.heat - dt * 0.35);
+      if (this.isOverheated && this.heat < 0.25) this.isOverheated = false;
+    }
+
+    // Auto-aim target acquisition in forward cone
+    this.currentTarget = null;
+    this.targetDist = 999;
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.vehicle.quaternion);
+
+    for (let enemy of enemyCars) {
+      if (enemy === this.vehicle || enemy.isWrecked) continue;
+      const toEnemy = enemy.position.clone().sub(this.vehicle.position);
+      const dist = toEnemy.length();
+      if (dist < 130.0) {
+        toEnemy.normalize();
+        const angle = forward.angleTo(toEnemy);
+        if (angle < (this.roofWeapon.lockAngle || 0.61)) {
+          if (dist < this.targetDist) {
+            this.targetDist = dist;
+            this.currentTarget = enemy;
+          }
+        }
+      }
+    }
+  }
+
+  canFirePrimary() {
+    return this.primaryCooldown <= 0 && !this.isOverheated && this.primaryAmmo > 0 && !this.vehicle.isWrecked;
+  }
+
+  canFireRoof() {
+    return this.roofCooldown <= 0 && this.roofAmmo > 0 && !this.vehicle.isWrecked;
+  }
+
+  canFireRear() {
+    return this.rearCooldown <= 0 && this.rearAmmo > 0 && !this.vehicle.isWrecked;
+  }
+}
+
+
+// ============================================================================
 // MODULE: VEHICLES.JS
 // ============================================================================
 // web/vehicles.js
@@ -910,211 +1544,6 @@ function buildProceduralSprinterMesh(car) {
     group.add(wGroup);
   }
   return group;
-}
-
-
-// ============================================================================
-// MODULE: WEAPONS.JS
-// ============================================================================
-// web/weapons.js
-// Stage 3 Vehicular Combat Arsenal: 10 Weapons & Vehicle Weapon System
-
-const WEAPONS = {
-  // --- PRIMARY FRONT WEAPONS ---
-  twin_mg: {
-    id: "twin_mg",
-    name: "Twin MG",
-    slot: "primary",
-    damage: 12.0,
-    fireRate: 12.5, // 0.08s cooldown
-    range: 120.0,
-    velocity: 340.0,
-    heatPerShot: 0.012,
-    maxAmmo: 999, // Infinite for player in Stage 3
-    isBallistic: false,
-    description: "Rapid-fire twin kinetic machine guns mounted on front quarter panels."
-  },
-  heavy_mg: {
-    id: "heavy_mg",
-    name: "Heavy MG",
-    slot: "primary",
-    damage: 26.0,
-    fireRate: 6.5,
-    range: 150.0,
-    velocity: 380.0,
-    heatPerShot: 0.024,
-    maxAmmo: 300,
-    isBallistic: false,
-    description: "High-calibre armour-piercing rounds with heavy kinetic impact."
-  },
-  shotgun_cannon: {
-    id: "shotgun_cannon",
-    name: "Shotgun Cannon",
-    slot: "primary",
-    damage: 9.0, // per pellet (8 pellets = 72 dmg)
-    pellets: 8,
-    fireRate: 1.8,
-    range: 50.0,
-    velocity: 280.0,
-    spreadAngle: 0.14,
-    heatPerShot: 0.08,
-    maxAmmo: 45,
-    isBallistic: false,
-    description: "8-pellet buckshot blast devastating in close bumper-to-bumper combat."
-  },
-
-  // --- ROOF WEAPONS ---
-  rocket_pod: {
-    id: "rocket_pod",
-    name: "Rocket Pod",
-    slot: "roof",
-    damage: 48.0,
-    blastRadius: 5.5,
-    fireRate: 1.25, // 0.8s cooldown
-    velocity: 160.0,
-    range: 160.0,
-    salvoCount: 1,
-    maxAmmo: 18,
-    isHoming: false,
-    description: "High-velocity unguided ballistic rockets with explosive blast radius."
-  },
-  homing_missile: {
-    id: "homing_missile",
-    name: "Homing Missile",
-    slot: "roof",
-    damage: 85.0,
-    blastRadius: 6.5,
-    fireRate: 0.75, // 1.33s cooldown
-    velocity: 130.0,
-    range: 180.0,
-    turnRate: 6.0, // rad/s
-    lockAngle: 0.61, // ~35 degrees
-    maxAmmo: 6,
-    isHoming: true,
-    description: "Laser-guided tracking missile with terminal seeking and devastating splash."
-  },
-
-  // --- REAR WEAPONS ---
-  mine_dropper: {
-    id: "mine_dropper",
-    name: "Mine Dropper",
-    slot: "rear",
-    damage: 120.0,
-    blastRadius: 6.0,
-    armDelay: 0.8,
-    triggerRadius: 3.5,
-    fireRate: 0.65,
-    maxAmmo: 6,
-    impulse: 18000.0,
-    description: "Magnetic proximity contact mines that launch tailgating rivals airborne."
-  },
-  oil_slick: {
-    id: "oil_slick",
-    name: "Oil Slick",
-    slot: "rear",
-    damage: 0.0,
-    duration: 12.0,
-    triggerRadius: 3.2,
-    slipMu: 0.20,
-    slipDuration: 4.0,
-    fireRate: 0.5,
-    maxAmmo: 4,
-    description: "Viscous synthetic lubricant puddle that induces severe loss of control."
-  },
-
-  // --- PASSIVE WEAPONS ---
-  ram_plate: {
-    id: "ram_plate",
-    name: "Ram Plate",
-    slot: "passive",
-    collisionDmgMult: 2.4,
-    selfDamageReduction: 0.60,
-    description: "Reinforced front-end cow-catcher doubling ramming damage while reducing self damage."
-  },
-  armour_plating: {
-    id: "armour_plating",
-    name: "Armour Plating",
-    slot: "passive",
-    bonusHealth: 250.0,
-    damageResistance: 0.25,
-    description: "Hardened composite panels granting +250 HP and 25% damage mitigation."
-  },
-  countermeasures: {
-    id: "countermeasures",
-    name: "Countermeasures",
-    slot: "passive",
-    cooldown: 8.0,
-    range: 30.0,
-    description: "Automated flare decoys disrupting incoming homing missile guidance."
-  }
-};
-
-class WeaponSystem {
-  constructor(vehicle) {
-    this.vehicle = vehicle;
-    this.primaryWeapon = WEAPONS.twin_mg;
-    this.roofWeapon = WEAPONS.rocket_pod;
-    this.rearWeapon = WEAPONS.mine_dropper;
-    this.passiveWeapon = WEAPONS.armour_plating;
-
-    this.primaryCooldown = 0;
-    this.roofCooldown = 0;
-    this.rearCooldown = 0;
-    this.heat = 0;
-    this.isOverheated = false;
-
-    this.primaryAmmo = this.primaryWeapon.maxAmmo;
-    this.roofAmmo = 6;
-    this.rearAmmo = 3;
-
-    this.currentTarget = null;
-    this.targetDist = 0;
-  }
-
-  update(dt, enemyCars = []) {
-    if (this.primaryCooldown > 0) this.primaryCooldown -= dt;
-    if (this.roofCooldown > 0) this.roofCooldown -= dt;
-    if (this.rearCooldown > 0) this.rearCooldown -= dt;
-
-    // Heat dissipation
-    if (this.heat > 0) {
-      this.heat = Math.max(0, this.heat - dt * 0.35);
-      if (this.isOverheated && this.heat < 0.25) this.isOverheated = false;
-    }
-
-    // Auto-aim target acquisition in forward cone
-    this.currentTarget = null;
-    this.targetDist = 999;
-    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.vehicle.quaternion);
-
-    for (let enemy of enemyCars) {
-      if (enemy === this.vehicle || enemy.isWrecked) continue;
-      const toEnemy = enemy.position.clone().sub(this.vehicle.position);
-      const dist = toEnemy.length();
-      if (dist < 130.0) {
-        toEnemy.normalize();
-        const angle = forward.angleTo(toEnemy);
-        if (angle < (this.roofWeapon.lockAngle || 0.61)) {
-          if (dist < this.targetDist) {
-            this.targetDist = dist;
-            this.currentTarget = enemy;
-          }
-        }
-      }
-    }
-  }
-
-  canFirePrimary() {
-    return this.primaryCooldown <= 0 && !this.isOverheated && this.primaryAmmo > 0 && !this.vehicle.isWrecked;
-  }
-
-  canFireRoof() {
-    return this.roofCooldown <= 0 && this.roofAmmo > 0 && !this.vehicle.isWrecked;
-  }
-
-  canFireRear() {
-    return this.rearCooldown <= 0 && this.rearAmmo > 0 && !this.vehicle.isWrecked;
-  }
 }
 
 
@@ -1823,6 +2252,321 @@ function fmtTime(sec) {
 
 
 // ============================================================================
+// MODULE: GARAGE.JS
+// ============================================================================
+// web/garage.js
+// 3D Garage Hub Controller, Turntable Visuals, Customization & Economy UI
+
+class GarageController {
+  constructor(scene, saveManager) {
+    this.scene = scene;
+    this.saveManager = saveManager;
+    this.activeTab = "showroom";
+    this.previewCarId = this.saveManager.state.selected_car;
+
+    // Turntable platform mesh
+    this.turntableGroup = new THREE.Group();
+    const ttGeo = new THREE.CylinderGeometry(4.2, 4.4, 0.35, 32);
+    const ttMat = new THREE.MeshStandardMaterial({ color: 0x22242a, metalness: 0.85, roughness: 0.25 });
+    const ttMesh = new THREE.Mesh(ttGeo, ttMat);
+    ttMesh.position.y = -0.175;
+    ttMesh.receiveShadow = true;
+    this.turntableGroup.add(ttMesh);
+
+    // Neon edge ring
+    const ringGeo = new THREE.TorusGeometry(4.3, 0.05, 8, 32).rotateX(Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.position.y = 0.02;
+    this.turntableGroup.add(ringMesh);
+
+    this.scene.add(this.turntableGroup);
+    this.turntableAngle = 0;
+  }
+
+  update(dt) {
+    this.turntableAngle += dt * 0.4;
+    this.turntableGroup.rotation.y = this.turntableAngle;
+  }
+
+  openGarageUI() {
+    const el = document.getElementById('garage-modal');
+    if (!el) return;
+    el.style.display = 'flex';
+    this.renderHeader();
+    this.renderTab(this.activeTab);
+  }
+
+  closeGarageUI() {
+    const el = document.getElementById('garage-modal');
+    if (el) el.style.display = 'none';
+  }
+
+  renderHeader() {
+    const s = this.saveManager.state;
+    const stats = computeCarStats(s.selected_car, (s.owned_cars[s.selected_car] || {}).upgrades || {});
+
+    document.getElementById('garage-cash').innerText = `${s.cash.toLocaleString()}`;
+    document.getElementById('garage-gold').innerText = `${s.gold} GOLD`;
+    document.getElementById('garage-car-name').innerText = (CAR_RECIPES[s.selected_car] || {}).name || "Sprinter R2";
+    document.getElementById('garage-class-badge').innerText = `CLASS ${stats.class_rating}`;
+  }
+
+  setTab(tab) {
+    this.activeTab = tab;
+    document.querySelectorAll('.g-tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    this.renderTab(tab);
+  }
+
+  renderTab(tab) {
+    const content = document.getElementById('garage-tab-content');
+    if (!content) return;
+    content.innerHTML = "";
+
+    if (tab === "showroom") {
+      this.renderShowroom(content);
+    } else if (tab === "upgrades") {
+      this.renderUpgrades(content);
+    } else if (tab === "customise") {
+      this.renderCustomise(content);
+    } else if (tab === "weapons") {
+      this.renderWeapons(content);
+    } else if (tab === "driver") {
+      this.renderDriver(content);
+    } else if (tab === "profile") {
+      this.renderProfile(content);
+    }
+  }
+
+  renderShowroom(container) {
+    const s = this.saveManager.state;
+    let html = `<div class="g-car-grid">`;
+
+    for (let carId of Object.keys(CAR_RECIPES)) {
+      const car = CAR_RECIPES[carId];
+      const isOwned = !!s.owned_cars[carId];
+      const isSelected = s.selected_car === carId;
+      const stats = computeCarStats(carId, (s.owned_cars[carId] || {}).upgrades || {});
+
+      html += `
+        <div class="g-car-card ${isSelected ? 'selected' : ''}">
+          <div class="g-card-header">
+            <strong>${car.name}</strong>
+            <span class="g-badge">${car.class}</span>
+          </div>
+          <div class="g-stats-mini">
+            <div>PWR: ${stats.power_kw} kW</div>
+            <div>TOP: ${stats.top_speed} km/h</div>
+            <div>ARMOUR: ${stats.health}</div>
+            <div>MASS: ${stats.mass} kg</div>
+          </div>
+          <div class="g-perk-text"><em>Perk: ${car.perk}</em></div>
+          <div class="g-action-bar">
+            ${isSelected ? '<button class="btn-sm active">ACTIVE</button>' :
+              isOwned ? `<button class="btn-sm" onclick="window.garage.selectCar('${carId}')">SELECT</button>` :
+              `<button class="btn-sm buy" onclick="window.garage.buyCar('${carId}')">BUY ${car.price.toLocaleString()}</button>`}
+          </div>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  renderUpgrades(container) {
+    const s = this.saveManager.state;
+    const carId = s.selected_car;
+    const carData = CAR_RECIPES[carId];
+    const carSave = s.owned_cars[carId] || { upgrades: {} };
+
+    let html = `<div class="g-upgrades-list">`;
+    for (let catId of Object.keys(UPGRADE_CATEGORIES)) {
+      const cat = UPGRADE_CATEGORIES[catId];
+      const tier = carSave.upgrades[catId] || 0;
+      const nextTier = tier + 1;
+      const cost = calculateUpgradeCost(carData.price, catId, nextTier);
+      const isMax = tier >= 5;
+
+      html += `
+        <div class="g-upgrade-row">
+          <div class="g-upg-info">
+            <strong>${cat.name}</strong> <span class="g-tier-tag">TIER ${tier} / 5</span>
+            <div class="g-upg-desc">${cat.desc}</div>
+          </div>
+          <div class="g-upg-action">
+            ${isMax ? '<span class="max-badge">MAXED</span>' :
+              `<button class="btn-sm buy" onclick="window.garage.buyUpgrade('${catId}')">UPGRADE TIER ${nextTier} (${cost.toLocaleString()})</button>`}
+          </div>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  renderCustomise(container) {
+    const s = this.saveManager.state;
+    const carSave = s.owned_cars[s.selected_car];
+    const currentColor = carSave.paint_color || "#ee1808";
+
+    container.innerHTML = `
+      <div class="g-customise-panel">
+        <h3>VEHICLE PAINT & FINISH</h3>
+        <div class="g-color-row">
+          <label>Primary Paint:</label>
+          <input type="color" id="paint-picker" value="${currentColor}" onchange="window.garage.updatePaint(this.value)">
+        </div>
+        <div class="g-finish-row">
+          <label>Finish Quality:</label>
+          <select id="finish-select" onchange="window.garage.updateFinish(this.value)">
+            <option value="gloss" ${carSave.finish==='gloss'?'selected':''}>High Gloss</option>
+            <option value="metallic" ${carSave.finish==='metallic'?'selected':''}>Metallic Clearcoat</option>
+            <option value="pearl" ${carSave.finish==='pearl'?'selected':''}>Pearlescent Shift</option>
+            <option value="matte" ${carSave.finish==='matte'?'selected':''}>Matte Tactical</option>
+            <option value="chrome" ${carSave.finish==='chrome'?'selected':''}>Mirrored Chrome</option>
+            <option value="primer" ${carSave.finish==='primer'?'selected':''}>Rusty Primer</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
+
+  renderWeapons(container) {
+    const s = this.saveManager.state;
+    const carSave = s.owned_cars[s.selected_car];
+    const equipped = carSave.equipped_weapons || {};
+
+    let html = `<div class="g-weapons-bay">`;
+    html += `<h3>EQUIPPED WEAPON SLOTS</h3>`;
+    for (let slot of ['primary', 'roof', 'rear', 'passive']) {
+      const wepId = equipped[slot];
+      const wep = WEAPONS[wepId] || { name: "Empty Slot", description: "No weapon equipped" };
+      html += `
+        <div class="g-weapon-slot-row">
+          <div class="w-slot-label">${slot.toUpperCase()}</div>
+          <div class="w-slot-details">
+            <strong>${wep.name}</strong>
+            <p>${wep.description}</p>
+          </div>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  renderDriver(container) {
+    const s = this.saveManager.state;
+    let html = `<div class="g-driver-grid">`;
+    for (let dId of Object.keys(DRIVERS)) {
+      const drv = DRIVERS[dId];
+      const isSel = s.selected_driver === dId;
+      html += `
+        <div class="g-driver-card ${isSel ? 'selected' : ''}">
+          <div class="d-avatar">${drv.name[0]}</div>
+          <strong>${drv.name}</strong>
+          <div class="d-title">${drv.title}</div>
+          <div class="d-perk">${drv.perk}</div>
+          <button class="btn-sm ${isSel ? 'active' : ''}" onclick="window.garage.selectDriver('${dId}')">
+            ${isSel ? 'SELECTED' : 'HIRE / SELECT'}
+          </button>
+        </div>
+      `;
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+
+  renderProfile(container) {
+    const s = this.saveManager.state;
+    const b64 = this.saveManager.exportBase64();
+
+    container.innerHTML = `
+      <div class="g-profile-panel">
+        <h3>PROFILE & SAVE SLOTS</h3>
+        <div class="g-slot-buttons">
+          <button class="btn-sm ${this.saveManager.currentSlot===1?'active':''}" onclick="window.garage.switchSlot(1)">Slot 1</button>
+          <button class="btn-sm ${this.saveManager.currentSlot===2?'active':''}" onclick="window.garage.switchSlot(2)">Slot 2</button>
+          <button class="btn-sm ${this.saveManager.currentSlot===3?'active':''}" onclick="window.garage.switchSlot(3)">Slot 3</button>
+        </div>
+        <h4 style="margin-top:16px;">EXPORT SAVE CODE:</h4>
+        <textarea readonly style="width:100%; height:60px; background:#111; color:#0f0; font-family:monospace; font-size:11px;">${b64}</textarea>
+        <h4 style="margin-top:14px;">IMPORT SAVE CODE:</h4>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="import-code-box" placeholder="Paste base64 save code here..." style="flex:1; background:#111; color:#fff; border:1px solid #444; padding:6px;">
+          <button class="btn-sm buy" onclick="window.garage.importSave()">IMPORT</button>
+        </div>
+      </div>
+    `;
+  }
+
+  buyCar(carId) {
+    if (this.saveManager.buyCar(carId)) {
+      this.renderHeader();
+      this.renderTab(this.activeTab);
+      if (window.addBattleFeed) window.addBattleFeed(`PURCHASED ${CAR_RECIPES[carId].name}!`);
+    } else {
+      alert("Insufficient Cash or Level Locked!");
+    }
+  }
+
+  selectCar(carId) {
+    if (this.saveManager.selectCar(carId)) {
+      this.renderHeader();
+      this.renderTab(this.activeTab);
+    }
+  }
+
+  buyUpgrade(category) {
+    if (this.saveManager.buyUpgrade(this.saveManager.state.selected_car, category)) {
+      this.renderHeader();
+      this.renderTab(this.activeTab);
+    } else {
+      alert("Insufficient Funds or Max Tier Reached!");
+    }
+  }
+
+  selectDriver(driverId) {
+    if (this.saveManager.selectDriver(driverId)) {
+      this.renderHeader();
+      this.renderTab(this.activeTab);
+    }
+  }
+
+  updatePaint(colorHex) {
+    const s = this.saveManager.state;
+    s.owned_cars[s.selected_car].paint_color = colorHex;
+    this.saveManager.saveSlot();
+  }
+
+  updateFinish(finish) {
+    const s = this.saveManager.state;
+    s.owned_cars[s.selected_car].finish = finish;
+    this.saveManager.saveSlot();
+  }
+
+  switchSlot(slot) {
+    this.saveManager.loadSlot(slot);
+    this.renderHeader();
+    this.renderTab(this.activeTab);
+  }
+
+  importSave() {
+    const box = document.getElementById('import-code-box');
+    if (box && this.saveManager.importBase64(box.value.trim())) {
+      this.renderHeader();
+      this.renderTab(this.activeTab);
+      alert("Save profile imported successfully!");
+    } else {
+      alert("Invalid save code!");
+    }
+  }
+}
+
+
+// ============================================================================
 // MODULE: MAIN.JS
 // ============================================================================
 // web/main.js
@@ -1873,6 +2617,12 @@ scene.add(ground);
 buildTrackRoad(scene);
 
 // Subsystems
+const saveManager = new SaveManager();
+window.saveManager = saveManager;
+
+const garage = new GarageController(scene, saveManager);
+window.garage = garage;
+
 const combatManager = new CombatManager(scene);
 window.spawnExplosion = (pos) => combatManager.spawnExplosion(pos);
 window.spawnSmoke = (pos) => combatManager.spawnSmoke(pos);
@@ -1922,6 +2672,11 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'KeyG') {
+    const gModal = document.getElementById('garage-modal');
+    if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
+    else garage.openGarageUI();
+  }
   if (e.code === 'KeyE' || e.code === 'KeyL') triggerDropMine();
   if (e.code === 'KeyK') triggerFireRocket();
 });
@@ -2107,6 +2862,9 @@ function animate(currentTime) {
     allCars.sort((a, b) => carProgress.get(b).score - carProgress.get(a).score);
   }
 
+  // Turntable & Garage Update
+  garage.update(delta);
+
   // Audio Update
   let maxSlip = 0;
   for (let w of playerCar.wheels) maxSlip = Math.max(maxSlip, Math.abs(w.slipAngle) + Math.abs(w.slipRatio));
@@ -2148,7 +2906,10 @@ window.addEventListener('resize', () => {
 document.getElementById('boot-screen').addEventListener('click', () => {
   audio.init();
   document.getElementById('boot-screen').style.opacity = '0';
-  setTimeout(() => document.getElementById('boot-screen').style.display = 'none', 500);
+  setTimeout(() => {
+    document.getElementById('boot-screen').style.display = 'none';
+    garage.openGarageUI();
+  }, 400);
 });
 
 requestAnimationFrame(animate);
