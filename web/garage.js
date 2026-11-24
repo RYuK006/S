@@ -85,7 +85,38 @@ class GarageController {
       this.renderProfile(content);
     } else if (tab === "achievements") {
       this.renderAchievements(content);
+    } else if (tab === "multiplayer") {
+      this.renderMultiplayer(content);
     }
+  }
+
+  renderMultiplayer(container) {
+    const net = window.netManager;
+    const peerId = net ? net.peerId : "OFFLINE";
+    const peerCount = net ? net.connectedPeers.size : 0;
+    const wsConnected = net && net.ws && net.ws.readyState === WebSocket.OPEN;
+
+    container.innerHTML = `
+      <div style="background:#131720; border:1px solid #2a3242; border-radius:6px; padding:18px; max-width:600px; margin:0 auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:14px;">
+          <strong style="color:#00e5ff; font-size:18px; letter-spacing:1px;">MULTIPLAYER LOBBY</strong>
+          <span class="g-badge" style="background:#00cc66;">NETWORK ACTIVE</span>
+        </div>
+        <div style="font-size:13px; color:#ccc; line-height:1.8;">
+          <div><strong>PILOT CALLSIGN:</strong> <span style="color:#ffaa00; font-family:monospace;">${peerId}</span></div>
+          <div><strong>LOCAL MULTI-TAB SYNC:</strong> <span style="color:#00ff88;">BROADCASTCHANNEL ACTIVE</span></div>
+          <div><strong>CONNECTED PEERS:</strong> <span style="color:#00e5ff; font-weight:bold;">${peerCount} Pilots in Circuit</span></div>
+          <div><strong>DEDICATED RELAY SERVER:</strong> <span style="color:${wsConnected ? '#00ff88' : '#ffaa00'};">${wsConnected ? 'CONNECTED (ws://localhost:8080)' : 'STANDALONE READY (node gridlethal-server.js)'}</span></div>
+        </div>
+        <div style="margin-top:16px; background:#181e28; border:1px solid #333; border-radius:4px; padding:12px; font-size:12px; color:#aaa;">
+          <strong style="color:#ff8800;">HOW TO PLAY LOCAL MULTI-TAB MULTIPLAYER:</strong>
+          <p style="margin-top:4px;">1. Open a second tab or separate browser window with <code>index.html</code>.</p>
+          <p>2. Both tabs automatically connect via 24-byte binary snapshots over <code>BroadcastChannel</code> with zero server setup!</p>
+          <p>3. Drive, drift, and fire weapons in either window—both cars synchronize and damage each other in real-time.</p>
+        </div>
+        <button class="btn-restart" style="width:100%; margin-top:16px;" onclick="window.garage.closeGarageUI()">ENTER MULTIPLAYER CIRCUIT ▶</button>
+      </div>
+    `;
   }
 
   renderAchievements(container) {
