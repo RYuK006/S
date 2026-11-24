@@ -3,6 +3,9 @@
 class_name VehicleController
 extends RigidBody3D
 
+const GameConstants = preload("res://src/core/constants.gd")
+const RaycastWheel = preload("res://src/physics/raycast_wheel.gd")
+
 @export var car_id: String = "sprinter_r2"
 var recipe: Dictionary
 
