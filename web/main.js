@@ -58,6 +58,53 @@ window.spawnSmoke = (pos) => combatManager.spawnSmoke(pos);
 
 const pickupManager = new TrackPickupManager(scene);
 
+const bossController = new BossController(scene);
+window.bossController = bossController;
+
+let currentBiomeGrip = 1.0;
+
+function startCampaignRace(raceConfig) {
+  const bio = BIOMES[raceConfig.region] || BIOMES.dust_bowl;
+  scene.background = new THREE.Color(bio.skyColor);
+  scene.fog.color = new THREE.Color(bio.fogColor);
+  ground.material.color = new THREE.Color(bio.groundColor);
+  hemiLight.color = new THREE.Color(bio.ambientLight);
+  sunLight.color = new THREE.Color(bio.sunColor);
+
+  currentBiomeGrip = bio.surfaceGrip;
+  totalLaps = raceConfig.laps || 3;
+  raceState = "COUNTDOWN";
+  countdownTimer = 3.99;
+
+  // Reset cars to starting grid
+  playerCar.position.set(-3.5, 0.6, -35.0);
+  playerCar.velocity.set(0, 0, 0);
+  playerCar.health = playerCar.maxHealth;
+  playerCar.isWrecked = false;
+
+  for (let i = 0; i < aiCars.length; i++) {
+    const ai = aiCars[i].car;
+    ai.position.copy(aiConfigs[i].pos);
+    ai.velocity.set(0, 0, 0);
+    ai.health = ai.maxHealth;
+    ai.isWrecked = false;
+  }
+
+  // Handle Boss Duel Mode
+  if (raceConfig.mode === "boss_duel") {
+    const bossRival = aiCars[aiCars.length - 1].car;
+    bossController.startBossEncounter(bossRival, raceConfig.boss_name, raceConfig.boss_hp, raceConfig.boss_hp > 8000 ? 4 : 3);
+  } else {
+    bossController.container.style.display = 'none';
+    bossController.isActive = false;
+  }
+
+  if (window.addBattleFeed) {
+    window.addBattleFeed(`LAUNCHING ${raceConfig.name.toUpperCase()} (${raceConfig.mode.toUpperCase()})`);
+  }
+}
+window.startCampaignRace = startCampaignRace;
+
 // Grid Spawn: Player + 5 AI Rivals
 const playerCar = new VehicleController(scene, 0xee1808, false, "Player");
 playerCar.position.set(-3.5, 0.6, -35.0);
@@ -261,6 +308,7 @@ function animate(currentTime) {
   // Update Combat Systems & Pickups
   combatManager.update(delta, allCars);
   pickupManager.update(delta, allCars);
+  bossController.update(delta, playerCar, combatManager);
 
   // Checkpoint & Leaderboard Progression
   if (raceState === "RACING") {
