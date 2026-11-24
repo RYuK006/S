@@ -49,6 +49,12 @@ buildTrackRoad(scene);
 const saveManager = new SaveManager();
 window.saveManager = saveManager;
 
+const progression = new ProgressionManager(saveManager);
+window.progression = progression;
+
+const cheatMenu = new CheatMenuController(saveManager);
+window.cheatMenu = cheatMenu;
+
 const garage = new GarageController(scene, saveManager);
 window.garage = garage;
 
@@ -148,6 +154,7 @@ let mouseRightDown = false;
 window.addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'KeyC') cameraMode = (cameraMode + 1) % 3;
+  if (e.code === 'F4') { e.preventDefault(); cheatMenu.toggle(); }
   if (e.code === 'KeyG') {
     const gModal = document.getElementById('garage-modal');
     if (gModal && gModal.style.display === 'flex') garage.closeGarageUI();
