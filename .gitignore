@@ -1,3 +1,18 @@
+# Godot 4.x
 .godot/
+*.translation
+*.import
+*.uid
+
+# Build outputs
+build/windows/*.pck
+build/windows/*.exe
+build/android/
+build/ios/
+build/screenshots/*.png
+!build/screenshots/.gitkeep
+
+# Temporary & Local
 *.tmp
-gridlethal.zip
+temp_check.js
+user/
