@@ -65,11 +65,11 @@ func _ready():
 
 func _spawn_ai_rivals():
 	var rivals = [
-		{ "id": "dust_viper", "name": "Viktor 'Rotor' Hale", "style": "Aggressive", "pos": Vector3(3.5, 0.8, 12.0), "front": "heavy_cannon", "roof": "swarm_missiles" },
-		{ "id": "gravel_fang", "name": "Mina Cross", "style": "Tactical", "pos": Vector3(-3.5, 0.8, 24.0), "front": "railgun", "roof": "rocket_pod" },
-		{ "id": "dune_reaper", "name": "Dozer Okafor", "style": "Bully", "pos": Vector3(3.5, 0.8, 36.0), "front": "twin_mg", "roof": "mortar" },
-		{ "id": "sand_striker", "name": "Lena Vash", "style": "Drifter", "pos": Vector3(-3.5, 0.8, 48.0), "front": "twin_mg", "roof": "rocket_pod" },
-		{ "id": "phantom_gt", "name": "'Hollow' Pike", "style": "Trickster", "pos": Vector3(3.5, 0.8, 60.0), "front": "autocannon", "roof": "swarm_missiles" }
+		{ "id": "dust_viper", "name": "Viktor 'Rotor' Hale", "style": "Aggressive", "pos": Vector3(3.5, 0.8, 12.0), "front": "heavy_mg", "roof": "homing_missile" },
+		{ "id": "gravel_fang", "name": "Mina Cross", "style": "Tactical", "pos": Vector3(-3.5, 0.8, 24.0), "front": "twin_mg", "roof": "rocket_pod" },
+		{ "id": "dune_reaper", "name": "Dozer Okafor", "style": "Bully", "pos": Vector3(3.5, 0.8, 36.0), "front": "shotgun_cannon", "roof": "rocket_pod" },
+		{ "id": "sand_striker", "name": "Lena Vash", "style": "Drifter", "pos": Vector3(-3.5, 0.8, 48.0), "front": "twin_mg", "roof": "homing_missile" },
+		{ "id": "phantom_gt", "name": "'Hollow' Pike", "style": "Trickster", "pos": Vector3(3.5, 0.8, 60.0), "front": "heavy_mg", "roof": "rocket_pod" }
 	]
 	
 	for r in rivals:
