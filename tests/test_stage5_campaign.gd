@@ -1,9 +1,9 @@
 # tests/test_stage5_campaign.gd
 extends Node
 
-const CampaignData = preload("res://src/campaign/campaign_data.gd")
-const ArsenalExpanded = preload("res://src/weapons/arsenal_expanded.gd")
-const BossManager = preload("res://src/campaign/boss_manager.gd")
+const CampaignData = preload("res://scripts/core/campaign_data.gd")
+const ArsenalExpanded = preload("res://scripts/weapons/arsenal_expanded.gd")
+const BossManager = preload("res://scripts/race/boss_manager.gd")
 
 func _ready():
 	print("\n=======================================================")
