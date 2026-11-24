@@ -32,10 +32,11 @@ var tactical_pitch_deg: float = 65.0
 var is_looking_behind: bool = false
 
 func _ready():
-	camera = Camera3D.new()
-	camera.fov = base_fov
-	camera.current = true
-	add_child(camera)
+	if not camera:
+		camera = Camera3D.new()
+		camera.fov = base_fov
+		camera.current = true
+		add_child(camera)
 
 func _input(event: InputEvent):
 	if event.is_action_pressed("camera_switch"):
@@ -47,7 +48,7 @@ func _input(event: InputEvent):
 		is_looking_behind = false
 
 func _physics_process(delta: float):
-	if not target_vehicle:
+	if not target_vehicle or not is_inside_tree() or not target_vehicle.is_inside_tree():
 		return
 		
 	match current_mode:
