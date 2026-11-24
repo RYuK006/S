@@ -24,6 +24,8 @@ const modules = [
   'boss_controller.js',
   'ai.js',
   'ui.js',
+  'music_sequencer.js',
+  'telemetry.js',
   'net_snapshot.js',
   'net_manager.js',
   'cheat_menu.js',
