@@ -52,6 +52,19 @@ func _generate_pink_noise():
 		b5 = -0.7616 * b5 - white * 0.0168980
 		pink_noise_buffer[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11
 		b6 = white * 0.115926
+	
+	# Zero the DC offset and normalize peak
+	var dc_sum = 0.0
+	for sample in pink_noise_buffer:
+		dc_sum += sample
+	var dc_mean = dc_sum / float(SAMPLE_RATE)
+	var max_peak = 0.0001
+	for i in range(SAMPLE_RATE):
+		pink_noise_buffer[i] -= dc_mean
+		max_peak = max(max_peak, abs(pink_noise_buffer[i]))
+	var scale = 0.85 / max_peak
+	for i in range(SAMPLE_RATE):
+		pink_noise_buffer[i] *= scale
 
 func _setup_audio_generator():
 	audio_stream_player = AudioStreamPlayer.new()
