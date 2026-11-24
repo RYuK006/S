@@ -47,7 +47,8 @@ func setup_race(p_track: SplineTrack, p_player: VehicleController, p_ai_cars: Ar
 	for c in cars:
 		car_progress[c] = {
 			"lap": 1,
-			"next_checkpoint": 0,
+			"next_checkpoint": 1, # First gate to pass after start line is Gate 1
+			"visited_count": 0,
 			"score": 0.0,
 			"is_finished": false,
 			"lap_times": [],
@@ -111,10 +112,12 @@ func _process_racing(delta: float):
 		# Check distance to target gate
 		var d = c.global_position.distance_to(gate.global_position)
 		if d < 14.0: # Checkpoint passed
+			prog.visited_count += 1
 			prog.next_checkpoint = (next_gate_idx + 1) % num_gates
 			
-			# If gate 0 crossed after going through last gate, lap completed
-			if next_gate_idx == 0 and prog.lap <= total_laps:
+			# Lap completes when crossing Gate 0 after completing the circuit gates
+			if next_gate_idx == 0 and prog.visited_count >= (num_gates - 2):
+				prog.visited_count = 0
 				var finished_lap_time = prog.current_lap_timer
 				prog.lap_times.append(finished_lap_time)
 				prog.current_lap_timer = 0.0
