@@ -67,6 +67,28 @@ const pickupManager = new TrackPickupManager(scene);
 const bossController = new BossController(scene);
 window.bossController = bossController;
 
+// Grid Spawn: Player + 5 AI Rivals
+const playerCar = new VehicleController(scene, 0xee1808, false, "Player");
+playerCar.position.set(-3.5, 0.6, -35.0);
+
+const aiConfigs = [
+  { name: "Viktor 'Rotor' Hale", style: "Aggressive", color: 0xf23518, pos: new THREE.Vector3(3.5, 0.6, 15.0) },
+  { name: "Mina Cross", style: "Tactical", color: 0x189bee, pos: new THREE.Vector3(-3.5, 0.6, 5.0) },
+  { name: "Dozer Okafor", style: "Bully", color: 0x24d436, pos: new THREE.Vector3(3.5, 0.6, -5.0) },
+  { name: "Lena Vash", style: "Drifter", color: 0xecb414, pos: new THREE.Vector3(-3.5, 0.6, -15.0) },
+  { name: "'Hollow' Pike", style: "Trickster", color: 0xa828e0, pos: new THREE.Vector3(3.5, 0.6, -25.0) }
+];
+
+const allCars = [playerCar];
+const aiCars = [];
+
+for (let cfg of aiConfigs) {
+  const ai = new VehicleController(scene, cfg.color, true, cfg.name);
+  ai.position.copy(cfg.pos);
+  allCars.push(ai);
+  aiCars.push({ car: ai, cfg: cfg });
+}
+
 const netManager = new NetworkManager(scene, playerCar);
 window.netManager = netManager;
 
@@ -77,6 +99,7 @@ const telemetry = new TelemetryController(renderer, playerCar, combatManager);
 window.telemetry = telemetry;
 
 let currentBiomeGrip = 1.0;
+let cameraMode = 0; // 0 = Chase, 1 = Cockpit, 2 = Tactical
 
 function startCampaignRace(raceConfig) {
   const bio = BIOMES[raceConfig.region] || BIOMES.dust_bowl;
@@ -119,28 +142,6 @@ function startCampaignRace(raceConfig) {
   }
 }
 window.startCampaignRace = startCampaignRace;
-
-// Grid Spawn: Player + 5 AI Rivals
-const playerCar = new VehicleController(scene, 0xee1808, false, "Player");
-playerCar.position.set(-3.5, 0.6, -35.0);
-
-const aiConfigs = [
-  { name: "Viktor 'Rotor' Hale", style: "Aggressive", color: 0xf23518, pos: new THREE.Vector3(3.5, 0.6, 15.0) },
-  { name: "Mina Cross", style: "Tactical", color: 0x189bee, pos: new THREE.Vector3(-3.5, 0.6, 5.0) },
-  { name: "Dozer Okafor", style: "Bully", color: 0x24d436, pos: new THREE.Vector3(3.5, 0.6, -5.0) },
-  { name: "Lena Vash", style: "Drifter", color: 0xecb414, pos: new THREE.Vector3(-3.5, 0.6, -15.0) },
-  { name: "'Hollow' Pike", style: "Trickster", color: 0xa828e0, pos: new THREE.Vector3(3.5, 0.6, -25.0) }
-];
-
-const allCars = [playerCar];
-const aiCars = [];
-
-for (let cfg of aiConfigs) {
-  const ai = new VehicleController(scene, cfg.color, true, cfg.name);
-  ai.position.copy(cfg.pos);
-  allCars.push(ai);
-  aiCars.push({ car: ai, cfg: cfg });
-}
 
 // Race Progression State
 let raceState = "COUNTDOWN"; // COUNTDOWN, RACING, FINISHED
@@ -219,9 +220,7 @@ function triggerDropMine() {
   playerCar.weapons.rearCooldown = 1.5;
 }
 
-// Camera Modes
-let cameraMode = 0; // 0 = Chase, 1 = Cockpit, 2 = Tactical
-
+// Camera Update
 function updateCamera(dt) {
   if (cameraMode === 0) {
     const speedNorm = Math.min(1.0, playerCar.speedKmh / 200.0);
@@ -399,14 +398,39 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Boot Unlocker
-document.getElementById('boot-screen').addEventListener('click', () => {
-  audio.init();
-  document.getElementById('boot-screen').style.opacity = '0';
-  setTimeout(() => {
-    document.getElementById('boot-screen').style.display = 'none';
-    garage.openGarageUI();
-  }, 400);
-});
+// Boot Unlocker & Transition
+const bootScreen = document.getElementById('boot-screen');
+function enterGame() {
+  try {
+    audio.init();
+  } catch (err) {
+    console.warn("Audio initialization notice:", err);
+  }
+  if (bootScreen) {
+    bootScreen.style.opacity = '0';
+    bootScreen.style.pointerEvents = 'none';
+    setTimeout(() => {
+      bootScreen.style.display = 'none';
+      if (window.garage) {
+        try {
+          garage.openGarageUI();
+        } catch (err) {
+          console.error("Garage opening error:", err);
+        }
+      }
+    }, 400);
+  }
+}
+
+if (bootScreen) {
+  bootScreen.addEventListener('click', enterGame);
+}
+const pressStartBtn = document.querySelector('.press-start');
+if (pressStartBtn) {
+  pressStartBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    enterGame();
+  });
+}
 
 requestAnimationFrame(animate);
