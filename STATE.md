@@ -53,20 +53,72 @@ This document specifies the public API, signals, data shapes, and cross-module c
 
 ### `VehicleController` (`scripts/vehicle/vehicle_controller.gd`)
 - **Inherits**: `RigidBody3D`
-- **Purpose**: 120Hz custom physics simulation using raycast suspension, Pacejka tire curves, transmission, and nitro.
+- **Purpose**: 120Hz custom physics simulation using raycast suspension, Pacejka tire curves, transmission, aerodynamics, and nitro.
 - **Signals**:
   - `gear_shifted(new_gear: int)`
   - `nitro_changed(amount: float)`
   - `vehicle_damaged(damage: float, attacker_node: Node)`
   - `vehicle_wrecked()`
 - **Public Properties**:
-  - `speed_kmh: float`
-  - `engine_rpm: float`
-  - `current_gear: int`
-  - `nitro_amount: float`
-  - `health: float`, `max_health: float`
-  - `is_wrecked: bool`
-- **Called by**: `InputManager` (sets inputs), `RaceHUD`, `ProceduralAudioEngine`, `CameraRig`.
+  - `car_id: String`: Unique recipe ID loaded from `data/vehicles.json` with fallback.
+  - `speed_kmh: float`: Current ground speed in km/h.
+  - `engine_rpm: float`: Drivetrain RPM with load-dependent torque scaling.
+  - `current_gear: int`: Automatic 5-speed transmission gear (1..5).
+  - `throttle_input: float`, `brake_input: float`, `steer_input: float`: Smoothed analog control states.
+  - `handbrake_input: bool`: Drifting handbrake modifier.
+  - `nitro_active: bool`, `nitro_amount: float`: Nitro boost state.
+  - `health: float`, `max_health: float`: Vehicle structural integrity.
+  - `wheels: Array[RaycastWheel]`: 4-corner suspension assemblies (`front_left_wheel`, `front_right_wheel`, `rear_left_wheel`, `rear_right_wheel`).
+- **Public API**:
+  - `self_right_car()`: Recovers vehicle if inverted.
+  - `apply_damage(amount: float, hit_point: Vector3, attacker = null)`
+  - `apply_repair(amount: float)`
+- **Called by**: `InputManager`, `DebugOverlay`, `ProceduralAudioEngine`, `CameraRig`, `TrackTestController`.
+
+### `RaycastWheel` (`scripts/vehicle/raycast_wheel.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: 4-corner suspension strut using RayCast3D, Pacejka Magic Formula, load sensitivity, bump/rebound damping, bump stops, and anti-roll bar coupling.
+- **Public Properties**:
+  - `is_grounded: bool`
+  - `compression: float`: Suspension travel displacement (m).
+  - `normal_force: float`: Ground contact normal force $F_z$ (N).
+  - `slip_angle: float`: Lateral tire slip angle $\alpha$ (rad).
+  - `slip_ratio: float`: Longitudinal tire slip ratio $\kappa$.
+  - `surface_type: String`: Detected collider surface meta (`asphalt_dry`, `dirt`, `grass`).
+  - `surface_mu: float`: Friction coefficient multiplier.
+  - `wheel_visual: Node3D`: Visual wheel mesh bound to suspension kinematics.
+- **Public API**:
+  - `setup(config: Dictionary, tire_cfg: Dictionary)`
+  - `update_suspension(chassis: RigidBody3D, dt: float) -> Vector3`
+- **Called by**: `VehicleController`.
+
+### `CameraRig` (`scripts/vehicle/camera_rig.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Multi-mode camera rig supporting Chase, Cockpit, and Tactical views with dynamic speed FOV.
+- **Enums**:
+  - `CameraMode`: `CHASE = 0`, `COCKPIT = 1`, `TACTICAL = 2`.
+- **Public Properties**:
+  - `target_vehicle: VehicleController`
+  - `current_mode: CameraMode`
+  - `camera: Camera3D`
+- **Called by**: `TrackTestController`.
+
+### `SplineTrack` (`scripts/race/spline_track.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Catmull-Rom swept asphalt circuit generator with curbs, trimesh collision, and checkpoint gates.
+- **Public Properties**:
+  - `track_points: Array[Dictionary]`: Sampled spline points with `pos`, `forward`, `right`, `up`, `dist`.
+  - `total_length: float`: Circuit lap distance (m).
+  - `checkpoints: Array[Area3D]`: Checkpoint gate triggers.
+- **Public API**:
+  - `setup_circuit()`
+  - `get_closest_track_point(pos: Vector3) -> Dictionary`
+- **Called by**: `TrackTestController`, `RaceManager`.
+
+### `TrackTestController` (`scripts/race/track_test_controller.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Milestone 2 scene coordinator wiring spline track, player car, audio engine, camera rig, and automated `--screenshot` frame capture.
+- **Called by**: `scenes/track_test.tscn`.
 
 ### `ProceduralCarMesh` (`scripts/vehicle/procedural_car_mesh.gd`)
 - **Inherits**: `Node3D`
