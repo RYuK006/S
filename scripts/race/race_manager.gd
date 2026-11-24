@@ -91,6 +91,9 @@ func _process_countdown(delta: float):
 		for c in cars:
 			c.brake_input = 0.0
 
+func _get_node_pos(node: Node3D) -> Vector3:
+	return node.global_position if node.is_inside_tree() else node.position
+
 func _process_racing(delta: float):
 	race_time += delta
 	current_lap_time += delta
@@ -110,7 +113,9 @@ func _process_racing(delta: float):
 		var gate = track.checkpoints[next_gate_idx]
 		
 		# Check distance to target gate
-		var d = c.global_position.distance_to(gate.global_position)
+		var car_pos = _get_node_pos(c)
+		var gate_pos = _get_node_pos(gate)
+		var d = car_pos.distance_to(gate_pos)
 		if d < 14.0: # Checkpoint passed
 			prog.visited_count += 1
 			prog.next_checkpoint = (next_gate_idx + 1) % num_gates
@@ -136,7 +141,8 @@ func _process_racing(delta: float):
 					prog.lap += 1
 		
 		# Calculate continuous leaderboard score: Lap * 10000 + Checkpoint * 100 - DistToNext
-		var dist_to_next = c.global_position.distance_to(track.checkpoints[prog.next_checkpoint].global_position)
+		var next_gate_obj = track.checkpoints[prog.next_checkpoint]
+		var dist_to_next = car_pos.distance_to(_get_node_pos(next_gate_obj))
 		prog.score = (prog.lap * 10000.0) + (prog.next_checkpoint * 100.0) - dist_to_next
 	
 	# 2. Sort standings by score descending
