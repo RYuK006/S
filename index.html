@@ -262,10 +262,10 @@
 </div>
 
 <!-- Boot Splash / Audio Unlocker -->
-<div id="boot-screen">
+<div id="boot-screen" onclick="if(window.enterGame){window.enterGame();}else{this.style.display='none';}">
   <h1>GRID<span>LETHAL</span></h1>
   <p>POST-APOCALYPTIC VEHICULAR-COMBAT RACING SIMULATOR</p>
-  <div class="press-start">Click to Enter Garage & Grid</div>
+  <div class="press-start" onclick="if(window.enterGame){window.enterGame();}else{document.getElementById('boot-screen').style.display='none';}">Click to Enter Garage & Grid</div>
 </div>
 
 <script>
@@ -4019,9 +4019,10 @@ function enterGame() {
           console.error("Garage opening error:", err);
         }
       }
-    }, 400);
+    }, 300);
   }
 }
+window.enterGame = enterGame;
 
 if (bootScreen) {
   bootScreen.addEventListener('click', enterGame);
