@@ -16,8 +16,8 @@ This document tracks progress across all 10 project milestones and maintains the
 | **M6** | **Garage & Economy** | 3D garage showroom with rotating turntable, customization (paints, finishes, spoilers), 10 upgrade systems x 5 tiers, 6 driver specialists, save slots, Base64 export/import. | **COMPLETED** |
 | **M7** | **Campaign & Biomes** | 4 Regional Biomes (Dust Bowl, Neon Docks, Frozen Pass, Volcano Ridge), 28 campaign missions across 8 game modes, 4 multi-phase boss encounters, expanded 26-weapon arsenal. | **COMPLETED** |
 | **M8** | **Progression & Balancing** | 100-level XP curve, 60 career achievements, loot crates, economy balance simulation, debug cheat console (<kbd>F4</kbd>). | **COMPLETED** |
-| **M9** | **Multiplayer & Server** | 24-byte binary snapshot codec, client-side prediction & entity interpolation, ENet high-level multiplayer, headless dedicated relay server (`--headless`). | **IN PROGRESS** |
-| **M10**| **Final Polish & Packaging** | Procedural 135 BPM industrial cyber-rock music sequencer, announcer voiceover, accessibility settings, photo mode, replay cam, Windows installer script, final performance pass. | Planned |
+| **M9** | **Multiplayer & Server** | 24-byte binary snapshot codec, client-side prediction & entity interpolation, ENet high-level multiplayer, headless dedicated relay server (`--headless`). | **COMPLETED** |
+| **M10**| **Final Polish & Packaging** | Procedural 135 BPM industrial cyber-rock music sequencer, announcer voiceover, accessibility settings, photo mode, replay cam, Windows installer script, final performance pass. | **IN PROGRESS** |
 
 ---
 
