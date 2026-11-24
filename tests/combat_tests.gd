@@ -2,10 +2,10 @@
 # Headless verification of Stage 3 Combat: Weapons, ballistics, damage reception, and revenge system.
 extends Node3D
 
-const WeaponData = preload("res://src/weapons/weapon_data.gd")
+const WeaponData = preload("res://scripts/weapons/weapon_data.gd")
 const WeaponSystem = preload("res://src/weapons/weapon_system.gd")
-const Projectile = preload("res://src/weapons/projectile.gd")
-const VehicleController = preload("res://src/vehicles/vehicle_controller.gd")
+const Projectile = preload("res://scripts/weapons/projectile.gd")
+const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 
 func _ready():
 	print("\n=======================================================")
