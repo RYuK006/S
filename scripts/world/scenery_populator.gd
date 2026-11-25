@@ -8,6 +8,23 @@ const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
 
 var terrain_gen: TerrainGenerator
 var road_network: RoadNetwork
+var shared_palette_mat: StandardMaterial3D
+
+func _get_palette_mat() -> StandardMaterial3D:
+	if not shared_palette_mat:
+		shared_palette_mat = StandardMaterial3D.new()
+		var tex := load("res://assets/models/props/Textures/colormap.png") as Texture2D
+		if tex:
+			shared_palette_mat.albedo_texture = tex
+		shared_palette_mat.roughness = 0.65
+		shared_palette_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	return shared_palette_mat
+
+func _assign_palette_recursive(node: Node, mat: Material) -> void:
+	if node is MeshInstance3D:
+		node.material_override = mat
+	for child in node.get_children():
+		_assign_palette_recursive(child, mat)
 
 func _init(tg: TerrainGenerator = null, rn: RoadNetwork = null) -> void:
 	terrain_gen = tg if tg else TerrainGenerator.new()
@@ -20,11 +37,23 @@ func populate_world_scenery() -> void:
 		
 	# 2. Regional Biome Foliage & Rock MultiMeshes
 	_populate_alpine_pines(550)
+	_populate_festival_trees(300)
 	_populate_desert_rocks_and_cacti(450)
 	_populate_volcanic_spires(450)
 	_populate_shipping_containers(250)
-	_populate_festival_banners()
 	_populate_festival_staging()
+
+func _get_glb_mesh(path: String) -> Mesh:
+	var scene := load(path) as PackedScene
+	if scene:
+		var root := scene.instantiate()
+		for child in root.get_children():
+			if child is MeshInstance3D and child.mesh:
+				var m: Mesh = child.mesh
+				root.queue_free()
+				return m
+		root.queue_free()
+	return null
 
 func _create_conifer_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
@@ -127,16 +156,14 @@ func _populate_highway_props() -> void:
 	var wps := road_network.highway_waypoints
 	var count := wps.size()
 	
-	# Light Poles MultiMesh
-	var pole_mesh := CylinderMesh.new()
-	pole_mesh.top_radius = 0.12
-	pole_mesh.bottom_radius = 0.18
-	pole_mesh.height = 7.5
-	
-	var pole_mat := StandardMaterial3D.new()
-	pole_mat.albedo_color = Color(0.2, 0.22, 0.25)
-	pole_mat.metallic = 0.85
-	pole_mat.roughness = 0.25
+	# Light Poles MultiMesh (use 3D Kenney lightpost model if available)
+	var pole_mesh: Mesh = _get_glb_mesh("res://assets/models/props/highway_lightpost.glb")
+	if not pole_mesh:
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.12
+		cyl.bottom_radius = 0.18
+		cyl.height = 7.5
+		pole_mesh = cyl
 	
 	var mm_poles := MultiMesh.new()
 	mm_poles.transform_format = MultiMesh.TRANSFORM_3D
@@ -151,26 +178,28 @@ func _populate_highway_props() -> void:
 		
 		var left_pos := p - (right * 8.5)
 		var right_pos := p + (right * 8.5)
-		left_pos.y = terrain_gen.get_height(left_pos.x, left_pos.z) + 3.75
-		right_pos.y = terrain_gen.get_height(right_pos.x, right_pos.z) + 3.75
+		left_pos.y = terrain_gen.get_height(left_pos.x, left_pos.z)
+		right_pos.y = terrain_gen.get_height(right_pos.x, right_pos.z)
 		
-		mm_poles.set_instance_transform(i * 2, Transform3D(Basis(), left_pos))
-		mm_poles.set_instance_transform(i * 2 + 1, Transform3D(Basis(), right_pos))
+		var rot_y := atan2(fwd.x, fwd.z)
+		var basis := Basis(Vector3.UP, rot_y)
+		mm_poles.set_instance_transform(i * 2, Transform3D(basis, left_pos))
+		mm_poles.set_instance_transform(i * 2 + 1, Transform3D(basis, right_pos))
 		
 	var inst_poles := MultiMeshInstance3D.new()
 	inst_poles.multimesh = mm_poles
-	inst_poles.material_override = pole_mat
+	inst_poles.material_override = _get_palette_mat()
+	inst_poles.visibility_range_end = 650.0
+	inst_poles.visibility_range_end_margin = 50.0
+	inst_poles.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	inst_poles.name = "MultiMesh_HighwayPoles"
 	add_child(inst_poles)
 
 func _populate_alpine_pines(count: int) -> void:
 	# Layered Conifer Pine Foliage (Multi-tiered evergreen trees for Frozen Pass)
-	var pine_mesh := _create_conifer_mesh()
-	
-	var pine_mat := StandardMaterial3D.new()
-	pine_mat.vertex_color_use_as_albedo = true
-	pine_mat.roughness = 0.85
-	pine_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var pine_mesh := _get_glb_mesh("res://assets/models/foliage/pine_cluster.glb")
+	if not pine_mesh:
+		pine_mesh = _create_conifer_mesh()
 	
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -181,20 +210,56 @@ func _populate_alpine_pines(count: int) -> void:
 	rng.seed = 2026
 	
 	for i in range(count):
-		# Frozen Pass quadrant (North-West: x in -1800 to -250, z in -1800 to -250)
-		var x := rng.randf_range(-1800.0, -250.0)
-		var z := rng.randf_range(-1800.0, -250.0)
-		var s := rng.randf_range(0.8, 1.8)
-		# Embed base trunk deeply into mountain slopes
-		var y := terrain_gen.get_height(x, z) - 0.25
+		# Frozen Pass quadrant (North-West: x in -3200 to -400, z in -3200 to -400)
+		var x := rng.randf_range(-3200.0, -400.0)
+		var z := rng.randf_range(-3200.0, -400.0)
+		var s := rng.randf_range(1.4, 3.2)
+		var y := terrain_gen.get_height(x, z) - 0.2
 		var rot_y := rng.randf_range(0, TAU)
 		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
 		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 		
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
-	inst.material_override = pine_mat
+	inst.material_override = _get_palette_mat()
+	inst.visibility_range_end = 850.0
+	inst.visibility_range_end_margin = 50.0
+	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	inst.name = "MultiMesh_AlpinePines"
+	add_child(inst)
+
+func _populate_festival_trees(count: int) -> void:
+	var tree_mesh := _get_glb_mesh("res://assets/models/foliage/trees_tall.glb")
+	if not tree_mesh:
+		return
+		
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = tree_mesh
+	mm.instance_count = count
+	
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1010
+	
+	for i in range(count):
+		# Central Hub meadow (radius 80m to 500m)
+		var angle := rng.randf_range(0, TAU)
+		var r := rng.randf_range(80.0, 480.0)
+		var x := cos(angle) * r
+		var z := sin(angle) * r
+		var s := rng.randf_range(1.5, 3.2)
+		var y := terrain_gen.get_height(x, z) - 0.2
+		var rot_y := rng.randf_range(0, TAU)
+		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
+		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+		
+	var inst := MultiMeshInstance3D.new()
+	inst.multimesh = mm
+	inst.material_override = _get_palette_mat()
+	inst.visibility_range_end = 750.0
+	inst.visibility_range_end_margin = 50.0
+	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	inst.name = "MultiMesh_FestivalTrees"
 	add_child(inst)
 
 func _populate_desert_rocks_and_cacti(count: int) -> void:
@@ -352,120 +417,43 @@ func _populate_shipping_containers(count: int) -> void:
 	inst.name = "MultiMesh_ShippingContainers"
 	add_child(inst)
 
-func _populate_festival_banners() -> void:
-	# Festival Gantry Arch across the roadway at Central Hub (20m ahead of spawn)
-	var arch_z := -20.0
-	var arch := Node3D.new()
-	arch.name = "Festival_Arch_Center"
-	var y := terrain_gen.get_height(0, arch_z)
-	arch.position = Vector3(0, y, arch_z)
-	
-	# Steel truss materials
-	var steel_mat := StandardMaterial3D.new()
-	steel_mat.albedo_color = Color(0.18, 0.20, 0.24)
-	steel_mat.metallic = 0.9
-	steel_mat.roughness = 0.25
-	
-	var neon_mat := StandardMaterial3D.new()
-	neon_mat.albedo_color = Color(1.0, 0.42, 0.0) # Radiant Horizon Festival Orange
-	neon_mat.emission_enabled = true
-	neon_mat.emission = Color(1.0, 0.42, 0.0)
-	neon_mat.emission_energy_multiplier = 3.5
-	
-	# Left vertical pillar (anchored deep into the terrain)
-	var left_pillar := MeshInstance3D.new()
-	var pillar_mesh := BoxMesh.new()
-	pillar_mesh.size = Vector3(1.2, 12.0, 1.2)
-	left_pillar.mesh = pillar_mesh
-	left_pillar.position = Vector3(-10.5, 4.5, 0)
-	left_pillar.material_override = steel_mat
-	arch.add_child(left_pillar)
-	
-	# Right vertical pillar (anchored deep into the terrain)
-	var right_pillar := MeshInstance3D.new()
-	right_pillar.mesh = pillar_mesh
-	right_pillar.position = Vector3(10.5, 4.5, 0)
-	right_pillar.material_override = steel_mat
-	arch.add_child(right_pillar)
-	
-	# Overhead truss crossbeam (spans between left and right pillars)
-	var beam := MeshInstance3D.new()
-	var beam_mesh := BoxMesh.new()
-	beam_mesh.size = Vector3(22.2, 1.6, 1.4)
-	beam.mesh = beam_mesh
-	beam.position = Vector3(0, 9.2, 0)
-	beam.material_override = steel_mat
-	arch.add_child(beam)
-	
-	# Illuminated Horizon Festival banner board mounted on crossbeam
-	var banner := MeshInstance3D.new()
-	var banner_mesh := BoxMesh.new()
-	banner_mesh.size = Vector3(18.0, 1.1, 0.2)
-	banner.mesh = banner_mesh
-	banner.position = Vector3(0, 9.2, 0.72)
-	banner.material_override = neon_mat
-	arch.add_child(banner)
-	
-	# Reverse side banner board
-	var banner_back := MeshInstance3D.new()
-	banner_back.mesh = banner_mesh
-	banner_back.position = Vector3(0, 9.2, -0.72)
-	banner_back.material_override = neon_mat
-	arch.add_child(banner_back)
-	
-	add_child(arch)
-
 func _populate_festival_staging() -> void:
 	var staging := Node3D.new()
 	staging.name = "FestivalStagingComplex"
 	add_child(staging)
 	
-	# 1. Left Spectator Grandstand (Covered bleachers)
-	var grandstand_mat := StandardMaterial3D.new()
-	grandstand_mat.albedo_color = Color(0.20, 0.22, 0.25)
-	grandstand_mat.metallic = 0.85
-	grandstand_mat.roughness = 0.25
-	
-	var canopy_mat := StandardMaterial3D.new()
-	canopy_mat.albedo_color = Color(0.85, 0.12, 0.08) # Horizon Festival Crimson Canopy
-	canopy_mat.roughness = 0.45
-	
-	var stand_left := MeshInstance3D.new()
-	var stand_mesh := BoxMesh.new()
-	stand_mesh.size = Vector3(8.0, 5.0, 32.0)
-	stand_left.mesh = stand_mesh
-	var stand_y := terrain_gen.get_height(-18.0, 0.0) + 2.5
-	stand_left.position = Vector3(-18.0, stand_y, 0.0)
-	stand_left.material_override = grandstand_mat
-	staging.add_child(stand_left)
-	
-	var can_mesh := BoxMesh.new()
-	can_mesh.size = Vector3(10.0, 0.4, 34.0)
-	var canopy_left := MeshInstance3D.new()
-	canopy_left.mesh = can_mesh
-	canopy_left.position = Vector3(-18.0, stand_y + 4.2, 0.0)
-	canopy_left.rotation.z = -0.15
-	canopy_left.material_override = canopy_mat
-	staging.add_child(canopy_left)
-	
-	# 2. Right Pit Garages & Team Staging
-	var pit_right := MeshInstance3D.new()
-	var pit_mesh := BoxMesh.new()
-	pit_mesh.size = Vector3(9.0, 4.5, 36.0)
-	pit_right.mesh = pit_mesh
-	var pit_y := terrain_gen.get_height(18.0, 0.0) + 2.25
-	pit_right.position = Vector3(18.0, pit_y, 0.0)
-	pit_right.material_override = grandstand_mat
-	staging.add_child(pit_right)
-	
-	var pit_canopy := MeshInstance3D.new()
-	pit_canopy.mesh = can_mesh
-	pit_canopy.position = Vector3(18.0, pit_y + 3.8, 0.0)
-	pit_canopy.rotation.z = 0.15
-	pit_canopy.material_override = canopy_mat
-	staging.add_child(pit_canopy)
-	
-	# 3. Track Edge Safety Tire Barriers (Alternating red and white tire stacks along the staging lane)
+	# 1. Authentic 3D Finish / Gantry Arch
+	var arch_scene := load("res://assets/models/props/track_finish_arch.glb") as PackedScene
+	if arch_scene:
+		var arch := arch_scene.instantiate()
+		var y := terrain_gen.get_height(0, -20.0)
+		arch.position = Vector3(0, y, -20.0)
+		arch.scale = Vector3(1.5, 1.5, 1.5)
+		_assign_palette_recursive(arch, _get_palette_mat())
+		staging.add_child(arch)
+		
+	# 2. Paddock Event Tents (Left of track)
+	var tent_scene := load("res://assets/models/props/festival_tents.glb") as PackedScene
+	if tent_scene:
+		var tent := tent_scene.instantiate()
+		var y := terrain_gen.get_height(-18.0, 0.0)
+		tent.position = Vector3(-18.0, y, 0.0)
+		tent.scale = Vector3(1.6, 1.6, 1.6)
+		_assign_palette_recursive(tent, _get_palette_mat())
+		staging.add_child(tent)
+		
+	# 3. Pit Garages Workshop (Right of track)
+	var garage_scene := load("res://assets/models/props/pit_garage.glb") as PackedScene
+	if garage_scene:
+		var garage := garage_scene.instantiate()
+		var y := terrain_gen.get_height(20.0, 0.0)
+		garage.position = Vector3(20.0, y, 0.0)
+		garage.rotation.y = PI
+		garage.scale = Vector3(1.8, 1.8, 1.8)
+		_assign_palette_recursive(garage, _get_palette_mat())
+		staging.add_child(garage)
+		
+	# 4. Track Edge Safety Tire Barriers
 	var tire_mat_w := StandardMaterial3D.new()
 	tire_mat_w.albedo_color = Color(0.92, 0.92, 0.92)
 	tire_mat_w.roughness = 0.75
