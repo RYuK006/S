@@ -35,6 +35,43 @@ func _setup_terrain_material() -> void:
 	if t_shader:
 		var s_mat := ShaderMaterial.new()
 		s_mat.shader = t_shader
+		
+		# Load and assign 1K PBR Texture sets
+		var tex_grass_d := load("res://assets/textures/grass_diff.jpg") as Texture2D
+		var tex_grass_n := load("res://assets/textures/grass_nor.jpg") as Texture2D
+		var tex_grass_r := load("res://assets/textures/grass_rough.jpg") as Texture2D
+		if tex_grass_d: s_mat.set_shader_parameter("tex_grass_diff", tex_grass_d)
+		if tex_grass_n: s_mat.set_shader_parameter("tex_grass_nor", tex_grass_n)
+		if tex_grass_r: s_mat.set_shader_parameter("tex_grass_rough", tex_grass_r)
+		
+		var tex_sand_d := load("res://assets/textures/sand_diff.jpg") as Texture2D
+		var tex_sand_n := load("res://assets/textures/sand_nor.jpg") as Texture2D
+		var tex_sand_r := load("res://assets/textures/sand_rough.jpg") as Texture2D
+		if tex_sand_d: s_mat.set_shader_parameter("tex_sand_diff", tex_sand_d)
+		if tex_sand_n: s_mat.set_shader_parameter("tex_sand_nor", tex_sand_n)
+		if tex_sand_r: s_mat.set_shader_parameter("tex_sand_rough", tex_sand_r)
+		
+		var tex_snow_d := load("res://assets/textures/snow_diff.jpg") as Texture2D
+		var tex_snow_n := load("res://assets/textures/snow_nor.jpg") as Texture2D
+		var tex_snow_r := load("res://assets/textures/snow_rough.jpg") as Texture2D
+		if tex_snow_d: s_mat.set_shader_parameter("tex_snow_diff", tex_snow_d)
+		if tex_snow_n: s_mat.set_shader_parameter("tex_snow_nor", tex_snow_n)
+		if tex_snow_r: s_mat.set_shader_parameter("tex_snow_rough", tex_snow_r)
+		
+		var tex_volcano_d := load("res://assets/textures/volcano_diff.jpg") as Texture2D
+		var tex_volcano_n := load("res://assets/textures/volcano_nor.jpg") as Texture2D
+		var tex_volcano_r := load("res://assets/textures/volcano_rough.jpg") as Texture2D
+		if tex_volcano_d: s_mat.set_shader_parameter("tex_volcano_diff", tex_volcano_d)
+		if tex_volcano_n: s_mat.set_shader_parameter("tex_volcano_nor", tex_volcano_n)
+		if tex_volcano_r: s_mat.set_shader_parameter("tex_volcano_rough", tex_volcano_r)
+		
+		var tex_cliff_d := load("res://assets/textures/cliff_diff.jpg") as Texture2D
+		var tex_cliff_n := load("res://assets/textures/cliff_nor.jpg") as Texture2D
+		var tex_cliff_r := load("res://assets/textures/cliff_rough.jpg") as Texture2D
+		if tex_cliff_d: s_mat.set_shader_parameter("tex_cliff_diff", tex_cliff_d)
+		if tex_cliff_n: s_mat.set_shader_parameter("tex_cliff_nor", tex_cliff_n)
+		if tex_cliff_r: s_mat.set_shader_parameter("tex_cliff_rough", tex_cliff_r)
+		
 		terrain_material = s_mat
 	else:
 		var std_mat := StandardMaterial3D.new()
