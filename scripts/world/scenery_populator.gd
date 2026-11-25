@@ -196,23 +196,64 @@ func _populate_shipping_containers(count: int) -> void:
 	add_child(inst)
 
 func _populate_festival_banners() -> void:
-	# Festival Arch at Central Hub (x=0, z=0)
+	# Festival Gantry Arch across the roadway at Central Hub (20m ahead of spawn)
+	var arch_z := -20.0
 	var arch := Node3D.new()
 	arch.name = "Festival_Arch_Center"
-	var y := terrain_gen.get_height(0, 0)
-	arch.position = Vector3(0, y, 0)
+	var y := terrain_gen.get_height(0, arch_z)
+	arch.position = Vector3(0, y, arch_z)
 	
+	# Steel truss materials
+	var steel_mat := StandardMaterial3D.new()
+	steel_mat.albedo_color = Color(0.18, 0.20, 0.24)
+	steel_mat.metallic = 0.9
+	steel_mat.roughness = 0.25
+	
+	var neon_mat := StandardMaterial3D.new()
+	neon_mat.albedo_color = Color(1.0, 0.42, 0.0) # Radiant Horizon Festival Orange
+	neon_mat.emission_enabled = true
+	neon_mat.emission = Color(1.0, 0.42, 0.0)
+	neon_mat.emission_energy_multiplier = 3.5
+	
+	# Left vertical pillar (anchored deep into the terrain)
+	var left_pillar := MeshInstance3D.new()
+	var pillar_mesh := BoxMesh.new()
+	pillar_mesh.size = Vector3(1.2, 12.0, 1.2)
+	left_pillar.mesh = pillar_mesh
+	left_pillar.position = Vector3(-10.5, 4.5, 0)
+	left_pillar.material_override = steel_mat
+	arch.add_child(left_pillar)
+	
+	# Right vertical pillar (anchored deep into the terrain)
+	var right_pillar := MeshInstance3D.new()
+	right_pillar.mesh = pillar_mesh
+	right_pillar.position = Vector3(10.5, 4.5, 0)
+	right_pillar.material_override = steel_mat
+	arch.add_child(right_pillar)
+	
+	# Overhead truss crossbeam (spans between left and right pillars)
 	var beam := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(24.0, 1.8, 1.2)
-	beam.mesh = box
-	beam.position = Vector3(0, 9.0, 0)
-	
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.35, 0.0) # Radiant Horizon Orange
-	mat.emission_enabled = true
-	mat.emission = Color(1.0, 0.35, 0.0)
-	mat.emission_energy_multiplier = 2.5
-	beam.material_override = mat
+	var beam_mesh := BoxMesh.new()
+	beam_mesh.size = Vector3(22.2, 1.6, 1.4)
+	beam.mesh = beam_mesh
+	beam.position = Vector3(0, 9.2, 0)
+	beam.material_override = steel_mat
 	arch.add_child(beam)
+	
+	# Illuminated Horizon Festival banner board mounted on crossbeam
+	var banner := MeshInstance3D.new()
+	var banner_mesh := BoxMesh.new()
+	banner_mesh.size = Vector3(18.0, 1.1, 0.2)
+	banner.mesh = banner_mesh
+	banner.position = Vector3(0, 9.2, 0.72)
+	banner.material_override = neon_mat
+	arch.add_child(banner)
+	
+	# Reverse side banner board
+	var banner_back := MeshInstance3D.new()
+	banner_back.mesh = banner_mesh
+	banner_back.position = Vector3(0, 9.2, -0.72)
+	banner_back.material_override = neon_mat
+	arch.add_child(banner_back)
+	
 	add_child(arch)
