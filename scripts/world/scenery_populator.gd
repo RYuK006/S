@@ -422,66 +422,81 @@ func _populate_festival_staging() -> void:
 	staging.name = "FestivalStagingComplex"
 	add_child(staging)
 	
+	var pal_mat: StandardMaterial3D = _get_palette_mat()
+	
 	# 1. Authentic 3D Finish / Gantry Arch
 	var arch_scene := load("res://assets/models/props/track_finish_arch.glb") as PackedScene
 	if arch_scene:
 		var arch := arch_scene.instantiate()
-		var y := terrain_gen.get_height(0, -20.0)
-		arch.position = Vector3(0, y, -20.0)
-		arch.scale = Vector3(1.5, 1.5, 1.5)
-		_assign_palette_recursive(arch, _get_palette_mat())
+		var y := terrain_gen.get_height(0, -25.0) + 0.38
+		arch.position = Vector3(0, y, -25.0)
+		arch.scale = Vector3(1.6, 1.6, 1.6)
+		_assign_palette_recursive(arch, pal_mat)
 		staging.add_child(arch)
 		
 	# 2. Paddock Event Tents (Left of track)
 	var tent_scene := load("res://assets/models/props/festival_tents.glb") as PackedScene
 	if tent_scene:
-		var tent := tent_scene.instantiate()
-		var y := terrain_gen.get_height(-18.0, 0.0)
-		tent.position = Vector3(-18.0, y, 0.0)
-		tent.scale = Vector3(1.6, 1.6, 1.6)
-		_assign_palette_recursive(tent, _get_palette_mat())
-		staging.add_child(tent)
+		for z_tent: float in [-12.0, 18.0]:
+			var tent := tent_scene.instantiate()
+			var y := terrain_gen.get_height(-16.0, z_tent)
+			tent.position = Vector3(-16.0, y, z_tent)
+			tent.scale = Vector3(1.5, 1.5, 1.5)
+			_assign_palette_recursive(tent, pal_mat)
+			staging.add_child(tent)
 		
 	# 3. Pit Garages Workshop (Right of track)
 	var garage_scene := load("res://assets/models/props/pit_garage.glb") as PackedScene
 	if garage_scene:
-		var garage := garage_scene.instantiate()
-		var y := terrain_gen.get_height(20.0, 0.0)
-		garage.position = Vector3(20.0, y, 0.0)
-		garage.rotation.y = PI
-		garage.scale = Vector3(1.8, 1.8, 1.8)
-		_assign_palette_recursive(garage, _get_palette_mat())
-		staging.add_child(garage)
+		for z_gar: float in [-12.0, 18.0]:
+			var garage := garage_scene.instantiate()
+			var y := terrain_gen.get_height(16.0, z_gar)
+			garage.position = Vector3(16.0, y, z_gar)
+			garage.rotation.y = PI
+			garage.scale = Vector3(1.6, 1.6, 1.6)
+			_assign_palette_recursive(garage, pal_mat)
+			staging.add_child(garage)
+			
+	# 4. Flanking Festival Trees
+	var tree_scene := load("res://assets/models/foliage/trees_tall.glb") as PackedScene
+	if tree_scene:
+		for z_tr: float in [-30.0, -10.0, 10.0, 30.0]:
+			var t_left := tree_scene.instantiate()
+			t_left.position = Vector3(-24.0, terrain_gen.get_height(-24.0, z_tr), z_tr)
+			t_left.scale = Vector3(1.4, 1.4, 1.4)
+			_assign_palette_recursive(t_left, pal_mat)
+			staging.add_child(t_left)
+			
+			var t_right := tree_scene.instantiate()
+			t_right.position = Vector3(24.0, terrain_gen.get_height(24.0, z_tr), z_tr)
+			t_right.scale = Vector3(1.4, 1.4, 1.4)
+			_assign_palette_recursive(t_right, pal_mat)
+			staging.add_child(t_right)
 		
-	# 4. Track Edge Safety Tire Barriers
-	var tire_mat_w := StandardMaterial3D.new()
-	tire_mat_w.albedo_color = Color(0.92, 0.92, 0.92)
-	tire_mat_w.roughness = 0.75
+	# 5. Sleek Armco Steel W-Beam Crash Barriers along Track Edges
+	var rail_mat := StandardMaterial3D.new()
+	rail_mat.albedo_color = Color(0.78, 0.80, 0.84)
+	rail_mat.metallic = 0.92
+	rail_mat.roughness = 0.28
 	
-	var tire_mat_r := StandardMaterial3D.new()
-	tire_mat_r.albedo_color = Color(0.85, 0.08, 0.06)
-	tire_mat_r.roughness = 0.75
+	var rail_mesh := BoxMesh.new()
+	rail_mesh.size = Vector3(0.14, 0.45, 3.2)
 	
-	var tire_box := BoxMesh.new()
-	tire_box.size = Vector3(1.2, 1.1, 2.0)
-	
-	for i in range(16):
-		var z_pos := -25.0 + (i * 3.2)
-		var is_white := (i % 2 == 0)
-		var mat := tire_mat_w if is_white else tire_mat_r
+	for i in range(24):
+		var z_pos := -45.0 + (i * 3.2)
 		
-		# Left barrier wall
+		# Left guardrail
 		var b_left := MeshInstance3D.new()
-		b_left.mesh = tire_box
-		var y_l := terrain_gen.get_height(-8.5, z_pos) + 0.55
-		b_left.position = Vector3(-8.5, y_l, z_pos)
-		b_left.material_override = mat
+		b_left.mesh = rail_mesh
+		var y_l := terrain_gen.get_height(-7.8, z_pos) + 0.65
+		b_left.position = Vector3(-7.8, y_l, z_pos)
+		b_left.material_override = rail_mat
 		staging.add_child(b_left)
 		
-		# Right barrier wall
+		# Right guardrail
 		var b_right := MeshInstance3D.new()
-		b_right.mesh = tire_box
-		var y_r := terrain_gen.get_height(8.5, z_pos) + 0.55
-		b_right.position = Vector3(8.5, y_r, z_pos)
-		b_right.material_override = mat
+		b_right.mesh = rail_mesh
+		var y_r := terrain_gen.get_height(7.8, z_pos) + 0.65
+		b_right.position = Vector3(7.8, y_r, z_pos)
+		b_right.material_override = rail_mat
 		staging.add_child(b_right)
