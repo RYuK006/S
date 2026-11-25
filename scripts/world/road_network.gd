@@ -23,6 +23,51 @@ func build_open_world_roads() -> void:
 	
 	# 3. Build Mountain Pass Hillclimb (Winding switchbacks to Frozen Pass peaks)
 	_build_mountain_hillclimb()
+	
+	# 4. Build Armco Steel Guardrails along Outer Highway Cliffs
+	_build_highway_guardrails()
+
+func _build_highway_guardrails() -> void:
+	if highway_waypoints.size() == 0:
+		return
+		
+	var wps := highway_waypoints
+	var count := wps.size()
+	
+	# Galvanized Corrugated Steel W-Beam Material
+	var steel_mat := StandardMaterial3D.new()
+	steel_mat.albedo_color = Color(0.72, 0.74, 0.78)
+	steel_mat.metallic = 0.92
+	steel_mat.roughness = 0.28
+	
+	# Guardrail W-Beam Box
+	var rail_mesh := BoxMesh.new()
+	rail_mesh.size = Vector3(0.14, 0.45, 14.0)
+	
+	var mm_rails := MultiMesh.new()
+	mm_rails.transform_format = MultiMesh.TRANSFORM_3D
+	mm_rails.mesh = rail_mesh
+	mm_rails.instance_count = count
+	
+	for i in range(count):
+		var p := wps[i]
+		var next_p := wps[(i + 1) % count]
+		var fwd := (next_p - p).normalized()
+		var right := fwd.cross(Vector3.UP).normalized()
+		
+		# Outer guardrail positioned 7.8m to the right of highway center
+		var rail_pos := ((p + next_p) * 0.5) + (right * 7.8)
+		rail_pos.y = terrain_gen.get_height(rail_pos.x, rail_pos.z) + 0.75
+		
+		var rot_y := atan2(fwd.x, fwd.z)
+		var basis := Basis(Vector3.UP, rot_y)
+		mm_rails.set_instance_transform(i, Transform3D(basis, rail_pos))
+		
+	var inst_rails := MultiMeshInstance3D.new()
+	inst_rails.multimesh = mm_rails
+	inst_rails.material_override = steel_mat
+	inst_rails.name = "MultiMesh_HighwayGuardrails"
+	add_child(inst_rails)
 
 func _build_perimeter_highway() -> void:
 	var R: float = 1600.0 # 3.2km loop diameter
@@ -177,11 +222,23 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	inst.mesh = mesh
 	inst.name = road_name
 	
-	# PBR Road Material with Vertex Color Lane Markings
+	# PBR Road Material with Vertex Color Lane Markings & Aggregate Grain
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.55
-	mat.metallic = 0.1
+	mat.roughness = 0.58
+	mat.metallic = 0.08
+	
+	var norm_tex := NoiseTexture2D.new()
+	norm_tex.width = 128
+	norm_tex.height = 128
+	norm_tex.as_normal_map = true
+	norm_tex.bump_strength = 1.8
+	var noise := FastNoiseLite.new()
+	noise.frequency = 0.08
+	norm_tex.noise = noise
+	mat.normal_enabled = true
+	mat.normal_texture = norm_tex
+	mat.uv1_scale = Vector3(8.0, 8.0, 8.0)
 	inst.material_override = mat
 	
 	# StaticBody3D collision with Asphalt Surface Metadata
