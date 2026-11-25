@@ -58,8 +58,15 @@ func _ready() -> void:
 	
 	# 6. Screenshot command check
 	for arg in OS.get_cmdline_args():
-		if arg == "--screenshot" or arg == "-screenshot":
-			_take_world_screenshot()
+		if arg == "--screenshot-dust-bowl":
+			var db_pos := Vector3(-331.0, terrain_gen.get_height(-331.0, 482.0) + 1.2, 482.0)
+			if player_vehicle:
+				player_vehicle.global_position = db_pos
+				player_vehicle.global_rotation = Vector3(0, PI * 0.25, 0)
+				_update_chunks_around(db_pos)
+			_take_world_screenshot("res://build/screenshots/open_world_dust_bowl.png")
+		elif arg == "--screenshot" or arg == "-screenshot":
+			_take_world_screenshot("res://build/screenshots/open_world_overview.png")
 
 func _physics_process(_delta: float) -> void:
 	if not player_vehicle:
@@ -144,7 +151,7 @@ func _update_hud(pos: Vector3) -> void:
 		
 	label_coords.text = "GPS: X: %dm | Z: %dm | ALT: %dm" % [int(pos.x), int(pos.z), int(pos.y)]
 
-func _take_world_screenshot() -> void:
+func _take_world_screenshot(out_path: String = "res://build/screenshots/open_world_overview.png") -> void:
 	await get_tree().create_timer(0.8).timeout
 	var vp := get_viewport()
 	if vp:
@@ -153,6 +160,6 @@ func _take_world_screenshot() -> void:
 			var dir := DirAccess.open("res://")
 			if dir and not dir.dir_exists("build/screenshots"):
 				dir.make_dir_recursive("build/screenshots")
-			img.save_png("res://build/screenshots/open_world_overview.png")
-			print("[SCREENSHOT] Successfully saved build/screenshots/open_world_overview.png")
+			img.save_png(out_path)
+			print("[SCREENSHOT] Successfully saved %s" % out_path)
 	get_tree().quit(0)
