@@ -8,11 +8,14 @@
 [ext_resource type="Script" path="res://scripts/core/drs_controller.gd" id="6_drs"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_world"]
-sky_top_color = Color(0.18, 0.42, 0.85, 1)
-sky_horizon_color = Color(0.75, 0.82, 0.90, 1)
+sky_top_color = Color(0.16, 0.38, 0.78, 1)
+sky_horizon_color = Color(0.72, 0.80, 0.90, 1)
+sky_curve = 0.08
 ground_bottom_color = Color(0.12, 0.14, 0.16, 1)
-ground_horizon_color = Color(0.55, 0.58, 0.62, 1)
-sun_angle_max = 35.0
+ground_horizon_color = Color(0.55, 0.62, 0.70, 1)
+ground_curve = 0.06
+sun_angle_max = 28.0
+sun_curve = 0.05
 
 [sub_resource type="Sky" id="Sky_world"]
 sky_material = SubResource("ProceduralSkyMaterial_world")
@@ -21,14 +24,23 @@ sky_material = SubResource("ProceduralSkyMaterial_world")
 background_mode = 2
 sky = SubResource("Sky_world")
 tonemap_mode = 3
-tonemap_exposure = 1.1
+tonemap_exposure = 1.05
 ssr_enabled = true
 ssao_enabled = true
+ssao_radius = 2.5
+ssao_intensity = 2.8
+ssao_power = 1.8
 ssil_enabled = true
+ssil_radius = 5.0
+ssil_intensity = 1.2
 glow_enabled = true
-glow_intensity = 0.3
+glow_intensity = 0.25
+glow_bloom = 0.15
+glow_hdr_threshold = 1.15
 volumetric_fog_enabled = true
-volumetric_fog_density = 0.002
+volumetric_fog_density = 0.0015
+volumetric_fog_albedo = Color(0.85, 0.90, 0.98, 1)
+volumetric_fog_anisotropy = 0.45
 
 [node name="OpenWorld" type="Node3D" node_paths=PackedStringArray("player_vehicle", "camera_rig", "world_environment", "sun_light")]
 script = ExtResource("1_mgr")
@@ -44,12 +56,15 @@ environment = SubResource("Environment_world")
 transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 50, 0)
 light_color = Color(1, 0.96, 0.90, 1)
 light_energy = 1.15
+light_volumetric_fog_energy = 2.4
 shadow_enabled = true
+shadow_bias = 0.03
 directional_shadow_mode = 1
-directional_shadow_split_1 = 0.1
-directional_shadow_split_2 = 0.25
-directional_shadow_split_3 = 0.55
+directional_shadow_split_1 = 0.08
+directional_shadow_split_2 = 0.22
+directional_shadow_split_3 = 0.52
 directional_shadow_blend_splits = true
+directional_shadow_max_distance = 600.0
 
 [node name="InputManager" type="Node" parent="."]
 script = ExtResource("2_input")
