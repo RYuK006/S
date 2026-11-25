@@ -1,0 +1,68 @@
+[gd_scene load_steps=12 format=3 uid="uid://ow8world01scene"]
+
+[ext_resource type="Script" path="res://scripts/world/open_world_manager.gd" id="1_mgr"]
+[ext_resource type="Script" path="res://scripts/core/input_manager.gd" id="2_input"]
+[ext_resource type="Script" path="res://scripts/vehicle/vehicle_controller.gd" id="3_car"]
+[ext_resource type="Script" path="res://scripts/vehicle/camera_rig.gd" id="4_cam"]
+[ext_resource type="Script" path="res://scripts/audio/procedural_audio_engine.gd" id="5_audio"]
+[ext_resource type="Script" path="res://scripts/core/drs_controller.gd" id="6_drs"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_world"]
+sky_top_color = Color(0.18, 0.42, 0.85, 1)
+sky_horizon_color = Color(0.75, 0.82, 0.90, 1)
+ground_bottom_color = Color(0.12, 0.14, 0.16, 1)
+ground_horizon_color = Color(0.55, 0.58, 0.62, 1)
+sun_angle_max = 35.0
+
+[sub_resource type="Sky" id="Sky_world"]
+sky_material = SubResource("ProceduralSkyMaterial_world")
+
+[sub_resource type="Environment" id="Environment_world"]
+background_mode = 2
+sky = SubResource("Sky_world")
+tonemap_mode = 3
+tonemap_exposure = 1.1
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+glow_enabled = true
+glow_intensity = 0.3
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.002
+
+[node name="OpenWorld" type="Node3D" node_paths=PackedStringArray("player_vehicle", "camera_rig", "world_environment", "sun_light")]
+script = ExtResource("1_mgr")
+player_vehicle = NodePath("PlayerVehicle")
+camera_rig = NodePath("CameraRig")
+world_environment = NodePath("WorldEnvironment")
+sun_light = NodePath("SunLight")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_world")
+
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 50, 0)
+light_color = Color(1, 0.96, 0.90, 1)
+light_energy = 1.6
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.1
+directional_shadow_split_2 = 0.25
+directional_shadow_split_3 = 0.55
+directional_shadow_blend_splits = true
+
+[node name="InputManager" type="Node" parent="."]
+script = ExtResource("2_input")
+
+[node name="PlayerVehicle" type="RigidBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 25, 0)
+script = ExtResource("3_car")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("4_cam")
+
+[node name="ProceduralAudioEngine" type="Node" parent="."]
+script = ExtResource("5_audio")
+
+[node name="DRSController" type="Node" parent="."]
+script = ExtResource("6_drs")
