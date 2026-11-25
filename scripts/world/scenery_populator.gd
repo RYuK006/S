@@ -457,23 +457,51 @@ func _populate_festival_staging() -> void:
 			_assign_palette_recursive(garage, pal_mat)
 			staging.add_child(garage)
 			
-	# 4. Flanking Festival Trees
+	# 4. Flanking Festival Trees & Foliage Canopy
 	var tree_scene := load("res://assets/models/foliage/trees_tall.glb") as PackedScene
-	if tree_scene:
-		for z_tr: float in [-30.0, -10.0, 10.0, 30.0]:
-			var t_left := tree_scene.instantiate()
-			t_left.position = Vector3(-24.0, terrain_gen.get_height(-24.0, z_tr), z_tr)
+	var med_tree_scene := load("res://assets/models/foliage/trees_medium.glb") as PackedScene
+	for z_tr: float in [-35.0, -18.0, 5.0, 25.0, 42.0]:
+		var scn := tree_scene if int(z_tr) % 2 == 0 else med_tree_scene
+		if scn:
+			var t_left := scn.instantiate()
+			t_left.position = Vector3(-25.0, terrain_gen.get_height(-25.0, z_tr), z_tr)
 			t_left.scale = Vector3(1.4, 1.4, 1.4)
 			_assign_palette_recursive(t_left, pal_mat)
 			staging.add_child(t_left)
 			
-			var t_right := tree_scene.instantiate()
-			t_right.position = Vector3(24.0, terrain_gen.get_height(24.0, z_tr), z_tr)
+			var t_right := scn.instantiate()
+			t_right.position = Vector3(25.0, terrain_gen.get_height(25.0, z_tr), z_tr)
 			t_right.scale = Vector3(1.4, 1.4, 1.4)
 			_assign_palette_recursive(t_right, pal_mat)
 			staging.add_child(t_right)
+			
+	# 5. Paddock Facilities & Celebration Plaza
+	var bld_a_scene := load("res://assets/models/props/paddock_building_a.glb") as PackedScene
+	if bld_a_scene:
+		var bld_a := bld_a_scene.instantiate()
+		bld_a.position = Vector3(-20.0, terrain_gen.get_height(-20.0, -32.0), -32.0)
+		bld_a.scale = Vector3(1.5, 1.5, 1.5)
+		_assign_palette_recursive(bld_a, pal_mat)
+		staging.add_child(bld_a)
 		
-	# 5. Sleek Armco Steel W-Beam Crash Barriers along Track Edges
+	var bld_b_scene := load("res://assets/models/props/paddock_building_b.glb") as PackedScene
+	if bld_b_scene:
+		var bld_b := bld_b_scene.instantiate()
+		bld_b.position = Vector3(20.0, terrain_gen.get_height(20.0, -32.0), -32.0)
+		bld_b.rotation.y = PI
+		bld_b.scale = Vector3(1.5, 1.5, 1.5)
+		_assign_palette_recursive(bld_b, pal_mat)
+		staging.add_child(bld_b)
+		
+	var fountain_scene := load("res://assets/models/props/plaza_fountain.glb") as PackedScene
+	if fountain_scene:
+		var fount := fountain_scene.instantiate()
+		fount.position = Vector3(-28.0, terrain_gen.get_height(-28.0, 0.0), 0.0)
+		fount.scale = Vector3(1.3, 1.3, 1.3)
+		_assign_palette_recursive(fount, pal_mat)
+		staging.add_child(fount)
+		
+	# 6. Sleek Armco Steel W-Beam Crash Barriers along Track Edges
 	var rail_mat := StandardMaterial3D.new()
 	rail_mat.albedo_color = Color(0.78, 0.80, 0.84)
 	rail_mat.metallic = 0.92
