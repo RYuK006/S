@@ -109,3 +109,17 @@ func _update_tactical_camera(delta: float):
 	
 	camera.global_position = camera.global_position.lerp(target_cam_pos, delta * 8.0)
 	camera.look_at(car_pos + lead_offset, Vector3.UP)
+
+func snap_to_target() -> void:
+	if not target_vehicle or not camera:
+		return
+	var car_trans := target_vehicle.global_transform
+	var car_pos := car_trans.origin
+	var forward_dir := -car_trans.basis.z.normalized()
+	var cur_dist := chase_distance
+	var cur_height := chase_height
+	var target_cam_pos := car_pos - (forward_dir * cur_dist) + (Vector3.UP * cur_height)
+	camera.global_position = target_cam_pos
+	var look_target := car_pos + (forward_dir * 3.0) + (Vector3.UP * 0.8)
+	camera.look_at(look_target, Vector3.UP)
+
