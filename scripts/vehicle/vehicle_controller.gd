@@ -128,6 +128,8 @@ func _setup_visual_model():
 			
 	if loaded_model:
 		car_mesh_instance = loaded_model
+		# Rotate 180 degrees around Y so the hood and headlights point forward (-Z)
+		loaded_model.rotation.y = PI
 		add_child(car_mesh_instance)
 		_bind_model_wheels(loaded_model)
 	else:
@@ -270,61 +272,100 @@ func _update_drivetrain(delta: float):
 	if nitro_active:
 		engine_torque *= 1.8
 	
-	# Shift logic
+	# Shift logic & Forward/Reverse transition
+	var fwd_dir: Vector3 = -global_transform.basis.z if is_inside_tree() else -transform.basis.z
+	var forward_vel: float = fwd_dir.dot(linear_velocity)
+	var rev_ratio: float = float(recipe.get("reverse_ratio", 3.4))
+	
 	if is_shifting:
 		shift_timer -= delta
 		if shift_timer <= 0.0:
 			is_shifting = false
 		engine_torque *= 0.1 # Cut torque during gear shifts
 	else:
-		# Auto-upshift
-		if engine_rpm > recipe.redline_rpm * 0.92 and current_gear < recipe.gear_ratios.size():
-			current_gear += 1
-			is_shifting = true
-			shift_timer = recipe.shift_time_ms / 1000.0
-		# Auto-downshift
-		elif engine_rpm < recipe.idle_rpm * 1.6 and current_gear > 1:
-			current_gear -= 1
-			is_shifting = true
-			shift_timer = recipe.shift_time_ms / 1000.0
+		if current_gear == 0:
+			# Currently in REVERSE:
+			# Shift to 1st gear if player presses throttle and car has stopped reversing
+			if throttle_input > 0.2 and forward_vel > -0.6:
+				current_gear = 1
+				is_shifting = true
+				shift_timer = 0.15
+		else:
+			# Currently in FORWARD gear (1..N):
+			# Auto-upshift
+			if engine_rpm > recipe.redline_rpm * 0.92 and current_gear < recipe.gear_ratios.size():
+				current_gear += 1
+				is_shifting = true
+				shift_timer = recipe.shift_time_ms / 1000.0
+			# Auto-downshift
+			elif engine_rpm < recipe.idle_rpm * 1.6 and current_gear > 1:
+				current_gear -= 1
+				is_shifting = true
+				shift_timer = recipe.shift_time_ms / 1000.0
+			# Shift to Reverse if player holds brake and car is stopped or nearly stopped
+			elif brake_input > 0.3 and forward_vel < 0.6 and throttle_input < 0.1:
+				current_gear = 0
+				is_shifting = true
+				shift_timer = 0.15
 	
-	# Compute wheel drive torque via transmission & final drive
-	var gear_ratio = recipe.gear_ratios[current_gear - 1]
-	var total_ratio = gear_ratio * recipe.final_drive
-	var axle_torque = engine_torque * total_ratio
+	var max_brake_nm: float = 3800.0
 	
-	# AWD split
-	var front_torque = axle_torque * recipe.torque_split * 0.5
-	var rear_torque = axle_torque * (1.0 - recipe.torque_split) * 0.5
-	
-	front_left_wheel.drive_torque = front_torque
-	front_right_wheel.drive_torque = front_torque
-	rear_left_wheel.drive_torque = rear_torque
-	rear_right_wheel.drive_torque = rear_torque
-	
-	# Braking torque with front bias (65% front, 35% rear)
-	var max_brake_nm = 3800.0
-	front_left_wheel.brake_torque = brake_input * max_brake_nm * 0.65 * 0.5
-	front_right_wheel.brake_torque = brake_input * max_brake_nm * 0.65 * 0.5
-	rear_left_wheel.brake_torque = brake_input * max_brake_nm * 0.35 * 0.5
-	rear_right_wheel.brake_torque = brake_input * max_brake_nm * 0.35 * 0.5
-	
-	# Handbrake locks rear wheels and reduces lateral grip for drifting
-	if handbrake_input:
-		rear_left_wheel.brake_torque += max_brake_nm * 1.5
-		rear_right_wheel.brake_torque += max_brake_nm * 1.5
-		rear_left_wheel.handbrake_factor = 0.35
-		rear_right_wheel.handbrake_factor = 0.35
+	if current_gear == 0:
+		# REVERSE DRIVETRAIN:
+		# In reverse, brake_input acts as reverse throttle to propel the vehicle backward
+		var rev_throttle := brake_input
+		var rev_engine_torque: float = recipe.peak_torque_nm * (0.6 + 0.4 * torque_factor) * rev_throttle
+		if is_shifting:
+			rev_engine_torque *= 0.1
+		var rev_total_ratio: float = rev_ratio * recipe.final_drive
+		var rev_axle_torque: float = -rev_engine_torque * rev_total_ratio
+		
+		var front_torque: float = rev_axle_torque * recipe.torque_split * 0.5
+		var rear_torque: float = rev_axle_torque * (1.0 - recipe.torque_split) * 0.5
+		front_left_wheel.drive_torque = front_torque
+		front_right_wheel.drive_torque = front_torque
+		rear_left_wheel.drive_torque = rear_torque
+		rear_right_wheel.drive_torque = rear_torque
+		
+		# Throttle input acts as brake when in reverse
+		var rev_brake: float = throttle_input * max_brake_nm
+		front_left_wheel.brake_torque = rev_brake * 0.65 * 0.5
+		front_right_wheel.brake_torque = rev_brake * 0.65 * 0.5
+		rear_left_wheel.brake_torque = rev_brake * 0.35 * 0.5
+		rear_right_wheel.brake_torque = rev_brake * 0.35 * 0.5
+		
+		# Simulated engine RPM in reverse
+		var avg_wheel_rad_s: float = (abs(rear_left_wheel.wheel_angular_velocity) + abs(rear_right_wheel.wheel_angular_velocity)) * 0.5
+		var driven_rpm: float = abs(avg_wheel_rad_s * rev_total_ratio * (60.0 / (2.0 * PI)))
+		target_rpm = max(recipe.idle_rpm, driven_rpm)
+		if brake_input > 0.0 and avg_wheel_rad_s < 2.0:
+			target_rpm = max(target_rpm, recipe.idle_rpm + brake_input * 2500.0)
 	else:
-		rear_left_wheel.handbrake_factor = 1.0
-		rear_right_wheel.handbrake_factor = 1.0
-	
-	# Calculate simulated engine RPM from driven wheels speed
-	var avg_wheel_rad_s = (rear_left_wheel.wheel_angular_velocity + rear_right_wheel.wheel_angular_velocity) * 0.5
-	var driven_rpm = abs(avg_wheel_rad_s * total_ratio * (60.0 / (2.0 * PI)))
-	target_rpm = max(recipe.idle_rpm, driven_rpm)
-	if throttle_input > 0.0 and avg_wheel_rad_s < 2.0:
-		target_rpm = max(target_rpm, recipe.idle_rpm + throttle_input * 2500.0) # Free rev when stalled/launching
+		# FORWARD DRIVETRAIN (1..N):
+		var gear_ratio: float = recipe.gear_ratios[current_gear - 1]
+		var total_ratio: float = gear_ratio * recipe.final_drive
+		var axle_torque: float = engine_torque * total_ratio
+		
+		# AWD split
+		var front_torque: float = axle_torque * recipe.torque_split * 0.5
+		var rear_torque: float = axle_torque * (1.0 - recipe.torque_split) * 0.5
+		front_left_wheel.drive_torque = front_torque
+		front_right_wheel.drive_torque = front_torque
+		rear_left_wheel.drive_torque = rear_torque
+		rear_right_wheel.drive_torque = rear_torque
+		
+		# Braking torque with front bias (65% front, 35% rear)
+		front_left_wheel.brake_torque = brake_input * max_brake_nm * 0.65 * 0.5
+		front_right_wheel.brake_torque = brake_input * max_brake_nm * 0.65 * 0.5
+		rear_left_wheel.brake_torque = brake_input * max_brake_nm * 0.35 * 0.5
+		rear_right_wheel.brake_torque = brake_input * max_brake_nm * 0.35 * 0.5
+		
+		# Calculate simulated engine RPM from driven wheels speed
+		var avg_wheel_rad_s := (rear_left_wheel.wheel_angular_velocity + rear_right_wheel.wheel_angular_velocity) * 0.5
+		var driven_rpm: float = abs(avg_wheel_rad_s * total_ratio * (60.0 / (2.0 * PI)))
+		target_rpm = max(recipe.idle_rpm, driven_rpm)
+		if throttle_input > 0.0 and avg_wheel_rad_s < 2.0:
+			target_rpm = max(target_rpm, recipe.idle_rpm + throttle_input * 2500.0) # Free rev when stalled/launching
 	
 	engine_rpm = move_toward(engine_rpm, clamp(target_rpm, recipe.idle_rpm, recipe.redline_rpm), delta * 5000.0)
 
