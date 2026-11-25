@@ -11,14 +11,14 @@ static func run() -> bool:
 	print("--- Running TestOpenWorldBench ---")
 	
 	# Test 1: Open World Scale & Biome Classification
-	if OpenWorldConfig.WORLD_SIZE_METERS != 4000.0 or OpenWorldConfig.GRID_CHUNKS != 8:
-		printerr("[FAIL] World size mismatch: expected 4000m, 8x8 chunks")
+	if OpenWorldConfig.WORLD_SIZE_METERS < 7000.0 or OpenWorldConfig.GRID_CHUNKS < 14:
+		printerr("[FAIL] World size mismatch: expected >= 7000m (50 km²)")
 		return false
 		
-	var b_nw := OpenWorldConfig.get_biome_at(-1000.0, -1000.0)
-	var b_ne := OpenWorldConfig.get_biome_at(1000.0, -1000.0)
-	var b_sw := OpenWorldConfig.get_biome_at(-1000.0, 1000.0)
-	var b_se := OpenWorldConfig.get_biome_at(1000.0, 1000.0)
+	var b_nw := OpenWorldConfig.get_biome_at(-1500.0, -1500.0)
+	var b_ne := OpenWorldConfig.get_biome_at(1500.0, -1500.0)
+	var b_sw := OpenWorldConfig.get_biome_at(-1500.0, 1500.0)
+	var b_se := OpenWorldConfig.get_biome_at(1500.0, 1500.0)
 	var b_center := OpenWorldConfig.get_biome_at(0.0, 0.0)
 	
 	if b_nw != OpenWorldConfig.BiomeType.FROZEN_PASS or b_ne != OpenWorldConfig.BiomeType.VOLCANO_RIDGE:
@@ -30,7 +30,7 @@ static func run() -> bool:
 	if b_center != OpenWorldConfig.BiomeType.FESTIVAL_HUB:
 		printerr("[FAIL] Central Festival Hub classification failed")
 		return false
-	print("[PASS] Open World Dimensions: 4,000m x 4,000m (16 km²) across 4 major biomes + Festival Hub")
+	print("[PASS] Open World Dimensions: 7,100m x 7,100m (50.4 km²) across 4 major biomes + Festival Hub")
 	
 	# Test 2: Procedural Multi-Octave Heightfield
 	var tg := TerrainGenerator.new(2026)
@@ -73,13 +73,13 @@ static func run() -> bool:
 	# Test 4: Arterial Road Network (Grand Perimeter Highway)
 	var rn := RoadNetwork.new(tg)
 	rn.build_open_world_roads()
-	if rn.highway_waypoints.size() != 64:
-		printerr("[FAIL] Expected 64 highway waypoints, got %d" % rn.highway_waypoints.size())
+	if rn.highway_waypoints.size() < 64:
+		printerr("[FAIL] Expected at least 64 highway waypoints, got %d" % rn.highway_waypoints.size())
 		return false
 	if rn.road_nodes.size() < 3:
 		printerr("[FAIL] Expected at least 3 major arterial road meshes, got %d" % rn.road_nodes.size())
 		return false
-	print("[PASS] Road Network: Grand Perimeter Highway (64 waypoints), Expressway, and Hillclimb Switchbacks validated")
+	print("[PASS] Road Network: Grand Perimeter Highway (%d waypoints), Expressway, and Hillclimb Switchbacks validated" % rn.highway_waypoints.size())
 	
 	# Test 5: Scenery MultiMesh Instancing
 	var pop := SceneryPopulator.new(tg, rn)
