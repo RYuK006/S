@@ -42,7 +42,10 @@ func _ready() -> void:
 	add_child(scenery_populator)
 	scenery_populator.populate_world_scenery()
 	
-	# 3. Position Player at Central Festival Hub
+	# 3. Add Reflective Ocean Water for Neon Coast
+	_build_coastal_ocean()
+	
+	# 4. Position Player at Central Festival Hub
 	var spawn_pos := Vector3(0, terrain_gen.get_height(0, 0) + 1.2, 0)
 	if player_vehicle:
 		player_vehicle.global_position = spawn_pos
@@ -50,23 +53,71 @@ func _ready() -> void:
 		if camera_rig:
 			camera_rig.target_vehicle = player_vehicle
 			
-	# 4. Initial chunk generation around spawn
+	# 5. Initial chunk generation around spawn
 	_update_chunks_around(Vector3.ZERO)
 	
-	# 5. Build Open World HUD
+	# 6. Build Open World HUD
 	_build_open_world_hud()
 	
-	# 6. Screenshot command check
+	# 7. Screenshot command check
 	for arg in OS.get_cmdline_args():
-		if arg == "--screenshot-dust-bowl":
-			var db_pos := Vector3(-331.0, terrain_gen.get_height(-331.0, 482.0) + 1.2, 482.0)
-			if player_vehicle:
-				player_vehicle.global_position = db_pos
-				player_vehicle.global_rotation = Vector3(0, PI * 0.25, 0)
-				_update_chunks_around(db_pos)
-			_take_world_screenshot("res://build/screenshots/open_world_dust_bowl.png")
-		elif arg == "--screenshot" or arg == "-screenshot":
-			_take_world_screenshot("res://build/screenshots/open_world_overview.png")
+		if arg == "--screenshot-volcano":
+			_teleport_to_biome(Vector3(820.0, 0.0, -820.0), -PI * 0.25)
+			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
+		elif arg == "--screenshot-snow":
+			_teleport_to_biome(Vector3(-850.0, 0.0, -850.0), PI * 0.25)
+			_take_world_screenshot("res://build/screenshots/open_world_snow.png")
+		elif arg == "--screenshot-desert" or arg == "--screenshot-dust-bowl":
+			_teleport_to_biome(Vector3(-650.0, 0.0, 650.0), -PI * 0.75)
+			_take_world_screenshot("res://build/screenshots/open_world_desert.png")
+		elif arg == "--screenshot-coast":
+			_teleport_to_biome(Vector3(850.0, 0.0, 850.0), PI * 0.75)
+			_take_world_screenshot("res://build/screenshots/open_world_coast.png")
+		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
+			_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_hub.png")
+
+func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
+	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 1.2
+	var final_pos := Vector3(target_xz.x, y, target_xz.z)
+	if player_vehicle:
+		player_vehicle.global_position = final_pos
+		player_vehicle.global_rotation = Vector3(0, yaw_rad, 0)
+		player_vehicle.linear_velocity = Vector3.ZERO
+		player_vehicle.angular_velocity = Vector3.ZERO
+	if camera_rig:
+		camera_rig.snap_to_target()
+	_update_chunks_around(final_pos)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_1:
+				_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0) # Festival Hub
+			KEY_2:
+				_teleport_to_biome(Vector3(-650.0, 0.0, 650.0), -PI * 0.75) # Dust Bowl
+			KEY_3:
+				_teleport_to_biome(Vector3(-850.0, 0.0, -850.0), PI * 0.25) # Frozen Pass
+			KEY_4:
+				_teleport_to_biome(Vector3(820.0, 0.0, -820.0), -PI * 0.25) # Volcano Ridge
+			KEY_5:
+				_teleport_to_biome(Vector3(850.0, 0.0, 850.0), PI * 0.75) # Neon Coast
+
+func _build_coastal_ocean() -> void:
+	var ocean := MeshInstance3D.new()
+	ocean.name = "CoastalOceanWater"
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(1800.0, 1800.0)
+	ocean.mesh = plane
+	ocean.position = Vector3(1200.0, 1.2, 1200.0)
+	
+	var water_mat := StandardMaterial3D.new()
+	water_mat.albedo_color = Color(0.06, 0.22, 0.44, 0.88)
+	water_mat.roughness = 0.08
+	water_mat.metallic = 0.35
+	water_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	ocean.material_override = water_mat
+	add_child(ocean)
 
 func _physics_process(_delta: float) -> void:
 	if not player_vehicle:
@@ -138,6 +189,13 @@ func _build_open_world_hud() -> void:
 	label_coords.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label_coords.add_theme_color_override("font_color", Color(0.8, 0.85, 0.9))
 	vbox.add_child(label_coords)
+	
+	var label_hint := Label.new()
+	label_hint.text = "FAST TRAVEL: [1] Hub | [2] Desert | [3] Snow | [4] Volcano | [5] Coast"
+	label_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label_hint.add_theme_font_size_override("font_size", 11)
+	label_hint.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+	vbox.add_child(label_hint)
 
 func _update_hud(pos: Vector3) -> void:
 	if not label_biome or not label_coords:
