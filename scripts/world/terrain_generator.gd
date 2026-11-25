@@ -115,10 +115,10 @@ func get_height(x: float, z: float) -> float:
 	var south_h: float = lerp(h_sw, h_se, weight_east)
 	var regional_h: float = lerp(north_h, south_h, weight_south)
 	
-	# Festival Hub blend (smooth flat plateau at center for events and staging)
-	var hub_h: float = 22.0 + (detail_noise.get_noise_2d(x, z) * 1.0)
+	# Festival Hub blend (smooth flat plateau at center for events, staging and start grid)
+	var hub_h: float = 22.0
 	if dist < 450.0:
-		var hub_factor: float = clamp((dist - 200.0) / 250.0, 0.0, 1.0)
+		var hub_factor: float = clamp((dist - 140.0) / 310.0, 0.0, 1.0)
 		hub_factor = hub_factor * hub_factor * (3.0 - 2.0 * hub_factor)
 		return max(1.5, lerp(hub_h, regional_h, hub_factor))
 		
