@@ -29,6 +29,8 @@ var label_coords: Label
 var label_speed_record: Label
 var last_reported_biome: int = -1
 
+var weather_particles: GPUParticles3D
+
 func _ready() -> void:
 	terrain_gen = TerrainGenerator.new(2026)
 	
@@ -46,7 +48,7 @@ func _ready() -> void:
 	_build_coastal_ocean()
 	
 	# 4. Position Player at Central Festival Hub
-	var spawn_pos := Vector3(0, terrain_gen.get_height(0, 0) + 1.2, 0)
+	var spawn_pos := Vector3(0, terrain_gen.get_height(0, 0) + 0.42, 0)
 	if player_vehicle:
 		player_vehicle.global_position = spawn_pos
 		player_vehicle.global_rotation = Vector3.ZERO
@@ -56,29 +58,61 @@ func _ready() -> void:
 	# 5. Initial chunk generation around spawn
 	_update_chunks_around(Vector3.ZERO)
 	
-	# 6. Build Open World HUD
+	# 6. Build Open World HUD & Weather
 	_build_open_world_hud()
+	_setup_weather_particles()
+
+func _setup_weather_particles() -> void:
+	weather_particles = GPUParticles3D.new()
+	weather_particles.name = "BiomeWeatherParticles"
+	weather_particles.amount = 350
+	weather_particles.lifetime = 4.0
+	weather_particles.preprocess = 2.0
+	
+	var mat := ParticleProcessMaterial.new()
+	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	mat.emission_box_extents = Vector3(45.0, 18.0, 45.0)
+	mat.direction = Vector3(0.3, -1.0, 0.2).normalized()
+	mat.spread = 15.0
+	mat.initial_velocity_min = 2.5
+	mat.initial_velocity_max = 6.0
+	mat.gravity = Vector3(0.0, -2.5, 0.0)
+	mat.scale_min = 0.04
+	mat.scale_max = 0.12
+	weather_particles.process_material = mat
+	
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.12, 0.12)
+	var p_mat := StandardMaterial3D.new()
+	p_mat.albedo_color = Color(0.95, 0.98, 1.0, 0.75)
+	p_mat.vertex_color_use_as_albedo = true
+	p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	quad.material = p_mat
+	weather_particles.draw_pass_1 = quad
+	
+	add_child(weather_particles)
 	
 	# 7. Screenshot command check
 	for arg in OS.get_cmdline_args():
 		if arg == "--screenshot-volcano":
-			_teleport_to_biome(Vector3(820.0, 0.0, -820.0), -PI * 0.25)
+			_teleport_to_biome(Vector3(750.0, 0.0, -750.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
 		elif arg == "--screenshot-snow":
-			_teleport_to_biome(Vector3(-850.0, 0.0, -850.0), PI * 0.25)
+			_teleport_to_biome(Vector3(-800.0, 0.0, -800.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_snow.png")
 		elif arg == "--screenshot-desert" or arg == "--screenshot-dust-bowl":
 			_teleport_to_biome(Vector3(-650.0, 0.0, 650.0), -PI * 0.75)
 			_take_world_screenshot("res://build/screenshots/open_world_desert.png")
 		elif arg == "--screenshot-coast":
-			_teleport_to_biome(Vector3(850.0, 0.0, 850.0), PI * 0.75)
+			_teleport_to_biome(Vector3(640.0, 0.0, 680.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_coast.png")
 		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
 			_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0)
 			_take_world_screenshot("res://build/screenshots/open_world_hub.png")
 
 func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
-	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 1.2
+	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 0.42
 	var final_pos := Vector3(target_xz.x, y, target_xz.z)
 	if player_vehicle:
 		player_vehicle.global_position = final_pos
@@ -107,16 +141,24 @@ func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
 	ocean.name = "CoastalOceanWater"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(1800.0, 1800.0)
+	plane.size = Vector2(2400.0, 2400.0)
+	plane.subdivide_width = 48
+	plane.subdivide_depth = 48
 	ocean.mesh = plane
 	ocean.position = Vector3(1200.0, 1.2, 1200.0)
 	
-	var water_mat := StandardMaterial3D.new()
-	water_mat.albedo_color = Color(0.06, 0.22, 0.44, 0.88)
-	water_mat.roughness = 0.08
-	water_mat.metallic = 0.35
-	water_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
-	ocean.material_override = water_mat
+	var water_shader := load("res://shaders/ocean_water.gdshader") as Shader
+	if water_shader:
+		var s_mat := ShaderMaterial.new()
+		s_mat.shader = water_shader
+		ocean.material_override = s_mat
+	else:
+		var water_mat := StandardMaterial3D.new()
+		water_mat.albedo_color = Color(0.06, 0.22, 0.44, 0.88)
+		water_mat.roughness = 0.08
+		water_mat.metallic = 0.35
+		water_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+		ocean.material_override = water_mat
 	add_child(ocean)
 
 func _physics_process(_delta: float) -> void:
@@ -133,6 +175,25 @@ func _physics_process(_delta: float) -> void:
 		_update_chunks_around(pos)
 		
 	_update_hud(pos)
+	
+	if weather_particles:
+		weather_particles.global_position = pos + Vector3(0.0, 8.0, 0.0)
+		var biome_type := OpenWorldConfig.get_biome_at(pos.x, pos.z)
+		var mat := weather_particles.process_material as ParticleProcessMaterial
+		if mat:
+			match biome_type:
+				OpenWorldConfig.BiomeType.VOLCANO_RIDGE:
+					mat.gravity = Vector3(0.0, 1.8, 0.0)
+					mat.color = Color(1.0, 0.45, 0.1, 0.85)
+				OpenWorldConfig.BiomeType.FROZEN_PASS:
+					mat.gravity = Vector3(0.0, -2.5, 0.0)
+					mat.color = Color(0.95, 0.98, 1.0, 0.8)
+				OpenWorldConfig.BiomeType.DUST_BOWL:
+					mat.gravity = Vector3(1.2, -0.8, 0.5)
+					mat.color = Color(0.85, 0.72, 0.55, 0.6)
+				_:
+					mat.gravity = Vector3(0.0, -2.0, 0.0)
+					mat.color = Color(0.9, 0.95, 1.0, 0.4)
 
 func _update_chunks_around(pos: Vector3) -> void:
 	var center_cx := int(floor((pos.x + OpenWorldConfig.HALF_SIZE) / OpenWorldConfig.CHUNK_SIZE))
@@ -210,7 +271,7 @@ func _update_hud(pos: Vector3) -> void:
 	label_coords.text = "GPS: X: %dm | Z: %dm | ALT: %dm" % [int(pos.x), int(pos.z), int(pos.y)]
 
 func _take_world_screenshot(out_path: String = "res://build/screenshots/open_world_overview.png") -> void:
-	await get_tree().create_timer(0.8).timeout
+	await get_tree().create_timer(1.0).timeout
 	var vp := get_viewport()
 	if vp:
 		var img := vp.get_texture().get_image()
