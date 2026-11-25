@@ -76,10 +76,10 @@ static func run() -> bool:
 	if rn.highway_waypoints.size() < 64:
 		printerr("[FAIL] Expected at least 64 highway waypoints, got %d" % rn.highway_waypoints.size())
 		return false
-	if rn.road_nodes.size() < 3:
-		printerr("[FAIL] Expected at least 3 major arterial road meshes, got %d" % rn.road_nodes.size())
+	if rn.road_nodes.size() < 6:
+		printerr("[FAIL] Expected at least 6 interconnected road meshes, got %d" % rn.road_nodes.size())
 		return false
-	print("[PASS] Road Network: Grand Perimeter Highway (%d waypoints), Expressway, and Hillclimb Switchbacks validated" % rn.highway_waypoints.size())
+	print("[PASS] Road Network: Grand Perimeter Highway (%d waypoints) + %d Interconnecting Highways & Connectors validated" % [rn.highway_waypoints.size(), rn.road_nodes.size()])
 	
 	# Test 5: Scenery MultiMesh Instancing
 	var pop := SceneryPopulator.new(tg, rn)
