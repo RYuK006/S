@@ -151,12 +151,20 @@ func _get_vertex_color(x: float, y: float, z: float) -> Color:
 	
 	var c_nw := Color(0.85, 0.90, 0.96) # Snow
 	var c_ne := Color(0.22, 0.12, 0.10) # Volcanic basalt
-	var c_sw := Color(0.78, 0.58, 0.35) # Sand dunes
+	var c_sw := Color(0.64, 0.42, 0.24) # Warm Desert Sandstone / Terracotta
 	var c_se := Color(0.18, 0.22, 0.26) # Coastal tarmac/docks
 	
 	var c_north := c_nw.lerp(c_ne, weight_east)
 	var c_south := c_sw.lerp(c_se, weight_east)
 	var base_color := c_north.lerp(c_south, weight_south)
+	
+	# Subtle natural dune / soil noise variation across vertices
+	var micro_noise: float = detail_noise.get_noise_2d(x * 1.5, z * 1.5) * 0.05
+	base_color = Color(
+		clamp(base_color.r + micro_noise, 0.0, 1.0),
+		clamp(base_color.g + (micro_noise * 0.8), 0.0, 1.0),
+		clamp(base_color.b + (micro_noise * 0.6), 0.0, 1.0)
+	)
 	
 	# Festival hub color blending
 	if dist < 450.0:
@@ -167,7 +175,7 @@ func _get_vertex_color(x: float, y: float, z: float) -> Color:
 		
 	var norm := get_normal(x, z)
 	var slope: float = 1.0 - norm.y # 0 on flat, 1 on vertical
-	var rock_color := Color(0.35, 0.32, 0.30)
+	var rock_color := Color(0.42, 0.28, 0.18)
 	var color: Color = base_color.lerp(rock_color, clamp(slope * 2.2, 0.0, 1.0))
 	
 	if y > 105.0:
