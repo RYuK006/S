@@ -57,6 +57,10 @@ $models = @(
     @{ Url = "https://github.com/KenneyNL/Starter-Kit-Racing/raw/main/models/decoration-forest.glb"; Dest = "assets/models/foliage/pine_cluster.glb" },
     @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/building-garage.glb"; Dest = "assets/models/props/pit_garage.glb" },
     @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/grass-trees-tall.glb"; Dest = "assets/models/foliage/trees_tall.glb" },
+    @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/grass-trees.glb"; Dest = "assets/models/foliage/trees_medium.glb" },
+    @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/building-small-a.glb"; Dest = "assets/models/props/paddock_building_a.glb" },
+    @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/building-small-b.glb"; Dest = "assets/models/props/paddock_building_b.glb" },
+    @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/pavement-fountain.glb"; Dest = "assets/models/props/plaza_fountain.glb" },
     @{ Url = "https://github.com/KenneyNL/Starter-Kit-City-Builder/raw/main/models/road-straight-lightposts.glb"; Dest = "assets/models/props/highway_lightpost.glb" }
 )
 
