@@ -32,9 +32,9 @@ func build_open_world_roads() -> void:
 
 func _build_festival_starting_grid() -> void:
 	var pts: Array[Vector3] = []
-	for i in range(15):
-		var z_val := -50.0 + (i * 8.0) # from -50m to +62m
-		var y_val := terrain_gen.get_height(0.0, z_val) + 0.18
+	for i in range(25):
+		var z_val := -80.0 + (i * 6.5) # from -80m to +76m across starting hub
+		var y_val := terrain_gen.get_height(0.0, z_val) + 0.38
 		pts.append(Vector3(0.0, y_val, z_val))
 	var road_mesh := _generate_ribbon_mesh(pts, 14.0, false, "Festival Starting Grid")
 	add_child(road_mesh)
@@ -165,10 +165,18 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	for i in range(max_idx):
 		var curr_p := points[i % n_pts]
 		var next_p := points[(i + 1) % n_pts]
+		var seg_len: float = curr_p.distance_to(next_p)
 		var fwd := (next_p - curr_p).normalized()
 		var right := fwd.cross(Vector3.UP).normalized()
 		
-		var next_next_p := points[(i + 2) % n_pts]
+		var next_next_p: Vector3
+		if is_closed:
+			next_next_p = points[(i + 2) % n_pts]
+		else:
+			if i + 2 < n_pts:
+				next_next_p = points[i + 2]
+			else:
+				next_next_p = next_p + fwd * seg_len
 		var next_fwd := (next_next_p - next_p).normalized()
 		var next_right := next_fwd.cross(Vector3.UP).normalized()
 		
@@ -186,46 +194,45 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 		var np_R1 := next_p + (next_right * (half_w * 0.88))
 		var np_R0 := next_p + (next_right * half_w)
 		
-		var seg_len := curr_p.distance_to(next_p)
 		var u0 := u_distance * 0.1
 		var u1 := (u_distance + seg_len) * 0.1
 		u_distance += seg_len
 		
-		# Quad 1: Left shoulder stripe
+		# Quad 1: Left shoulder stripe (Counter-Clockwise winding upward)
 		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u0)); st.add_vertex(p_L0)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
 		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
+		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
 		
 		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
 		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
+		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
 		
 		# Quad 2: Left travel lane to centerline
 		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
 		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
+		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
 		
 		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
 		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
+		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
 		
 		# Quad 3: Centerline to Right travel lane
 		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
 		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
+		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
 		
 		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
 		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
+		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
 		
 		# Quad 4: Right travel lane to right shoulder stripe
 		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
 		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
+		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
 		
 		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u1)); st.add_vertex(np_R0)
 		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
+		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u1)); st.add_vertex(np_R0)
 		
 	st.generate_normals()
 	st.generate_tangents()
@@ -240,6 +247,7 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 0.55
 	mat.metallic = 0.05
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	
 	var tex_asphalt_d := load("res://assets/textures/asphalt_diff.jpg") as Texture2D
 	var tex_asphalt_n := load("res://assets/textures/asphalt_nor.jpg") as Texture2D
