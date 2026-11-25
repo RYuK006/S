@@ -79,8 +79,24 @@ func _update_chase_camera(delta: float):
 	var target_cam_pos = car_pos - (forward_dir * cur_dist) + (Vector3.UP * cur_height)
 	camera.global_position = camera.global_position.lerp(target_cam_pos, delta * chase_pos_smooth)
 	
+	# High-speed camera shake & cornering banking
+	var shake_offset := Vector3.ZERO
+	if target_vehicle.speed_kmh > 40.0:
+		var shake_mag: float = (target_vehicle.speed_kmh / 250.0) * 0.02
+		shake_offset = Vector3(
+			randf_range(-shake_mag, shake_mag),
+			randf_range(-shake_mag, shake_mag),
+			0.0
+		)
+	
+	# Dynamic camera banking (subtle centrifugal roll into apex)
+	var lat_g: float = clamp(target_vehicle.steer_input * (target_vehicle.speed_kmh / 140.0), -1.0, 1.0)
+	var target_roll: float = -lat_g * 0.04
+	var up_vector: Vector3 = Vector3(sin(target_roll), cos(target_roll), 0.0).normalized()
+	
 	var look_target = car_pos + (forward_dir * 3.0) + (Vector3.UP * 0.8)
-	camera.look_at(look_target, Vector3.UP)
+	camera.look_at(look_target, up_vector)
+	camera.global_position += shake_offset
 
 func _update_cockpit_camera(delta: float):
 	var car_trans = target_vehicle.global_transform
