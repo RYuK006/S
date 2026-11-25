@@ -199,3 +199,50 @@ This document specifies the public API, signals, data shapes, and cross-module c
 - **Inherits**: `RefCounted`
 - **Purpose**: Atomic settings persistence in `user://settings.json` for audio volumes, graphics DRS, screen shake, and colorblind filters.
 - **Called by**: `MainScene`, `GarageController`.
+
+---
+
+## 6. Open World System (FH5 Scale Architecture)
+
+### `OpenWorldConfig` (`scripts/world/open_world_config.gd`)
+- **Inherits**: `RefCounted`
+- **Purpose**: Map layout constants (4,000m x 4,000m, 500m chunk size, 8x8 grid = 64 chunks), 5 biome profiles (Frozen Pass, Volcano Ridge, Dust Bowl, Neon Coast, Festival Hub) with friction, surface types, and color definitions.
+- **Called by**: `TerrainGenerator`, `RoadNetwork`, `SceneryPopulator`, `OpenWorldManager`.
+
+### `TerrainGenerator` (`scripts/world/terrain_generator.gd`)
+- **Inherits**: `RefCounted`
+- **Purpose**: 3-noise octave continuous heightfield, smooth quadrant and festival hub blending, surface normal calculation, and 500m `ArrayMesh` + `ConcavePolygonShape3D` chunk collision generation.
+- **Public API**:
+  - `get_height(x: float, z: float) -> float`
+  - `get_normal(x: float, z: float, step: float = 1.0) -> Vector3`
+  - `generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 32) -> MeshInstance3D`
+- **Called by**: `OpenWorldManager`, `RoadNetwork`, `SceneryPopulator`, `TestOpenWorldBench`.
+
+### `RoadNetwork` (`scripts/world/road_network.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Generates arterial asphalt road ribbon meshes with PBR materials and physics collision shapes:
+  - Grand Perimeter Highway (64 waypoints, 14m wide, 3.2km loop).
+  - Trans-Continental Expressway (East-West arterial connector).
+  - Frozen Pass Mountain Hillclimb (Catmull-Rom switchback hairpin curves).
+- **Public API**:
+  - `build_open_world_roads() -> void`
+  - `highway_waypoints: Array[Vector3]`
+- **Called by**: `OpenWorldManager`, `TestOpenWorldBench`.
+
+### `SceneryPopulator` (`scripts/world/scenery_populator.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Batched `MultiMeshInstance3D` generation for massive open world roadside decoration:
+  - Highway dual-side light poles and crash barriers.
+  - Alpine pine forests (NW peaks).
+  - Desert boulder clusters and saguaro cacti (SW dunes).
+  - Volcanic basalt spires (NE caldera).
+  - Industrial shipping containers and dock cranes (SE harbor).
+  - Festival entry archway and stage banners.
+- **Public API**:
+  - `populate_world_scenery() -> void`
+- **Called by**: `OpenWorldManager`, `TestOpenWorldBench`.
+
+### `OpenWorldManager` (`scripts/world/open_world_manager.gd`)
+- **Inherits**: `Node3D`
+- **Purpose**: Dynamic chunk streaming ($5 \times 5$ active radius, $2,500\text{ m} \times 2,500\text{ m}$ loaded area), real-time player GPS & Biome HUD, vehicle spawn at central hub, and `--screenshot` visual test verification.
+- **Called by**: `scenes/open_world.tscn`.
