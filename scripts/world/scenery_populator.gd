@@ -66,30 +66,34 @@ func _populate_highway_props() -> void:
 	add_child(inst_poles)
 
 func _populate_alpine_pines(count: int) -> void:
-	var cone_mesh := CylinderMesh.new()
-	cone_mesh.top_radius = 0.05
-	cone_mesh.bottom_radius = 2.2
-	cone_mesh.height = 8.0
+	# Layered Conifer Pine Foliage (Multi-tiered evergreen trees for Frozen Pass)
+	var pine_mesh := CylinderMesh.new()
+	pine_mesh.top_radius = 0.05
+	pine_mesh.bottom_radius = 2.8
+	pine_mesh.height = 9.0
+	pine_mesh.radial_segments = 7
 	
 	var pine_mat := StandardMaterial3D.new()
-	pine_mat.albedo_color = Color(0.08, 0.22, 0.12)
-	pine_mat.roughness = 0.8
+	pine_mat.albedo_color = Color(0.06, 0.20, 0.10) # Alpine Spruce Green
+	pine_mat.roughness = 0.85
 	
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = cone_mesh
+	mm.mesh = pine_mesh
 	mm.instance_count = count
 	
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2026
 	
 	for i in range(count):
-		# Frozen Pass quadrant (North-West: x in -1800 to -200, z in -1800 to -200)
+		# Frozen Pass quadrant (North-West: x in -1800 to -250, z in -1800 to -250)
 		var x := rng.randf_range(-1800.0, -250.0)
 		var z := rng.randf_range(-1800.0, -250.0)
-		var y := terrain_gen.get_height(x, z) + 4.0
-		var s := rng.randf_range(0.7, 1.4)
-		var basis := Basis().scaled(Vector3(s, s, s))
+		var s := rng.randf_range(0.8, 1.8)
+		# Embed base into mountain slopes
+		var y := terrain_gen.get_height(x, z) + (3.8 * s)
+		var rot_y := rng.randf_range(0, TAU)
+		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
 		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 		
 	var inst := MultiMeshInstance3D.new()
@@ -169,21 +173,21 @@ func _populate_desert_rocks_and_cacti(count: int) -> void:
 	add_child(inst_cacti)
 
 func _populate_volcanic_spires(count: int) -> void:
-	# Hexagonal Basalt Columns (Giant's Causeway / Volcanic Caldera formations)
-	var spire_mesh := CylinderMesh.new()
-	spire_mesh.top_radius = 2.0
-	spire_mesh.bottom_radius = 2.6
-	spire_mesh.height = 14.0
-	spire_mesh.radial_segments = 6 # Hexagonal prism
+	# Jagged Volcanic Obsidian Crags & Basalt Outcrops (Natural low-profile jagged rock clusters)
+	var crag_mesh := SphereMesh.new()
+	crag_mesh.radial_segments = 6
+	crag_mesh.rings = 3
+	crag_mesh.radius = 2.2
+	crag_mesh.height = 3.6
 	
-	var spire_mat := StandardMaterial3D.new()
-	spire_mat.albedo_color = Color(0.14, 0.12, 0.13) # Obsidian Basalt
-	spire_mat.roughness = 0.85
-	spire_mat.metallic = 0.15
+	var crag_mat := StandardMaterial3D.new()
+	crag_mat.albedo_color = Color(0.12, 0.10, 0.11) # Charred Volcanic Basalt
+	crag_mat.roughness = 0.88
+	crag_mat.metallic = 0.25
 	
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = spire_mesh
+	mm.mesh = crag_mesh
 	mm.instance_count = count
 	
 	var rng := RandomNumberGenerator.new()
@@ -191,29 +195,32 @@ func _populate_volcanic_spires(count: int) -> void:
 	
 	for i in range(count):
 		# Volcano Ridge quadrant (North-East: x in 250 to 1800, z in -1800 to -250)
-		var x := rng.randf_range(250.0, 1800.0)
-		var z := rng.randf_range(-1800.0, -250.0)
+		var x := rng.randf_range(280.0, 1750.0)
+		var z := rng.randf_range(-1750.0, -280.0)
 		var rot_y := rng.randf_range(0, TAU)
-		var s := rng.randf_range(0.8, 2.2)
-		var y := terrain_gen.get_height(x, z) + (5.0 * s)
-		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
+		var rot_x := rng.randf_range(-0.4, 0.4)
+		var rot_z := rng.randf_range(-0.4, 0.4)
+		var s := rng.randf_range(0.8, 3.2)
+		# Embed rocks naturally into volcanic slopes
+		var y := terrain_gen.get_height(x, z) - (s * 0.3)
+		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s * 1.4, s * 0.9, s * 1.2))
 		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 		
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
-	inst.material_override = spire_mat
+	inst.material_override = crag_mat
 	inst.name = "MultiMesh_VolcanicSpires"
 	add_child(inst)
 
 func _populate_shipping_containers(count: int) -> void:
+	# Standard 40ft ISO Shipping Containers in organized harbor stacks
 	var cont_mesh := BoxMesh.new()
-	cont_mesh.size = Vector3(2.4, 2.6, 6.0)
+	cont_mesh.size = Vector3(2.44, 2.59, 12.19)
 	
-	var colors := [Color(0.8, 0.2, 0.1), Color(0.1, 0.4, 0.8), Color(0.1, 0.7, 0.3), Color(0.9, 0.6, 0.1)]
 	var cont_mat := StandardMaterial3D.new()
-	cont_mat.albedo_color = Color(0.25, 0.45, 0.75)
-	cont_mat.roughness = 0.4
-	cont_mat.metallic = 0.7
+	cont_mat.albedo_color = Color(0.22, 0.42, 0.72) # Industrial Freight Marine Blue
+	cont_mat.roughness = 0.45
+	cont_mat.metallic = 0.65
 	
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -223,14 +230,19 @@ func _populate_shipping_containers(count: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5050
 	
+	# Organized harbor container terminal layout in Neon Coast (SE)
 	for i in range(count):
-		# Neon Docks quadrant (South-East: x in 250 to 1800, z in 250 to 1800)
-		var x := rng.randf_range(300.0, 1750.0)
-		var z := rng.randf_range(300.0, 1750.0)
-		var y := terrain_gen.get_height(x, z) + 1.3
-		var rot_y := float(rng.randi_range(0, 3)) * (PI * 0.5)
-		var basis := Basis(Vector3.UP, rot_y)
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+		# Grid-aligned stacks in harbor depot
+		var row := (i / 5) % 10
+		var col := i % 5
+		var tier := (i / 50) % 2 # 2-high stacks
+		
+		var base_x := 650.0 + (col * 3.6)
+		var base_z := 650.0 + (row * 14.5)
+		var y := terrain_gen.get_height(base_x, base_z) + 1.3 + (tier * 2.6)
+		
+		var basis := Basis(Vector3.UP, 0.0)
+		mm.set_instance_transform(i, Transform3D(basis, Vector3(base_x, y, base_z)))
 		
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
