@@ -7,6 +7,7 @@ const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
 var macro_noise: FastNoiseLite
 var mountain_noise: FastNoiseLite
 var detail_noise: FastNoiseLite
+var terrain_material: StandardMaterial3D
 
 func _init(seed_val: int = 1337) -> void:
 	macro_noise = FastNoiseLite.new()
@@ -26,6 +27,32 @@ func _init(seed_val: int = 1337) -> void:
 	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	detail_noise.frequency = 0.008
 	detail_noise.fractal_octaves = 2
+	
+	_setup_terrain_material()
+
+func _setup_terrain_material() -> void:
+	terrain_material = StandardMaterial3D.new()
+	terrain_material.vertex_color_use_as_albedo = true
+	terrain_material.roughness = 0.88
+	terrain_material.metallic = 0.04
+	terrain_material.metallic_specular = 0.15
+	
+	# Procedural PBR Normal Map for realistic sand ripples, rock crags, and ground grain
+	var noise_tex := NoiseTexture2D.new()
+	noise_tex.width = 256
+	noise_tex.height = 256
+	noise_tex.as_normal_map = true
+	noise_tex.bump_strength = 2.4
+	
+	var norm_noise := FastNoiseLite.new()
+	norm_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	norm_noise.frequency = 0.05
+	norm_noise.fractal_octaves = 3
+	noise_tex.noise = norm_noise
+	
+	terrain_material.normal_enabled = true
+	terrain_material.normal_texture = noise_tex
+	terrain_material.uv1_scale = Vector3(120.0, 120.0, 120.0)
 
 func get_height(x: float, z: float) -> float:
 	var dist: float = Vector2(x, z).length()
@@ -41,14 +68,21 @@ func get_height(x: float, z: float) -> float:
 	var ridge: float = pow(1.0 - abs(n_mount), 2.0)
 	
 	# Biome regional heights:
-	# NW: Frozen Pass (Alpine peaks)
+	# NW: Frozen Pass (Alpine peaks & jagged mountain summits)
 	var h_nw: float = 70.0 + (n_macro * 50.0) + (ridge * 65.0)
-	# NE: Volcano Ridge (Volcanic caldera & jagged obsidian ridges)
-	var h_ne: float = 65.0 + (n_macro * 60.0) + (ridge * 70.0)
+	
+	# NE: Volcano Ridge (Volcanic caldera cone & crater)
+	# Center of volcano caldera cone around (1000, -1000)
+	var dist_volcano: float = Vector2(x - 1000.0, z + 1000.0).length()
+	var volcano_cone: float = clamp(1.0 - (dist_volcano / 700.0), 0.0, 1.0)
+	var volcano_crater: float = clamp(1.0 - (dist_volcano / 160.0), 0.0, 1.0)
+	var h_ne: float = 55.0 + (n_macro * 40.0) + (volcano_cone * 75.0) - (volcano_crater * 38.0) + (ridge * 35.0)
+	
 	# SW: Dust Bowl (Rolling desert dunes & canyon washes)
 	var h_sw: float = 18.0 + (n_macro * 20.0) + (n_mount * 10.0)
-	# SE: Neon Coast (Low coastal basin & docklands)
-	var h_se: float = 4.0 + (n_macro * 10.0) + (n_mount * 5.0)
+	
+	# SE: Neon Coast (Low coastal basin & docklands, sloping to ocean shore)
+	var h_se: float = 3.5 + (n_macro * 8.0) + (n_mount * 4.0)
 	
 	# Bilinear blend across all four quadrants
 	var north_h: float = lerp(h_nw, h_ne, weight_east)
@@ -59,7 +93,6 @@ func get_height(x: float, z: float) -> float:
 	var hub_h: float = 22.0 + (detail_noise.get_noise_2d(x, z) * 1.0)
 	if dist < 450.0:
 		var hub_factor: float = clamp((dist - 200.0) / 250.0, 0.0, 1.0)
-		# Smoothstep S-curve
 		hub_factor = hub_factor * hub_factor * (3.0 - 2.0 * hub_factor)
 		return max(1.5, lerp(hub_h, regional_h, hub_factor))
 		
@@ -126,13 +159,7 @@ func generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 32) -> Me
 	var mesh_inst := MeshInstance3D.new()
 	mesh_inst.mesh = mesh
 	mesh_inst.name = "Chunk_%d_%d" % [chunk_x, chunk_z]
-	
-	# PBR Terrain Material with vertex colors
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.85
-	mat.metallic = 0.05
-	mesh_inst.material_override = mat
+	mesh_inst.material_override = terrain_material
 	
 	# Add StaticBody3D collision shape for driving
 	var static_body := StaticBody3D.new()
@@ -149,16 +176,17 @@ func _get_vertex_color(x: float, y: float, z: float) -> Color:
 	var weight_east: float = clamp((x + blend_w) / (2.0 * blend_w), 0.0, 1.0)
 	var weight_south: float = clamp((z + blend_w) / (2.0 * blend_w), 0.0, 1.0)
 	
-	var c_nw := Color(0.85, 0.90, 0.96) # Snow
-	var c_ne := Color(0.22, 0.12, 0.10) # Volcanic basalt
-	var c_sw := Color(0.64, 0.42, 0.24) # Warm Desert Sandstone / Terracotta
-	var c_se := Color(0.18, 0.22, 0.26) # Coastal tarmac/docks
+	# 1. Base regional palette
+	var c_nw := Color(0.92, 0.95, 1.0)   # Frozen Pass alpine snow
+	var c_ne := Color(0.08, 0.08, 0.09)  # Volcano Ridge deep charred obsidian & ash
+	var c_sw := Color(0.72, 0.44, 0.20)  # Dust Bowl warm terracotta / golden dunes
+	var c_se := Color(0.14, 0.16, 0.18)  # Neon Coast dark harbor tarmac
 	
 	var c_north := c_nw.lerp(c_ne, weight_east)
 	var c_south := c_sw.lerp(c_se, weight_east)
 	var base_color := c_north.lerp(c_south, weight_south)
 	
-	# Subtle natural dune / soil noise variation across vertices
+	# 2. Subtle procedural ground grain variation
 	var micro_noise: float = detail_noise.get_noise_2d(x * 1.5, z * 1.5) * 0.05
 	base_color = Color(
 		clamp(base_color.r + micro_noise, 0.0, 1.0),
@@ -166,20 +194,45 @@ func _get_vertex_color(x: float, y: float, z: float) -> Color:
 		clamp(base_color.b + (micro_noise * 0.6), 0.0, 1.0)
 	)
 	
-	# Festival hub color blending
+	# 3. Slope-based rock cliffs
+	var norm := get_normal(x, z)
+	var slope: float = 1.0 - norm.y # 0 = flat ground, 1 = vertical cliff
+	
+	# Regional cliff rock colors
+	var rock_nw := Color(0.32, 0.34, 0.38) # Dark granite cliff
+	var rock_ne := Color(0.05, 0.05, 0.06) # Dark chiseled basalt
+	var rock_sw := Color(0.52, 0.28, 0.14) # Red canyon sandstone
+	var rock_se := Color(0.10, 0.12, 0.14) # Breakwater stone
+	var reg_rock := rock_nw.lerp(rock_ne, weight_east).lerp(rock_sw.lerp(rock_se, weight_east), weight_south)
+	
+	var color: Color = base_color.lerp(reg_rock, clamp(slope * 2.2, 0.0, 1.0))
+	
+	# 4. Volcano Ridge: Magma veins & Caldera glow (ONLY in NE quadrant, x > 0 and z < 0)
+	if x > 150.0 and z < -150.0:
+		var dist_caldera: float = Vector2(x - 1000.0, z + 1000.0).length()
+		# Caldera floor has glowing molten magma lake at the volcano crater
+		if dist_caldera < 180.0:
+			var lake_intensity: float = clamp(1.0 - (dist_caldera / 180.0), 0.0, 1.0)
+			color = color.lerp(Color(1.5, 0.45, 0.05), lake_intensity * 0.98)
+		else:
+			# Fine glowing lava fissures running through the dark obsidian rock
+			var fissure_noise: float = abs(detail_noise.get_noise_2d(x * 3.5, z * 3.5))
+			if y > 60.0 and fissure_noise < 0.022:
+				var fissure_t: float = 1.0 - (fissure_noise / 0.022)
+				color = color.lerp(Color(1.4, 0.38, 0.04), fissure_t * 0.92)
+	
+	# 5. Frozen Pass: Alpine Snow Caps (ONLY in NW quadrant, x < 0 and z < 0)
+	if x < -100.0 and z < -100.0:
+		if y > 75.0 and slope < 0.45:
+			var snow_factor: float = clamp((y - 75.0) / 30.0, 0.0, 1.0)
+			color = color.lerp(Color(0.96, 0.98, 1.0), snow_factor)
+			
+	# 6. Festival Hub blending (Central arena)
 	if dist < 450.0:
-		var hub_c := Color(0.30, 0.32, 0.36)
+		var hub_c := Color(0.22, 0.23, 0.26)
 		var hub_factor: float = clamp((dist - 200.0) / 250.0, 0.0, 1.0)
 		hub_factor = hub_factor * hub_factor * (3.0 - 2.0 * hub_factor)
-		base_color = hub_c.lerp(base_color, hub_factor)
-		
-	var norm := get_normal(x, z)
-	var slope: float = 1.0 - norm.y # 0 on flat, 1 on vertical
-	var rock_color := Color(0.42, 0.28, 0.18)
-	var color: Color = base_color.lerp(rock_color, clamp(slope * 2.2, 0.0, 1.0))
-	
-	if y > 105.0:
-		var snow_factor: float = clamp((y - 105.0) / 25.0, 0.0, 1.0)
-		color = color.lerp(Color(0.96, 0.98, 1.0), snow_factor)
+		color = hub_c.lerp(color, hub_factor)
 		
 	return color
+
