@@ -30,6 +30,7 @@ var slip_angle: float = 0.0
 var slip_ratio: float = 0.0
 var steer_angle: float = 0.0
 var wheel_angular_velocity: float = 0.0
+var wheel_roll_angle: float = 0.0
 var drive_torque: float = 0.0
 var brake_torque: float = 0.0
 var handbrake_factor: float = 1.0     # When handbrake is pulled on rear, scales grip down
@@ -62,15 +63,20 @@ func setup(config: Dictionary, tire_cfg: Dictionary):
 	add_child(raycast)
 
 func update_suspension(chassis: RigidBody3D, dt: float) -> Vector3:
+	if raycast and chassis and not raycast.get_collision_mask_value(1) == false:
+		raycast.add_exception(chassis)
+		
 	var total_force = Vector3.ZERO
 	if not raycast.is_colliding():
 		is_grounded = false
 		compression = 0.0
 		compression_velocity = 0.0
 		normal_force = 0.0
-		# Update visual mesh to hang at full droop
+		# Update visual mesh to hang at droop limit
 		if wheel_visual:
-			wheel_visual.position = Vector3(0, -rest_length, 0)
+			wheel_visual.position = Vector3(0, -rest_length * 0.5, 0)
+			wheel_roll_angle += wheel_angular_velocity * dt
+			wheel_visual.rotation = Vector3(wheel_roll_angle, steer_angle, 0.0)
 		return total_force
 	
 	is_grounded = true
@@ -90,11 +96,12 @@ func update_suspension(chassis: RigidBody3D, dt: float) -> Vector3:
 	compression_velocity = (target_comp - compression) / max(0.0001, dt)
 	compression = target_comp
 	
-	# Visual wheel position updates smoothly
+	# Visual wheel position updates smoothly with natural suspension motion
 	if wheel_visual:
-		wheel_visual.position = Vector3(0, -hit_dist, 0)
-		wheel_visual.rotation.y = steer_angle
-		wheel_visual.rotate_x(wheel_angular_velocity * dt)
+		var visual_y: float = -(hit_dist - rest_length)
+		wheel_visual.position = Vector3(0, clamp(visual_y, -rest_length * 0.5, travel), 0)
+		wheel_roll_angle += wheel_angular_velocity * dt
+		wheel_visual.rotation = Vector3(wheel_roll_angle, steer_angle, 0.0)
 	
 	# 1. Spring Force with Bump Stop exponential stiffness near limit
 	var spring_f = compression * spring_rate
