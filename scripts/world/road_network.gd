@@ -15,7 +15,7 @@ func _init(tg: TerrainGenerator = null) -> void:
 		terrain_gen = TerrainGenerator.new()
 
 func build_open_world_roads() -> void:
-	# 1. Build Grand Perimeter Highway (Sweeping 4-lane loop around the 4km map)
+	# 1. Build Grand Perimeter Highway (Sweeping 4-lane loop around the 50 km² map)
 	_build_perimeter_highway()
 	
 	# 2. Build Trans-Continental Cross Expressway (Connecting West to East through Central Festival Hub)
@@ -24,8 +24,21 @@ func build_open_world_roads() -> void:
 	# 3. Build Mountain Pass Hillclimb (Winding switchbacks to Frozen Pass peaks)
 	_build_mountain_hillclimb()
 	
-	# 4. Build Armco Steel Guardrails along Outer Highway Cliffs
+	# 4. Build Festival Starting Grid Runway (Straight staging road through arch)
+	_build_festival_starting_grid()
+	
+	# 5. Build Armco Steel Guardrails along Outer Highway Cliffs
 	_build_highway_guardrails()
+
+func _build_festival_starting_grid() -> void:
+	var pts: Array[Vector3] = []
+	for i in range(15):
+		var z_val := -50.0 + (i * 8.0) # from -50m to +62m
+		var y_val := terrain_gen.get_height(0.0, z_val) + 0.18
+		pts.append(Vector3(0.0, y_val, z_val))
+	var road_mesh := _generate_ribbon_mesh(pts, 14.0, false, "Festival Starting Grid")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
 
 func _build_highway_guardrails() -> void:
 	if highway_waypoints.size() == 0:
@@ -70,8 +83,8 @@ func _build_highway_guardrails() -> void:
 	add_child(inst_rails)
 
 func _build_perimeter_highway() -> void:
-	var R: float = 1600.0 # 3.2km loop diameter
-	var num_pts := 64
+	var R: float = 2800.0 # 5.6km loop diameter across 50 km² map
+	var num_pts := 96
 	var raw_points: Array[Vector3] = []
 	
 	for i in range(num_pts):
@@ -94,14 +107,14 @@ func _build_perimeter_highway() -> void:
 
 func _build_trans_expressway() -> void:
 	var raw_points: Array[Vector3] = []
-	var start_x := -1700.0
-	var end_x := 1700.0
-	var num_pts := 36
+	var start_x := -3200.0
+	var end_x := 3200.0
+	var num_pts := 48
 	
 	for i in range(num_pts):
 		var t := float(i) / float(num_pts - 1)
 		var x: float = lerp(start_x, end_x, t)
-		var z: float = sin(t * PI * 2.0) * 250.0 # Gentle S-curve through festival center
+		var z: float = sin(t * PI * 2.0) * 350.0 # Gentle S-curve through festival center
 		var y := terrain_gen.get_height(x, z) + 0.18
 		raw_points.append(Vector3(x, y, z))
 		
@@ -114,14 +127,14 @@ func _build_mountain_hillclimb() -> void:
 	# Starts near festival center and climbs north-west into Frozen Pass
 	var base_pts: Array[Vector2] = [
 		Vector2(0, 0),
-		Vector2(-250, -200),
-		Vector2(-500, -350),
-		Vector2(-400, -600),
-		Vector2(-700, -750),
-		Vector2(-650, -1000),
-		Vector2(-950, -1150),
-		Vector2(-850, -1400),
-		Vector2(-1200, -1550)
+		Vector2(-350, -300),
+		Vector2(-700, -550),
+		Vector2(-600, -900),
+		Vector2(-1100, -1200),
+		Vector2(-1000, -1600),
+		Vector2(-1500, -1900),
+		Vector2(-1400, -2300),
+		Vector2(-2000, -2600)
 	]
 	
 	for pt: Vector2 in base_pts:
@@ -222,23 +235,25 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	inst.mesh = mesh
 	inst.name = road_name
 	
-	# PBR Road Material with Vertex Color Lane Markings & Aggregate Grain
+	# PBR Road Material with Authentic 1K Asphalt Textures & Painted Markings
 	var mat := StandardMaterial3D.new()
 	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.58
-	mat.metallic = 0.08
+	mat.roughness = 0.55
+	mat.metallic = 0.05
 	
-	var norm_tex := NoiseTexture2D.new()
-	norm_tex.width = 128
-	norm_tex.height = 128
-	norm_tex.as_normal_map = true
-	norm_tex.bump_strength = 1.8
-	var noise := FastNoiseLite.new()
-	noise.frequency = 0.08
-	norm_tex.noise = noise
-	mat.normal_enabled = true
-	mat.normal_texture = norm_tex
-	mat.uv1_scale = Vector3(8.0, 8.0, 8.0)
+	var tex_asphalt_d := load("res://assets/textures/asphalt_diff.jpg") as Texture2D
+	var tex_asphalt_n := load("res://assets/textures/asphalt_nor.jpg") as Texture2D
+	var tex_asphalt_r := load("res://assets/textures/asphalt_rough.jpg") as Texture2D
+	
+	if tex_asphalt_d:
+		mat.albedo_texture = tex_asphalt_d
+	if tex_asphalt_n:
+		mat.normal_enabled = true
+		mat.normal_texture = tex_asphalt_n
+	if tex_asphalt_r:
+		mat.roughness_texture = tex_asphalt_r
+		
+	mat.uv1_scale = Vector3(1.0, 8.0, 1.0)
 	inst.material_override = mat
 	
 	# StaticBody3D collision with Asphalt Surface Metadata
