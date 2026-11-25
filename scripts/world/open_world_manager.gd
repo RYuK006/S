@@ -96,19 +96,19 @@ func _setup_weather_particles() -> void:
 	# 7. Screenshot command check
 	for arg in OS.get_cmdline_args():
 		if arg == "--screenshot-volcano":
-			_teleport_to_biome(Vector3(750.0, 0.0, -750.0), PI * 0.25)
+			_teleport_to_biome(Vector3(1800.0, 0.0, -1800.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
 		elif arg == "--screenshot-snow":
-			_teleport_to_biome(Vector3(-800.0, 0.0, -800.0), PI * 0.25)
+			_teleport_to_biome(Vector3(-1600.0, 0.0, -1600.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_snow.png")
 		elif arg == "--screenshot-desert" or arg == "--screenshot-dust-bowl":
-			_teleport_to_biome(Vector3(-650.0, 0.0, 650.0), -PI * 0.75)
+			_teleport_to_biome(Vector3(-1800.0, 0.0, 1800.0), -PI * 0.75)
 			_take_world_screenshot("res://build/screenshots/open_world_desert.png")
 		elif arg == "--screenshot-coast":
-			_teleport_to_biome(Vector3(640.0, 0.0, 680.0), PI * 0.25)
+			_teleport_to_biome(Vector3(1600.0, 0.0, 1600.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_coast.png")
 		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
-			_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0)
+			_teleport_to_biome(Vector3(0.0, 0.0, 0.0), 0.0)
 			_take_world_screenshot("res://build/screenshots/open_world_hub.png")
 
 func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
@@ -129,23 +129,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_1:
 				_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0) # Festival Hub
 			KEY_2:
-				_teleport_to_biome(Vector3(-650.0, 0.0, 650.0), -PI * 0.75) # Dust Bowl
+				_teleport_to_biome(Vector3(-1800.0, 0.0, 1800.0), -PI * 0.75) # Dust Bowl
 			KEY_3:
-				_teleport_to_biome(Vector3(-850.0, 0.0, -850.0), PI * 0.25) # Frozen Pass
+				_teleport_to_biome(Vector3(-2200.0, 0.0, -2200.0), PI * 0.25) # Frozen Pass
 			KEY_4:
-				_teleport_to_biome(Vector3(820.0, 0.0, -820.0), -PI * 0.25) # Volcano Ridge
+				_teleport_to_biome(Vector3(2200.0, 0.0, -2200.0), PI * 0.25) # Volcano Ridge
 			KEY_5:
-				_teleport_to_biome(Vector3(850.0, 0.0, 850.0), PI * 0.75) # Neon Coast
+				_teleport_to_biome(Vector3(1800.0, 0.0, 1800.0), PI * 0.25) # Neon Coast
 
 func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
 	ocean.name = "CoastalOceanWater"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(2400.0, 2400.0)
+	plane.size = Vector2(5000.0, 5000.0)
 	plane.subdivide_width = 48
 	plane.subdivide_depth = 48
 	ocean.mesh = plane
-	ocean.position = Vector3(1200.0, 1.2, 1200.0)
+	ocean.position = Vector3(2500.0, 1.2, 2500.0)
 	
 	var water_shader := load("res://shaders/ocean_water.gdshader") as Shader
 	if water_shader:
