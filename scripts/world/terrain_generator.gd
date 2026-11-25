@@ -7,7 +7,7 @@ const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
 var macro_noise: FastNoiseLite
 var mountain_noise: FastNoiseLite
 var detail_noise: FastNoiseLite
-var terrain_material: StandardMaterial3D
+var terrain_material: Material
 
 func _init(seed_val: int = 1337) -> void:
 	macro_noise = FastNoiseLite.new()
@@ -31,28 +31,17 @@ func _init(seed_val: int = 1337) -> void:
 	_setup_terrain_material()
 
 func _setup_terrain_material() -> void:
-	terrain_material = StandardMaterial3D.new()
-	terrain_material.vertex_color_use_as_albedo = true
-	terrain_material.roughness = 0.88
-	terrain_material.metallic = 0.04
-	terrain_material.metallic_specular = 0.15
-	
-	# Procedural PBR Normal Map for realistic sand ripples, rock crags, and ground grain
-	var noise_tex := NoiseTexture2D.new()
-	noise_tex.width = 256
-	noise_tex.height = 256
-	noise_tex.as_normal_map = true
-	noise_tex.bump_strength = 2.4
-	
-	var norm_noise := FastNoiseLite.new()
-	norm_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	norm_noise.frequency = 0.05
-	norm_noise.fractal_octaves = 3
-	noise_tex.noise = norm_noise
-	
-	terrain_material.normal_enabled = true
-	terrain_material.normal_texture = noise_tex
-	terrain_material.uv1_scale = Vector3(120.0, 120.0, 120.0)
+	var t_shader := load("res://shaders/terrain.gdshader") as Shader
+	if t_shader:
+		var s_mat := ShaderMaterial.new()
+		s_mat.shader = t_shader
+		terrain_material = s_mat
+	else:
+		var std_mat := StandardMaterial3D.new()
+		std_mat.vertex_color_use_as_albedo = true
+		std_mat.roughness = 0.88
+		std_mat.metallic = 0.04
+		terrain_material = std_mat
 
 func get_height(x: float, z: float) -> float:
 	var dist: float = Vector2(x, z).length()
