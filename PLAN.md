@@ -18,6 +18,7 @@ This document tracks progress across all 10 project milestones and maintains the
 | **M8** | **Progression & Balancing** | 100-level XP curve, 60 career achievements, loot crates, economy balance simulation, debug cheat console (<kbd>F4</kbd>). | **COMPLETED** |
 | **M9** | **Multiplayer & Server** | 24-byte binary snapshot codec, client-side prediction & entity interpolation, ENet high-level multiplayer, headless dedicated relay server (`--headless`). | **COMPLETED** |
 | **M10**| **Final Polish & Packaging** | Procedural 135 BPM industrial cyber-rock music sequencer, announcer voiceover, accessibility settings, photo mode, replay cam, Windows installer script, final performance pass. | **COMPLETED** |
+| **OPEN WORLD** | **FH5 Scale World Map** | 16 km² ($4,000\text{ m} \times 4,000\text{ m}$) open world map across 4 biomes + Festival Hub, Grand Perimeter Highway (64 waypoints), Trans-Continental Expressway, Hillclimb switchbacks, chunk streaming, MultiMesh scenery instancing, and GPS telemetry HUD. | **COMPLETED** |
 
 ---
 
