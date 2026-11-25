@@ -2,10 +2,10 @@
 class_name OpenWorldConfig
 extends RefCounted
 
-const WORLD_SIZE_METERS: float = 4000.0
-const HALF_SIZE: float = WORLD_SIZE_METERS * 0.5
+const WORLD_SIZE_METERS: float = 7100.0
+const HALF_SIZE: float = WORLD_SIZE_METERS * 0.5 # 3550.0m
 const CHUNK_SIZE: float = 500.0
-const GRID_CHUNKS: int = int(WORLD_SIZE_METERS / CHUNK_SIZE) # 8x8 = 64 chunks
+const GRID_CHUNKS: int = 15 # 15x15 = 225 chunks (56.25 km² >= 50 km²)
 
 enum BiomeType {
 	DUST_BOWL,
