@@ -132,11 +132,119 @@ func _setup_visual_model():
 		loaded_model.rotation.y = PI
 		add_child(car_mesh_instance)
 		_bind_model_wheels(loaded_model)
+		_apply_fh5_car_materials(loaded_model)
 	else:
 		var proc = ProceduralCarMesh.new()
 		car_mesh_instance = proc.build_car(recipe)
 		add_child(car_mesh_instance)
 		_bind_model_wheels(proc)
+
+func _apply_fh5_car_materials(root: Node) -> void:
+	# Forza-Quality Automotive Clearcoat Paint
+	var paint_mat := StandardMaterial3D.new()
+	paint_mat.albedo_color = Color(0.80, 0.07, 0.05) # Radiant Rosso Corsa Crimson
+	paint_mat.metallic = 0.85
+	paint_mat.roughness = 0.12
+	paint_mat.clearcoat_enabled = true
+	paint_mat.clearcoat = 1.0
+	paint_mat.clearcoat_roughness = 0.04
+	
+	# Transparent Smoked Automotive Glass
+	var glass_mat := StandardMaterial3D.new()
+	glass_mat.albedo_color = Color(0.06, 0.08, 0.12, 0.65)
+	glass_mat.metallic = 0.0
+	glass_mat.roughness = 0.04
+	glass_mat.clearcoat_enabled = true
+	glass_mat.clearcoat = 1.0
+	glass_mat.clearcoat_roughness = 0.02
+	glass_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+	
+	# Matte Rubber Gaskets & Wipers
+	var rubber_mat := StandardMaterial3D.new()
+	rubber_mat.albedo_color = Color(0.06, 0.06, 0.07)
+	rubber_mat.metallic = 0.0
+	rubber_mat.roughness = 0.85
+	
+	# High-Intensity Projector Xenon Headlights
+	var headlight_mat := StandardMaterial3D.new()
+	headlight_mat.albedo_color = Color(0.95, 0.98, 1.0)
+	headlight_mat.emission_enabled = true
+	headlight_mat.emission = Color(1.1, 1.25, 1.5)
+	headlight_mat.emission_energy_multiplier = 1.6
+	
+	# Radiant Neon OLED Taillights
+	var taillight_mat := StandardMaterial3D.new()
+	taillight_mat.albedo_color = Color(0.85, 0.04, 0.02)
+	taillight_mat.emission_enabled = true
+	taillight_mat.emission = Color(1.3, 0.06, 0.02)
+	taillight_mat.emission_energy_multiplier = 1.8
+	
+	# Carbon Fiber Trim & Underside
+	var carbon_mat := StandardMaterial3D.new()
+	carbon_mat.albedo_color = Color(0.10, 0.10, 0.11)
+	carbon_mat.metallic = 0.25
+	carbon_mat.roughness = 0.32
+	
+	# Machined Gunmetal Forged Alloy Rims
+	var rim_mat := StandardMaterial3D.new()
+	rim_mat.albedo_color = Color(0.32, 0.33, 0.36)
+	rim_mat.metallic = 0.90
+	rim_mat.roughness = 0.18
+	
+	# Carbon-Ceramic Perforated Brake Discs
+	var disc_mat := StandardMaterial3D.new()
+	disc_mat.albedo_color = Color(0.55, 0.56, 0.58)
+	disc_mat.metallic = 0.95
+	disc_mat.roughness = 0.24
+	
+	# Brembo Racing Calipers
+	var caliper_mat := StandardMaterial3D.new()
+	caliper_mat.albedo_color = Color(0.82, 0.06, 0.04)
+	caliper_mat.metallic = 0.40
+	caliper_mat.roughness = 0.22
+	
+	# Semi-Slick Vulcanized Tires
+	var tire_mat := StandardMaterial3D.new()
+	tire_mat.albedo_color = Color(0.08, 0.08, 0.09)
+	tire_mat.metallic = 0.0
+	tire_mat.roughness = 0.88
+	
+	# Interior Cockpit / Dashboard
+	var interior_mat := StandardMaterial3D.new()
+	interior_mat.albedo_color = Color(0.12, 0.12, 0.14)
+	interior_mat.metallic = 0.05
+	interior_mat.roughness = 0.70
+	
+	_assign_materials_recursive(root, paint_mat, glass_mat, rubber_mat, headlight_mat, taillight_mat, carbon_mat, rim_mat, disc_mat, caliper_mat, tire_mat, interior_mat)
+
+func _assign_materials_recursive(node: Node, paint: Material, glass: Material, rubber: Material, hl: Material, tl: Material, carbon: Material, rim: Material, disc: Material, cal: Material, tire: Material, interior: Material) -> void:
+	if node is MeshInstance3D:
+		var n_lower := node.name.to_lower()
+		if "gasket" in n_lower or "wiper" in n_lower:
+			node.material_override = rubber
+		elif "windshield" in n_lower or "window" in n_lower:
+			node.material_override = glass
+		elif "headlight" in n_lower:
+			node.material_override = hl
+		elif "taillight" in n_lower or "turnsignal" in n_lower:
+			node.material_override = tl
+		elif "rim" in n_lower:
+			node.material_override = rim
+		elif "brakedisc" in n_lower:
+			node.material_override = disc
+		elif "brakepad" in n_lower or "caliper" in n_lower:
+			node.material_override = cal
+		elif "mesh" in n_lower and ("wheel" in node.get_parent().name.to_lower() or n_lower in ["mesh", "mesh2", "mesh3", "mesh4"]):
+			node.material_override = tire
+		elif "interior" in n_lower or "seat" in n_lower or "dash" in n_lower or "pedal" in n_lower or "steering" in n_lower:
+			node.material_override = interior
+		elif "underside" in n_lower or "cage" in n_lower or "diffuser" in n_lower or "axle" in n_lower:
+			node.material_override = carbon
+		elif "color1" in n_lower or "panels" in n_lower or "roof" in n_lower or "door" in n_lower or "hood" in n_lower or "spoiler" in n_lower or "body" in n_lower:
+			node.material_override = paint
+			
+	for child in node.get_children():
+		_assign_materials_recursive(child, paint, glass, rubber, hl, tl, carbon, rim, disc, cal, tire, interior)
 
 func _find_child_recursive(node: Node, names: Array[String]) -> Node3D:
 	for n in names:
@@ -164,19 +272,22 @@ func _attach_wheel_visual(wheel: RaycastWheel, visual_node: Node3D):
 	if visual_node.get_parent():
 		visual_node.get_parent().remove_child(visual_node)
 	wheel.add_child(visual_node)
-	visual_node.position = Vector3(0, -wheel.rest_length, 0)
+	visual_node.position = Vector3.ZERO
 	visual_node.rotation = Vector3.ZERO
 	wheel.wheel_visual = visual_node
 
 func _setup_wheels():
-	var wb_half = recipe.wheelbase * 0.5
-	var tw_half = recipe.track_width * 0.5
-	var y_offset = 0.0
+	# Perfectly fitted to CarConcept.glb wheel arches:
+	# Front axle at Z = -1.485m, Rear axle at Z = +1.314m, Track half-width = 0.98m, Spindle height = 0.384m
+	var tw_half: float = 0.98
+	var wb_front: float = 1.485
+	var wb_rear: float = 1.314
+	var y_offset: float = 0.384
 	
-	front_left_wheel = _create_wheel(Vector3(-tw_half, y_offset, -wb_half), true, true)
-	front_right_wheel = _create_wheel(Vector3(tw_half, y_offset, -wb_half), true, false)
-	rear_left_wheel = _create_wheel(Vector3(-tw_half, y_offset, wb_half), false, true)
-	rear_right_wheel = _create_wheel(Vector3(tw_half, y_offset, wb_half), false, false)
+	front_left_wheel = _create_wheel(Vector3(-tw_half, y_offset, -wb_front), true, true)
+	front_right_wheel = _create_wheel(Vector3(tw_half, y_offset, -wb_front), true, false)
+	rear_left_wheel = _create_wheel(Vector3(-tw_half, y_offset, wb_rear), false, true)
+	rear_right_wheel = _create_wheel(Vector3(tw_half, y_offset, wb_rear), false, false)
 	
 	# Pair opposite wheels for anti-roll bars
 	front_left_wheel.opposite_wheel = front_right_wheel
@@ -192,7 +303,14 @@ func _create_wheel(rel_pos: Vector3, is_f: bool, is_l: bool) -> RaycastWheel:
 	w.is_front = is_f
 	w.is_left = is_l
 	add_child(w)
-	w.setup(recipe.suspension, recipe.tire)
+	var susp: Dictionary = recipe.get("suspension", {}).duplicate()
+	susp["rest_length"] = 0.12
+	susp["travel"] = 0.12
+	susp["wheel_radius"] = 0.384
+	susp["spring_rate"] = 45000.0
+	susp["damping_bump"] = 3200.0
+	susp["damping_rebound"] = 4500.0
+	w.setup(susp, recipe.get("tire", {}))
 	return w
 
 func _physics_process(delta: float):
