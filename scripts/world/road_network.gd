@@ -15,19 +15,34 @@ func _init(tg: TerrainGenerator = null) -> void:
 		terrain_gen = TerrainGenerator.new()
 
 func build_open_world_roads() -> void:
-	# 1. Build Grand Perimeter Highway (Sweeping 4-lane loop around the 50 km² map)
+	# 1. Grand Perimeter Highway (Outer 5.6km 4-lane loop around the 50 km² map)
 	_build_perimeter_highway()
 	
-	# 2. Build Trans-Continental Cross Expressway (Connecting West to East through Central Festival Hub)
+	# 2. Trans-Continental Expressway (East-West corridor through Central Hub)
 	_build_trans_expressway()
 	
-	# 3. Build Mountain Pass Hillclimb (Winding switchbacks to Frozen Pass peaks)
+	# 3. Meridian Central Boulevard (North-South corridor through Central Hub)
+	_build_meridian_boulevard()
+	
+	# 4. Volcano Ridge Scenic Highway (Diagonal arterial from Hub to Caldera Rim)
+	_build_volcano_highway()
+	
+	# 5. Dust Bowl Canyon Highway (Diagonal arterial from Hub to Desert Badlands)
+	_build_desert_canyon_highway()
+	
+	# 6. Coastal Shoreline Boulevard (Connecting Harbor to Eastern Volcano cliffs)
+	_build_coastal_promenade()
+	
+	# 7. Desert-Alpine Ridge Connector (Western trail connecting Desert to Alpine Pass)
+	_build_desert_alpine_pass()
+	
+	# 8. Mountain Pass Hillclimb (Winding switchbacks to Frozen Pass peaks)
 	_build_mountain_hillclimb()
 	
-	# 4. Build Festival Starting Grid Runway (Straight staging road through arch)
+	# 9. Festival Starting Grid Runway (Straight staging road through arch)
 	_build_festival_starting_grid()
 	
-	# 5. Build Armco Steel Guardrails along Outer Highway Cliffs
+	# 10. Armco Steel Guardrails along Outer Highway Cliffs
 	_build_highway_guardrails()
 
 func _build_festival_starting_grid() -> void:
@@ -146,6 +161,99 @@ func _build_mountain_hillclimb() -> void:
 	# Subdivide with Catmull-Rom interpolation for smooth hairpins
 	var smooth_points := _subdivide_spline(raw_points, 4)
 	var road_mesh := _generate_ribbon_mesh(smooth_points, 9.5, false, "Frozen Pass Hillclimb")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
+
+func _build_meridian_boulevard() -> void:
+	var raw_points: Array[Vector3] = []
+	var start_z := -3200.0
+	var end_z := 3200.0
+	var num_pts := 48
+	for i in range(num_pts):
+		var t := float(i) / float(num_pts - 1)
+		var z: float = lerp(start_z, end_z, t)
+		var x: float = cos(t * PI * 2.0) * 160.0
+		var y := terrain_gen.get_height(x, z) + 0.22
+		raw_points.append(Vector3(x, y, z))
+	var road_mesh := _generate_ribbon_mesh(raw_points, 12.0, false, "Meridian Central Boulevard")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
+
+func _build_volcano_highway() -> void:
+	var base_pts: Array[Vector2] = [
+		Vector2(0, 0),
+		Vector2(250, -220),
+		Vector2(550, -480),
+		Vector2(850, -780),
+		Vector2(1150, -1100),
+		Vector2(1400, -1450),
+		Vector2(1750, -1750),
+		Vector2(2100, -2000)
+	]
+	var raw_points: Array[Vector3] = []
+	for pt: Vector2 in base_pts:
+		var y := terrain_gen.get_height(pt.x, pt.y) + 0.24
+		raw_points.append(Vector3(pt.x, y, pt.y))
+	var smooth_pts := _subdivide_spline(raw_points, 3)
+	var road_mesh := _generate_ribbon_mesh(smooth_pts, 11.0, false, "Volcano Ridge Scenic Highway")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
+
+func _build_desert_canyon_highway() -> void:
+	var base_pts: Array[Vector2] = [
+		Vector2(0, 0),
+		Vector2(-220, 240),
+		Vector2(-480, 520),
+		Vector2(-800, 820),
+		Vector2(-1150, 1150),
+		Vector2(-1480, 1420),
+		Vector2(-1850, 1750),
+		Vector2(-2200, 2100)
+	]
+	var raw_points: Array[Vector3] = []
+	for pt: Vector2 in base_pts:
+		var y := terrain_gen.get_height(pt.x, pt.y) + 0.24
+		raw_points.append(Vector3(pt.x, y, pt.y))
+	var smooth_pts := _subdivide_spline(raw_points, 3)
+	var road_mesh := _generate_ribbon_mesh(smooth_pts, 11.0, false, "Dust Bowl Canyon Highway")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
+
+func _build_coastal_promenade() -> void:
+	var base_pts: Array[Vector2] = [
+		Vector2(1600, 2200),
+		Vector2(1850, 1600),
+		Vector2(2050, 1000),
+		Vector2(2150, 350),
+		Vector2(2200, -300),
+		Vector2(2050, -950),
+		Vector2(1750, -1550)
+	]
+	var raw_points: Array[Vector3] = []
+	for pt: Vector2 in base_pts:
+		var y := terrain_gen.get_height(pt.x, pt.y) + 0.22
+		raw_points.append(Vector3(pt.x, y, pt.y))
+	var smooth_pts := _subdivide_spline(raw_points, 3)
+	var road_mesh := _generate_ribbon_mesh(smooth_pts, 11.5, false, "Neon Coastline Promenade")
+	add_child(road_mesh)
+	road_nodes.append(road_mesh)
+
+func _build_desert_alpine_pass() -> void:
+	var base_pts: Array[Vector2] = [
+		Vector2(-2200, 1600),
+		Vector2(-2350, 950),
+		Vector2(-2400, 300),
+		Vector2(-2300, -350),
+		Vector2(-2150, -1000),
+		Vector2(-1950, -1650),
+		Vector2(-1650, -2200)
+	]
+	var raw_points: Array[Vector3] = []
+	for pt: Vector2 in base_pts:
+		var y := terrain_gen.get_height(pt.x, pt.y) + 0.24
+		raw_points.append(Vector3(pt.x, y, pt.y))
+	var smooth_pts := _subdivide_spline(raw_points, 3)
+	var road_mesh := _generate_ribbon_mesh(smooth_pts, 10.0, false, "Desert-Alpine Ridge Connector")
 	add_child(road_mesh)
 	road_nodes.append(road_mesh)
 
