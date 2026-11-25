@@ -99,17 +99,21 @@ func _populate_alpine_pines(count: int) -> void:
 	add_child(inst)
 
 func _populate_desert_rocks_and_cacti(count: int) -> void:
-	var rock_mesh := BoxMesh.new()
-	rock_mesh.size = Vector3(4.5, 3.5, 5.0)
+	# 1. Weathered Desert Sandstone Boulders (Organic low-poly faceted boulders sunk into dunes)
+	var boulder_mesh := SphereMesh.new()
+	boulder_mesh.radial_segments = 7
+	boulder_mesh.rings = 4
+	boulder_mesh.radius = 2.4
+	boulder_mesh.height = 3.2
 	
-	var rock_mat := StandardMaterial3D.new()
-	rock_mat.albedo_color = Color(0.65, 0.45, 0.28)
-	rock_mat.roughness = 0.9
+	var boulder_mat := StandardMaterial3D.new()
+	boulder_mat.albedo_color = Color(0.56, 0.36, 0.22) # Desert Sandstone Red/Tan
+	boulder_mat.roughness = 0.95
 	
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = rock_mesh
-	mm.instance_count = count
+	var mm_boulders := MultiMesh.new()
+	mm_boulders.transform_format = MultiMesh.TRANSFORM_3D
+	mm_boulders.mesh = boulder_mesh
+	mm_boulders.instance_count = count
 	
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3030
@@ -118,25 +122,64 @@ func _populate_desert_rocks_and_cacti(count: int) -> void:
 		# Dust Bowl quadrant (South-West: x in -1800 to -250, z in 250 to 1800)
 		var x := rng.randf_range(-1800.0, -250.0)
 		var z := rng.randf_range(250.0, 1800.0)
-		var y := terrain_gen.get_height(x, z) + 1.2
 		var rot_y := rng.randf_range(0, TAU)
-		var s := rng.randf_range(0.6, 2.2)
-		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s * 0.8, s))
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+		var rot_x := rng.randf_range(-0.25, 0.25)
+		var rot_z := rng.randf_range(-0.25, 0.25)
+		var s := rng.randf_range(0.8, 2.8)
+		# Boulders are partially sunk into the sand for a natural embedded look
+		var y := terrain_gen.get_height(x, z) - (s * 0.45)
+		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s * 1.5, s * 0.75, s * 1.25))
+		mm_boulders.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 		
-	var inst := MultiMeshInstance3D.new()
-	inst.multimesh = mm
-	inst.material_override = rock_mat
-	inst.name = "MultiMesh_DesertRocks"
-	add_child(inst)
+	var inst_boulders := MultiMeshInstance3D.new()
+	inst_boulders.multimesh = mm_boulders
+	inst_boulders.material_override = boulder_mat
+	inst_boulders.name = "MultiMesh_DesertRocks"
+	add_child(inst_boulders)
+	
+	# 2. Saguaro Cacti (Iconic Sonora / Baja desert landscape feature)
+	var cactus_mesh := CylinderMesh.new()
+	cactus_mesh.top_radius = 0.26
+	cactus_mesh.bottom_radius = 0.30
+	cactus_mesh.height = 5.2
+	cactus_mesh.radial_segments = 8
+	
+	var cactus_mat := StandardMaterial3D.new()
+	cactus_mat.albedo_color = Color(0.18, 0.38, 0.16) # Desert Cactus Green
+	cactus_mat.roughness = 0.8
+	
+	var mm_cacti := MultiMesh.new()
+	mm_cacti.transform_format = MultiMesh.TRANSFORM_3D
+	mm_cacti.mesh = cactus_mesh
+	mm_cacti.instance_count = int(count * 0.75)
+	
+	for i in range(mm_cacti.instance_count):
+		var x := rng.randf_range(-1750.0, -280.0)
+		var z := rng.randf_range(280.0, 1750.0)
+		var s := rng.randf_range(0.7, 1.4)
+		var y := terrain_gen.get_height(x, z) + (2.5 * s)
+		var rot_y := rng.randf_range(0, TAU)
+		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
+		mm_cacti.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+		
+	var inst_cacti := MultiMeshInstance3D.new()
+	inst_cacti.multimesh = mm_cacti
+	inst_cacti.material_override = cactus_mat
+	inst_cacti.name = "MultiMesh_SaguaroCacti"
+	add_child(inst_cacti)
 
 func _populate_volcanic_spires(count: int) -> void:
-	var spire_mesh := PrismMesh.new()
-	spire_mesh.size = Vector3(5.0, 14.0, 5.0)
+	# Hexagonal Basalt Columns (Giant's Causeway / Volcanic Caldera formations)
+	var spire_mesh := CylinderMesh.new()
+	spire_mesh.top_radius = 2.0
+	spire_mesh.bottom_radius = 2.6
+	spire_mesh.height = 14.0
+	spire_mesh.radial_segments = 6 # Hexagonal prism
 	
 	var spire_mat := StandardMaterial3D.new()
-	spire_mat.albedo_color = Color(0.12, 0.08, 0.08)
-	spire_mat.roughness = 0.95
+	spire_mat.albedo_color = Color(0.14, 0.12, 0.13) # Obsidian Basalt
+	spire_mat.roughness = 0.85
+	spire_mat.metallic = 0.15
 	
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
@@ -150,9 +193,9 @@ func _populate_volcanic_spires(count: int) -> void:
 		# Volcano Ridge quadrant (North-East: x in 250 to 1800, z in -1800 to -250)
 		var x := rng.randf_range(250.0, 1800.0)
 		var z := rng.randf_range(-1800.0, -250.0)
-		var y := terrain_gen.get_height(x, z) + 6.0
 		var rot_y := rng.randf_range(0, TAU)
-		var s := rng.randf_range(0.8, 2.5)
+		var s := rng.randf_range(0.8, 2.2)
+		var y := terrain_gen.get_height(x, z) + (5.0 * s)
 		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
 		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
 		
