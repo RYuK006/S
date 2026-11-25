@@ -47,8 +47,8 @@ func _ready() -> void:
 	# 3. Add Reflective Ocean Water for Neon Coast
 	_build_coastal_ocean()
 	
-	# 4. Position Player at Central Festival Hub
-	var spawn_pos := Vector3(0, terrain_gen.get_height(0, 0) + 0.42, 0)
+	# 4. Position Player at Central Festival Hub on Starting Grid
+	var spawn_pos := Vector3(0.0, terrain_gen.get_height(0, 15.0) + 0.65, 15.0)
 	if player_vehicle:
 		player_vehicle.global_position = spawn_pos
 		player_vehicle.global_rotation = Vector3.ZERO
@@ -65,6 +65,7 @@ func _ready() -> void:
 func _setup_weather_particles() -> void:
 	weather_particles = GPUParticles3D.new()
 	weather_particles.name = "BiomeWeatherParticles"
+	weather_particles.emitting = false
 	weather_particles.amount = 350
 	weather_particles.lifetime = 4.0
 	weather_particles.preprocess = 2.0
@@ -96,23 +97,23 @@ func _setup_weather_particles() -> void:
 	# 7. Screenshot command check
 	for arg in OS.get_cmdline_args():
 		if arg == "--screenshot-volcano":
-			_teleport_to_biome(Vector3(1800.0, 0.0, -1800.0), PI * 0.25)
+			_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65)
 			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
 		elif arg == "--screenshot-snow":
-			_teleport_to_biome(Vector3(-1600.0, 0.0, -1600.0), PI * 0.25)
+			_teleport_to_biome(Vector3(-1300.0, 0.0, -1300.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_snow.png")
 		elif arg == "--screenshot-desert" or arg == "--screenshot-dust-bowl":
-			_teleport_to_biome(Vector3(-1800.0, 0.0, 1800.0), -PI * 0.75)
+			_teleport_to_biome(Vector3(-1100.0, 0.0, 900.0), -PI * 0.35)
 			_take_world_screenshot("res://build/screenshots/open_world_desert.png")
 		elif arg == "--screenshot-coast":
-			_teleport_to_biome(Vector3(1600.0, 0.0, 1600.0), PI * 0.25)
+			_teleport_to_biome(Vector3(1200.0, 0.0, 1200.0), PI * 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_coast.png")
 		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
-			_teleport_to_biome(Vector3(0.0, 0.0, 0.0), 0.0)
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
 			_take_world_screenshot("res://build/screenshots/open_world_hub.png")
 
 func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
-	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 0.42
+	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 0.65
 	var final_pos := Vector3(target_xz.x, y, target_xz.z)
 	if player_vehicle:
 		player_vehicle.global_position = final_pos
@@ -122,20 +123,23 @@ func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
 	if camera_rig:
 		camera_rig.snap_to_target()
 	_update_chunks_around(final_pos)
+	if weather_particles:
+		weather_particles.global_position = final_pos + Vector3(0.0, 8.0, 0.0)
+		weather_particles.restart()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_1:
-				_teleport_to_biome(Vector3(0.0, 0.0, 20.0), 0.0) # Festival Hub
+				_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0) # Festival Hub
 			KEY_2:
-				_teleport_to_biome(Vector3(-1800.0, 0.0, 1800.0), -PI * 0.75) # Dust Bowl
+				_teleport_to_biome(Vector3(-1100.0, 0.0, 900.0), -PI * 0.35) # Dust Bowl
 			KEY_3:
-				_teleport_to_biome(Vector3(-2200.0, 0.0, -2200.0), PI * 0.25) # Frozen Pass
+				_teleport_to_biome(Vector3(-1300.0, 0.0, -1300.0), PI * 0.25) # Frozen Pass
 			KEY_4:
-				_teleport_to_biome(Vector3(2200.0, 0.0, -2200.0), PI * 0.25) # Volcano Ridge
+				_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65) # Volcano Ridge
 			KEY_5:
-				_teleport_to_biome(Vector3(1800.0, 0.0, 1800.0), PI * 0.25) # Neon Coast
+				_teleport_to_biome(Vector3(1200.0, 0.0, 1200.0), PI * 0.25) # Neon Coast
 
 func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
@@ -183,17 +187,20 @@ func _physics_process(_delta: float) -> void:
 		if mat:
 			match biome_type:
 				OpenWorldConfig.BiomeType.VOLCANO_RIDGE:
+					weather_particles.emitting = true
 					mat.gravity = Vector3(0.0, 1.8, 0.0)
 					mat.color = Color(1.0, 0.45, 0.1, 0.85)
 				OpenWorldConfig.BiomeType.FROZEN_PASS:
+					weather_particles.emitting = true
 					mat.gravity = Vector3(0.0, -2.5, 0.0)
 					mat.color = Color(0.95, 0.98, 1.0, 0.8)
 				OpenWorldConfig.BiomeType.DUST_BOWL:
+					weather_particles.emitting = true
 					mat.gravity = Vector3(1.2, -0.8, 0.5)
 					mat.color = Color(0.85, 0.72, 0.55, 0.6)
 				_:
-					mat.gravity = Vector3(0.0, -2.0, 0.0)
-					mat.color = Color(0.9, 0.95, 1.0, 0.4)
+					# Sunny clear festival conditions at Hub & Coastal Resort
+					weather_particles.emitting = false
 
 func _update_chunks_around(pos: Vector3) -> void:
 	var center_cx := int(floor((pos.x + OpenWorldConfig.HALF_SIZE) / OpenWorldConfig.CHUNK_SIZE))
