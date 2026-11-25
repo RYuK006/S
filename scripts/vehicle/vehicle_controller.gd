@@ -48,6 +48,7 @@ var rear_right_wheel: RaycastWheel
 
 # Node references
 var car_mesh_instance: Node3D
+var car_reflection_probe: ReflectionProbe
 
 func _ready():
 	recipe = _load_recipe()
@@ -133,11 +134,25 @@ func _setup_visual_model():
 		add_child(car_mesh_instance)
 		_bind_model_wheels(loaded_model)
 		_apply_fh5_car_materials(loaded_model)
+		_setup_car_reflection_probe()
 	else:
 		var proc = ProceduralCarMesh.new()
 		car_mesh_instance = proc.build_car(recipe)
 		add_child(car_mesh_instance)
 		_bind_model_wheels(proc)
+		_setup_car_reflection_probe()
+
+func _setup_car_reflection_probe() -> void:
+	if not car_reflection_probe:
+		car_reflection_probe = ReflectionProbe.new()
+		car_reflection_probe.name = "CarDynamicReflectionProbe"
+		car_reflection_probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
+		car_reflection_probe.size = Vector3(32.0, 16.0, 32.0)
+		car_reflection_probe.origin_offset = Vector3(0.0, 1.2, 0.0)
+		car_reflection_probe.max_distance = 64.0
+		car_reflection_probe.enable_shadows = false
+		car_reflection_probe.position = Vector3(0.0, 0.8, 0.0)
+		add_child(car_reflection_probe)
 
 func _apply_fh5_car_materials(root: Node) -> void:
 	# Forza-Quality Automotive Clearcoat Paint
@@ -220,9 +235,7 @@ func _apply_fh5_car_materials(root: Node) -> void:
 func _assign_materials_recursive(node: Node, paint: Material, glass: Material, rubber: Material, hl: Material, tl: Material, carbon: Material, rim: Material, disc: Material, cal: Material, tire: Material, interior: Material) -> void:
 	if node is MeshInstance3D:
 		var n_lower := node.name.to_lower()
-		if "gasket" in n_lower or "wiper" in n_lower:
-			node.material_override = rubber
-		elif "windshield" in n_lower or "window" in n_lower:
+		if "windshield" in n_lower or "window" in n_lower:
 			node.material_override = glass
 		elif "headlight" in n_lower:
 			node.material_override = hl
@@ -230,18 +243,15 @@ func _assign_materials_recursive(node: Node, paint: Material, glass: Material, r
 			node.material_override = tl
 		elif "rim" in n_lower:
 			node.material_override = rim
-		elif "brakedisc" in n_lower:
-			node.material_override = disc
 		elif "brakepad" in n_lower or "caliper" in n_lower:
 			node.material_override = cal
 		elif "mesh" in n_lower and ("wheel" in node.get_parent().name.to_lower() or n_lower in ["mesh", "mesh2", "mesh3", "mesh4"]):
 			node.material_override = tire
-		elif "interior" in n_lower or "seat" in n_lower or "dash" in n_lower or "pedal" in n_lower or "steering" in n_lower:
-			node.material_override = interior
-		elif "underside" in n_lower or "cage" in n_lower or "diffuser" in n_lower or "axle" in n_lower:
+		elif "color2" in n_lower or "underside" in n_lower or "cage" in n_lower or "diffuser" in n_lower or "axle" in n_lower or "topgrill" in n_lower or "bodypillars" in n_lower:
 			node.material_override = carbon
-		elif "color1" in n_lower or "panels" in n_lower or "roof" in n_lower or "door" in n_lower or "hood" in n_lower or "spoiler" in n_lower or "body" in n_lower:
+		elif "color1" in n_lower or "roofpanel" in n_lower or "door" in n_lower or "hood" in n_lower or "spoiler" in n_lower or "bodyrearpanels" in n_lower:
 			node.material_override = paint
+		# Note: Interior components (seats, dash, pedals, steering wheel, badges) retain native glTF PBR textures
 			
 	for child in node.get_children():
 		_assign_materials_recursive(child, paint, glass, rubber, hl, tl, carbon, rim, disc, cal, tire, interior)
