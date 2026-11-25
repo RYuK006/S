@@ -20,8 +20,8 @@ const BIOME_DATA = {
 		"name": "The Dust Bowl",
 		"base_height": 18.0,
 		"height_variation": 24.0,
-		"primary_color": Color(0.78, 0.58, 0.35),
-		"rock_color": Color(0.48, 0.36, 0.24),
+		"primary_color": Color(0.72, 0.44, 0.20),
+		"rock_color": Color(0.52, 0.28, 0.14),
 		"surface_type": "sand",
 		"friction": 0.85
 	},
@@ -29,8 +29,8 @@ const BIOME_DATA = {
 		"name": "Neon Coast & Docks",
 		"base_height": 4.0,
 		"height_variation": 12.0,
-		"primary_color": Color(0.12, 0.16, 0.22),
-		"rock_color": Color(0.08, 0.10, 0.14),
+		"primary_color": Color(0.14, 0.16, 0.18),
+		"rock_color": Color(0.10, 0.12, 0.14),
 		"surface_type": "asphalt_wet",
 		"friction": 1.05
 	},
@@ -38,8 +38,8 @@ const BIOME_DATA = {
 		"name": "Frozen Pass",
 		"base_height": 70.0,
 		"height_variation": 90.0,
-		"primary_color": Color(0.85, 0.90, 0.96),
-		"rock_color": Color(0.35, 0.40, 0.48),
+		"primary_color": Color(0.92, 0.95, 1.0),
+		"rock_color": Color(0.32, 0.34, 0.38),
 		"surface_type": "snow",
 		"friction": 0.62
 	},
@@ -47,8 +47,8 @@ const BIOME_DATA = {
 		"name": "Volcano Ridge",
 		"base_height": 85.0,
 		"height_variation": 110.0,
-		"primary_color": Color(0.22, 0.12, 0.10),
-		"rock_color": Color(0.15, 0.08, 0.06),
+		"primary_color": Color(0.08, 0.08, 0.09),
+		"rock_color": Color(0.05, 0.05, 0.06),
 		"surface_type": "packed_dirt",
 		"friction": 0.95
 	},
@@ -56,8 +56,8 @@ const BIOME_DATA = {
 		"name": "Horizon Festival Central",
 		"base_height": 22.0,
 		"height_variation": 4.0,
-		"primary_color": Color(0.25, 0.26, 0.30),
-		"rock_color": Color(0.20, 0.20, 0.22),
+		"primary_color": Color(0.22, 0.23, 0.26),
+		"rock_color": Color(0.18, 0.18, 0.20),
 		"surface_type": "asphalt_dry",
 		"friction": 1.00
 	}
