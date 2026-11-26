@@ -33,7 +33,7 @@
       "health": 650,
       "combat_rating": 140,
       "hp_ton": 245.8,
-      "model_path": "res://assets/models/cars/CarConcept.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     },
     {
       "id": "dust_viper",
@@ -67,7 +67,7 @@
       "health": 620,
       "combat_rating": 185,
       "hp_ton": 309.5,
-      "model_path": "res://assets/models/cars/dust_viper.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     },
     {
       "id": "gravel_fang",
@@ -101,7 +101,7 @@
       "health": 700,
       "combat_rating": 230,
       "hp_ton": 341.6,
-      "model_path": "res://assets/models/cars/gravel_fang.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     },
     {
       "id": "tundra_wolf",
@@ -135,7 +135,7 @@
       "health": 680,
       "combat_rating": 195,
       "hp_ton": 279.5,
-      "model_path": "res://assets/models/cars/tundra_wolf.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     },
     {
       "id": "desert_corsair",
@@ -169,7 +169,7 @@
       "health": 720,
       "combat_rating": 175,
       "hp_ton": 260.8,
-      "model_path": "res://assets/models/cars/desert_corsair.glb"
+      "model_path": "res://assets/models/cars/ford_bronco.glb"
     },
     {
       "id": "ridge_phantom",
@@ -203,7 +203,7 @@
       "health": 590,
       "combat_rating": 245,
       "hp_ton": 354.1,
-      "model_path": "res://assets/models/cars/ridge_phantom.glb"
+      "model_path": "res://assets/models/cars/ford_bronco.glb"
     },
     {
       "id": "iron_charger",
@@ -237,7 +237,7 @@
       "health": 920,
       "combat_rating": 160,
       "hp_ton": 275.7,
-      "model_path": "res://assets/models/cars/mustang_gt.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "venom_boss",
@@ -271,7 +271,7 @@
       "health": 880,
       "combat_rating": 180,
       "hp_ton": 291.1,
-      "model_path": "res://assets/models/cars/mustang_gt.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "scrap_cuda",
@@ -305,7 +305,7 @@
       "health": 860,
       "combat_rating": 175,
       "hp_ton": 285.7,
-      "model_path": "res://assets/models/cars/scrap_cuda.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "gnx_marauder",
@@ -339,7 +339,7 @@
       "health": 840,
       "combat_rating": 165,
       "hp_ton": 266.6,
-      "model_path": "res://assets/models/cars/gnx_marauder.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "camaro_fury",
@@ -373,7 +373,7 @@
       "health": 850,
       "combat_rating": 155,
       "hp_ton": 273,
-      "model_path": "res://assets/models/cars/camaro_fury.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "javelin_reaper",
@@ -407,7 +407,7 @@
       "health": 830,
       "combat_rating": 170,
       "hp_ton": 280.4,
-      "model_path": "res://assets/models/cars/javelin_reaper.glb"
+      "model_path": "res://assets/models/cars/dodge_challenger.glb"
     },
     {
       "id": "bulldog_6x6",
@@ -441,7 +441,7 @@
       "health": 2400,
       "combat_rating": 260,
       "hp_ton": 165.3,
-      "model_path": "res://assets/models/cars/bulldog_6x6.glb"
+      "model_path": "res://assets/models/cars/ford_raptor.glb"
     },
     {
       "id": "rock_crusher",
@@ -475,7 +475,7 @@
       "health": 1450,
       "combat_rating": 210,
       "hp_ton": 231.4,
-      "model_path": "res://assets/models/cars/rock_crusher.glb"
+      "model_path": "res://assets/models/cars/ford_bronco.glb"
     },
     {
       "id": "mud_reaper",
@@ -509,7 +509,7 @@
       "health": 1680,
       "combat_rating": 250,
       "hp_ton": 283.7,
-      "model_path": "res://assets/models/cars/mud_reaper.glb"
+      "model_path": "res://assets/models/cars/ford_raptor.glb"
     },
     {
       "id": "scrap_titan",
@@ -543,7 +543,7 @@
       "health": 3200,
       "combat_rating": 310,
       "hp_ton": 140.6,
-      "model_path": "res://assets/models/cars/scrap_titan.glb"
+      "model_path": "res://assets/models/cars/ford_raptor.glb"
     },
     {
       "id": "dune_behemoth",
@@ -577,7 +577,7 @@
       "health": 1550,
       "combat_rating": 220,
       "hp_ton": 195.5,
-      "model_path": "res://assets/models/cars/dune_behemoth.glb"
+      "model_path": "res://assets/models/cars/ford_bronco.glb"
     },
     {
       "id": "warlord_h1",
@@ -611,7 +611,7 @@
       "health": 2600,
       "combat_rating": 270,
       "hp_ton": 150,
-      "model_path": "res://assets/models/cars/warlord_h1.glb"
+      "model_path": "res://assets/models/cars/ford_raptor.glb"
     },
     {
       "id": "skyline_vspec",
@@ -713,7 +713,7 @@
       "health": 710,
       "combat_rating": 175,
       "hp_ton": 238.8,
-      "model_path": "res://assets/models/cars/stuttgart_190.glb"
+      "model_path": "res://assets/models/cars/bmw_m4.glb"
     },
     {
       "id": "rotary_wraith",
@@ -747,7 +747,7 @@
       "health": 660,
       "combat_rating": 220,
       "hp_ton": 297.6,
-      "model_path": "res://assets/models/cars/rotary_wraith.glb"
+      "model_path": "res://assets/models/cars/nissan_gtr_r35.glb"
     },
     {
       "id": "turbo_930",
@@ -815,7 +815,7 @@
       "health": 680,
       "combat_rating": 190,
       "hp_ton": 264.4,
-      "model_path": "res://assets/models/cars/cosworth_rs.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     },
     {
       "id": "vantage_v600",
@@ -849,7 +849,7 @@
       "health": 980,
       "combat_rating": 240,
       "hp_ton": 309.6,
-      "model_path": "res://assets/models/cars/vantage_v600.glb"
+      "model_path": "res://assets/models/cars/porsche_911_turbo.glb"
     },
     {
       "id": "aurelia_gt",
@@ -917,7 +917,7 @@
       "health": 610,
       "combat_rating": 320,
       "hp_ton": 523.8,
-      "model_path": "res://assets/models/cars/noir_phantom.glb"
+      "model_path": "res://assets/models/cars/ferrari_488_pista.glb"
     },
     {
       "id": "vandal_hyper",
@@ -985,7 +985,7 @@
       "health": 690,
       "combat_rating": 305,
       "hp_ton": 462.6,
-      "model_path": "res://assets/models/cars/gilded_sovereign.glb"
+      "model_path": "res://assets/models/cars/mclaren_p1.glb"
     },
     {
       "id": "countach_apex",
@@ -1053,7 +1053,7 @@
       "health": 640,
       "combat_rating": 325,
       "hp_ton": 512,
-      "model_path": "res://assets/models/cars/zonda_reign.glb"
+      "model_path": "res://assets/models/cars/aventador.glb"
     },
     {
       "id": "dakar_959",
@@ -1087,7 +1087,7 @@
       "health": 760,
       "combat_rating": 300,
       "hp_ton": 384.9,
-      "model_path": "res://assets/models/cars/dakar_959.glb"
+      "model_path": "res://assets/models/cars/subaru_sti.glb"
     }
   ]
 }
