@@ -36,16 +36,16 @@ static func load_car_visuals(controller: RigidBody3D, recipe: Dictionary) -> Nod
 		loaded_model.scale = Vector3(0.175, 0.175, 0.175)
 	elif "nissan_gtr" in glb_path.to_lower():
 		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3.ONE
+		loaded_model.scale = Vector3(100.0, 100.0, 100.0)
 	elif "mclaren_p1" in glb_path.to_lower():
 		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.0225, 0.0225, 0.0225)
+		loaded_model.scale = Vector3(0.82, 0.82, 0.82)
 	elif "porsche_911" in glb_path.to_lower():
 		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.0145, 0.0145, 0.0145)
+		loaded_model.scale = Vector3(0.688, 0.688, 0.688)
 	elif "countach" in glb_path.to_lower():
 		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.5, 0.5, 0.5)
+		loaded_model.scale = Vector3(0.495, 0.495, 0.495)
 	elif "carconcept" in glb_path.to_lower():
 		loaded_model.rotation.y = PI
 		loaded_model.scale = Vector3.ONE
@@ -90,8 +90,8 @@ static func _bind_model_wheels(controller: RigidBody3D, root: Node3D, glb_path: 
 		rl = _find_child_recursive(root, ["wheel1"])
 		rr = _find_child_recursive(root, ["wheel3"])
 		rot_l = Vector3(0.0, -PI * 0.5, 0.0)
-		rot_r = Vector3(0.0, PI * 0.5, 0.0)
-		offset_r = Vector3(-0.11, 0.0, 0.0)
+		rot_r = Vector3(0.0, -PI * 0.5, 0.0)
+		offset_r = Vector3.ZERO
 		base_scale = Vector3.ONE
 	elif "aventador" in path_low:
 		fl = _find_child_recursive(root, ["Obj_WheelHub_FL"])
@@ -253,23 +253,31 @@ static func _apply_fh5_car_materials(root: Node, glb_path: String) -> void:
 static func _assign_materials_recursive(node: Node, paint: Material, glass: Material, rubber: Material, hl: Material, tl: Material, carbon: Material, rim: Material, disc: Material, cal: Material, tire: Material) -> void:
 	if node is MeshInstance3D:
 		var n_lower := node.name.to_lower()
-		if "windshield" in n_lower or "window" in n_lower or "glass" in n_lower or "windscreen" in n_lower:
+		var p_lower := node.get_parent().name.to_lower() if node.get_parent() else ""
+		var combined := n_lower + " " + p_lower
+		if node.mesh:
+			for s in range(node.mesh.get_surface_count()):
+				var mat = node.get_active_material(s)
+				if mat and mat.resource_name:
+					combined += " " + mat.resource_name.to_lower()
+					
+		if "windshield" in combined or "window" in combined or "glass" in combined or "windscreen" in combined:
 			node.material_override = glass
-		elif "headlight" in n_lower or "lamp" in n_lower:
+		elif "headlight" in combined or "lamp" in combined or "lighte" in combined or "light_geo" in combined:
 			node.material_override = hl
-		elif "taillight" in n_lower or "turnsignal" in n_lower or "tail_led" in n_lower or "tail_light" in n_lower:
+		elif "taillight" in combined or "turnsignal" in combined or "tail_led" in combined or "tail_light" in combined:
 			node.material_override = tl
-		elif "rim" in n_lower or "wheelhub" in n_lower or "chrome" in n_lower:
+		elif "rim" in combined or "wheelhub" in combined or "chrome" in combined or "aimgain_g2m" in combined:
 			node.material_override = rim
-		elif "brakepad" in n_lower or "caliper" in n_lower:
+		elif "brakepad" in combined or "caliper" in combined or "calliper" in combined:
 			node.material_override = cal
-		elif "rotor" in n_lower or "discrotor" in n_lower or "brakedisc" in n_lower:
+		elif "rotor" in combined or "discrotor" in combined or "brakedisc" in combined:
 			node.material_override = disc
-		elif "tyre" in n_lower or "tire" in n_lower or ("mesh" in n_lower and "wheel" in node.get_parent().name.to_lower()):
+		elif "tyre" in combined or "tire" in combined:
 			node.material_override = tire
-		elif "diffuser" in n_lower or "spoiler" in n_lower or "skirt" in n_lower or "underbody" in n_lower or "color2" in n_lower or "matte" in n_lower:
+		elif "diffuser" in combined or "spoiler" in combined or "skirt" in combined or "underbody" in combined or "color2" in combined or "carbon" in combined:
 			node.material_override = carbon
-		elif "color1" in n_lower or "paint" in n_lower or "hood" in n_lower or "door" in n_lower or "bumper" in n_lower or "boot" in n_lower or "fender" in n_lower:
+		elif "color1" in combined or "paint" in combined or "hood" in combined or "door" in combined or "bumper" in combined or "boot" in combined or "fender" in combined or "body" in combined or "carrosserie" in combined:
 			node.material_override = paint
 			
 	for child in node.get_children():
