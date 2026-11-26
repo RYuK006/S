@@ -16,8 +16,8 @@ var camera: Camera3D
 var base_fov: float = 68.0
 
 # Chase camera parameters
-var chase_distance: float = 5.6
-var chase_height: float = 2.1
+var chase_distance: float = 5.15
+var chase_height: float = 1.62
 var chase_pos_smooth: float = 12.0
 var chase_look_smooth: float = 16.0
 
@@ -94,7 +94,7 @@ func _update_chase_camera(delta: float):
 	var target_roll: float = -lat_g * 0.04
 	var up_vector: Vector3 = Vector3(sin(target_roll), cos(target_roll), 0.0).normalized()
 	
-	var look_target = car_pos + (forward_dir * 3.0) + (Vector3.UP * 0.8)
+	var look_target = car_pos + (forward_dir * 7.2) + (Vector3.UP * 0.92)
 	camera.look_at(look_target, up_vector)
 	camera.global_position += shake_offset
 
