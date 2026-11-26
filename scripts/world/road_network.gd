@@ -306,41 +306,23 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 		var u1 := (u_distance + seg_len) * 0.1
 		u_distance += seg_len
 		
-		# Quad 1: Left shoulder stripe (Counter-Clockwise winding upward)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u0)); st.add_vertex(p_L0)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
+		# Quad 1: Left lane (UV.x: 0.0 to 0.5)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u0)); st.add_vertex(p_L0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
 		
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.0, u1)); st.add_vertex(np_L0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
 		
-		# Quad 2: Left travel lane to centerline
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u0)); st.add_vertex(p_L1)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
+		# Quad 2: Right lane (UV.x: 0.5 to 1.0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
 		
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.1, u1)); st.add_vertex(np_L1)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
-		
-		# Quad 3: Centerline to Right travel lane
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u0)); st.add_vertex(p_C0)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
-		
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
-		st.set_color(col_centerline); st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
-		st.set_color(col_asphalt);    st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
-		
-		# Quad 4: Right travel lane to right shoulder stripe
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u0)); st.add_vertex(p_R1)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
-		
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
-		st.set_color(col_asphalt);  st.set_normal(Vector3.UP); st.set_uv(Vector2(0.9, u1)); st.add_vertex(np_R1)
-		st.set_color(col_shoulder); st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u1)); st.add_vertex(np_R0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u0)); st.add_vertex(p_R0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(0.5, u1)); st.add_vertex(np_C0)
+		st.set_normal(Vector3.UP); st.set_uv(Vector2(1.0, u1)); st.add_vertex(np_R0)
 		
 	st.generate_normals()
 	st.generate_tangents()
@@ -350,27 +332,24 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	inst.mesh = mesh
 	inst.name = road_name
 	
-	# PBR Road Material with Authentic 1K Asphalt Textures & Painted Markings
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.55
-	mat.metallic = 0.05
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	
-	var tex_asphalt_d := load("res://assets/textures/asphalt_diff.jpg") as Texture2D
-	var tex_asphalt_n := load("res://assets/textures/asphalt_nor.jpg") as Texture2D
-	var tex_asphalt_r := load("res://assets/textures/asphalt_rough.jpg") as Texture2D
-	
-	if tex_asphalt_d:
-		mat.albedo_texture = tex_asphalt_d
-	if tex_asphalt_n:
-		mat.normal_enabled = true
-		mat.normal_texture = tex_asphalt_n
-	if tex_asphalt_r:
-		mat.roughness_texture = tex_asphalt_r
-		
-	mat.uv1_scale = Vector3(1.0, 8.0, 1.0)
-	inst.material_override = mat
+	# PBR Road Material with Authentic Highway Markings Shader
+	var road_shader := load("res://shaders/road.gdshader") as Shader
+	if road_shader:
+		var s_mat := ShaderMaterial.new()
+		s_mat.shader = road_shader
+		var tex_asphalt_d := load("res://assets/textures/asphalt_diff.jpg") as Texture2D
+		var tex_asphalt_n := load("res://assets/textures/asphalt_nor.jpg") as Texture2D
+		var tex_asphalt_r := load("res://assets/textures/asphalt_rough.jpg") as Texture2D
+		if tex_asphalt_d: s_mat.set_shader_parameter("texture_albedo", tex_asphalt_d)
+		if tex_asphalt_n: s_mat.set_shader_parameter("texture_normal", tex_asphalt_n)
+		if tex_asphalt_r: s_mat.set_shader_parameter("texture_roughness", tex_asphalt_r)
+		inst.material_override = s_mat
+	else:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.18, 0.18, 0.20)
+		mat.roughness = 0.55
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		inst.material_override = mat
 	
 	# StaticBody3D collision with Asphalt Surface Metadata
 	var body := StaticBody3D.new()
