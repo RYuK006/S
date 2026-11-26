@@ -74,7 +74,7 @@ func update_suspension(chassis: RigidBody3D, dt: float) -> Vector3:
 		normal_force = 0.0
 		# Update visual mesh to hang at droop limit
 		if wheel_visual:
-			wheel_visual.position = Vector3(0, -rest_length * 0.5, 0)
+			wheel_visual.position = Vector3(0.0, -rest_length, 0.0)
 			wheel_roll_angle += wheel_angular_velocity * dt
 			wheel_visual.rotation = Vector3(wheel_roll_angle, steer_angle, 0.0)
 		return total_force
@@ -96,10 +96,10 @@ func update_suspension(chassis: RigidBody3D, dt: float) -> Vector3:
 	compression_velocity = (target_comp - compression) / max(0.0001, dt)
 	compression = target_comp
 	
-	# Visual wheel position updates smoothly with natural suspension motion
+	# Visual wheel tracks exact road contact point minus tire radius
 	if wheel_visual:
-		var visual_y: float = -(hit_dist - rest_length)
-		wheel_visual.position = Vector3(0, clamp(visual_y, -rest_length * 0.5, travel), 0)
+		var visual_y: float = clamp(-hit_dist, -(rest_length + travel), travel * 0.5)
+		wheel_visual.position = Vector3(0.0, visual_y, 0.0)
 		wheel_roll_angle += wheel_angular_velocity * dt
 		wheel_visual.rotation = Vector3(wheel_roll_angle, steer_angle, 0.0)
 	
