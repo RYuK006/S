@@ -6,6 +6,7 @@ extends RigidBody3D
 const GameConstants = preload("res://scripts/core/constants.gd")
 const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
 const ProceduralCarMesh = preload("res://scripts/vehicle/procedural_car_mesh.gd")
+const CarModelLoader = preload("res://scripts/vehicle/car_model_loader.gd")
 
 @export var car_id: String = "sprinter_r2"
 var recipe: Dictionary
@@ -115,184 +116,41 @@ func _setup_chassis_collision():
 	add_child(col_shape)
 
 func _setup_visual_model():
-	var glb_path = "res://assets/models/cars/CarConcept.glb"
-	if recipe.has("model_path") and FileAccess.file_exists(recipe.model_path):
-		glb_path = recipe.model_path
-		
-	var loaded_model: Node3D = null
-	if FileAccess.file_exists(glb_path):
-		var gltf = GLTFDocument.new()
-		var state = GLTFState.new()
-		var err = gltf.append_from_file(glb_path, state)
-		if err == OK:
-			loaded_model = gltf.generate_scene(state) as Node3D
-			
-	if loaded_model:
-		car_mesh_instance = loaded_model
-		# Rotate 180 degrees around Y so the hood and headlights point forward (-Z)
-		loaded_model.rotation.y = PI
-		add_child(car_mesh_instance)
-		_bind_model_wheels(loaded_model)
-		_apply_fh5_car_materials(loaded_model)
-		_setup_car_reflection_probe()
-	else:
-		var proc = ProceduralCarMesh.new()
-		car_mesh_instance = proc.build_car(recipe)
-		add_child(car_mesh_instance)
-		_bind_model_wheels(proc)
-		_setup_car_reflection_probe()
-
-func _setup_car_reflection_probe() -> void:
-	if not car_reflection_probe:
-		car_reflection_probe = ReflectionProbe.new()
-		car_reflection_probe.name = "CarDynamicReflectionProbe"
-		car_reflection_probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
-		car_reflection_probe.size = Vector3(32.0, 16.0, 32.0)
-		car_reflection_probe.origin_offset = Vector3(0.0, 1.2, 0.0)
-		car_reflection_probe.max_distance = 64.0
-		car_reflection_probe.enable_shadows = false
-		car_reflection_probe.position = Vector3(0.0, 0.8, 0.0)
-		add_child(car_reflection_probe)
-
-func _apply_fh5_car_materials(root: Node) -> void:
-	# Forza-Quality Automotive Clearcoat Paint
-	var paint_mat := StandardMaterial3D.new()
-	paint_mat.albedo_color = Color(0.80, 0.07, 0.05) # Radiant Rosso Corsa Crimson
-	paint_mat.metallic = 0.85
-	paint_mat.roughness = 0.12
-	paint_mat.clearcoat_enabled = true
-	paint_mat.clearcoat = 1.0
-	paint_mat.clearcoat_roughness = 0.04
-	
-	# Transparent Smoked Automotive Glass
-	var glass_mat := StandardMaterial3D.new()
-	glass_mat.albedo_color = Color(0.06, 0.08, 0.12, 0.65)
-	glass_mat.metallic = 0.0
-	glass_mat.roughness = 0.04
-	glass_mat.clearcoat_enabled = true
-	glass_mat.clearcoat = 1.0
-	glass_mat.clearcoat_roughness = 0.02
-	glass_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
-	
-	# Matte Rubber Gaskets & Wipers
-	var rubber_mat := StandardMaterial3D.new()
-	rubber_mat.albedo_color = Color(0.06, 0.06, 0.07)
-	rubber_mat.metallic = 0.0
-	rubber_mat.roughness = 0.85
-	
-	# High-Intensity Projector Xenon Headlights
-	var headlight_mat := StandardMaterial3D.new()
-	headlight_mat.albedo_color = Color(0.95, 0.98, 1.0)
-	headlight_mat.emission_enabled = true
-	headlight_mat.emission = Color(1.1, 1.25, 1.5)
-	headlight_mat.emission_energy_multiplier = 1.6
-	
-	# Radiant Neon OLED Taillights
-	var taillight_mat := StandardMaterial3D.new()
-	taillight_mat.albedo_color = Color(0.85, 0.04, 0.02)
-	taillight_mat.emission_enabled = true
-	taillight_mat.emission = Color(1.3, 0.06, 0.02)
-	taillight_mat.emission_energy_multiplier = 1.8
-	
-	# Carbon Fiber Trim & Underside
-	var carbon_mat := StandardMaterial3D.new()
-	carbon_mat.albedo_color = Color(0.10, 0.10, 0.11)
-	carbon_mat.metallic = 0.25
-	carbon_mat.roughness = 0.32
-	
-	# Machined Gunmetal Forged Alloy Rims
-	var rim_mat := StandardMaterial3D.new()
-	rim_mat.albedo_color = Color(0.32, 0.33, 0.36)
-	rim_mat.metallic = 0.90
-	rim_mat.roughness = 0.18
-	
-	# Carbon-Ceramic Perforated Brake Discs
-	var disc_mat := StandardMaterial3D.new()
-	disc_mat.albedo_color = Color(0.55, 0.56, 0.58)
-	disc_mat.metallic = 0.95
-	disc_mat.roughness = 0.24
-	
-	# Brembo Racing Calipers
-	var caliper_mat := StandardMaterial3D.new()
-	caliper_mat.albedo_color = Color(0.82, 0.06, 0.04)
-	caliper_mat.metallic = 0.40
-	caliper_mat.roughness = 0.22
-	
-	# Semi-Slick Vulcanized Tires
-	var tire_mat := StandardMaterial3D.new()
-	tire_mat.albedo_color = Color(0.08, 0.08, 0.09)
-	tire_mat.metallic = 0.0
-	tire_mat.roughness = 0.88
-	
-	# Interior Cockpit / Dashboard
-	var interior_mat := StandardMaterial3D.new()
-	interior_mat.albedo_color = Color(0.12, 0.12, 0.14)
-	interior_mat.metallic = 0.05
-	interior_mat.roughness = 0.70
-	
-	_assign_materials_recursive(root, paint_mat, glass_mat, rubber_mat, headlight_mat, taillight_mat, carbon_mat, rim_mat, disc_mat, caliper_mat, tire_mat, interior_mat)
-
-func _assign_materials_recursive(node: Node, paint: Material, glass: Material, rubber: Material, hl: Material, tl: Material, carbon: Material, rim: Material, disc: Material, cal: Material, tire: Material, interior: Material) -> void:
-	if node is MeshInstance3D:
-		var n_lower := node.name.to_lower()
-		if "windshield" in n_lower or "window" in n_lower:
-			node.material_override = glass
-		elif "headlight" in n_lower:
-			node.material_override = hl
-		elif "taillight" in n_lower or "turnsignal" in n_lower:
-			node.material_override = tl
-		elif "rim" in n_lower:
-			node.material_override = rim
-		elif "brakepad" in n_lower or "caliper" in n_lower:
-			node.material_override = cal
-		elif "mesh" in n_lower and ("wheel" in node.get_parent().name.to_lower() or n_lower in ["mesh", "mesh2", "mesh3", "mesh4"]):
-			node.material_override = tire
-		elif "color2" in n_lower or "underside" in n_lower or "cage" in n_lower or "diffuser" in n_lower or "axle" in n_lower or "topgrill" in n_lower or "bodypillars" in n_lower:
-			node.material_override = carbon
-		elif "color1" in n_lower or "roofpanel" in n_lower or "door" in n_lower or "hood" in n_lower or "spoiler" in n_lower or "bodyrearpanels" in n_lower:
-			node.material_override = paint
-		# Note: Interior components (seats, dash, pedals, steering wheel, badges) retain native glTF PBR textures
-			
-	for child in node.get_children():
-		_assign_materials_recursive(child, paint, glass, rubber, hl, tl, carbon, rim, disc, cal, tire, interior)
-
-func _find_child_recursive(node: Node, names: Array[String]) -> Node3D:
-	for n in names:
-		if node.name.nocasecmp_to(n) == 0:
-			return node as Node3D
-	for child in node.get_children():
-		var res = _find_child_recursive(child, names)
-		if res:
-			return res
-	return null
-
-func _bind_model_wheels(root: Node3D):
-	var fl = _find_child_recursive(root, ["WheelFrontL", "wheel_FL", "Wheel_FL"])
-	var fr = _find_child_recursive(root, ["WheelFrontR", "wheel_FR", "Wheel_FR"])
-	var rl = _find_child_recursive(root, ["WheelRearL", "wheel_RL", "Wheel_RL"])
-	var rr = _find_child_recursive(root, ["WheelRearR", "wheel_RR", "Wheel_RR"])
-	
-	if fl: _attach_wheel_visual(front_left_wheel, fl)
-	if fr: _attach_wheel_visual(front_right_wheel, fr)
-	if rl: _attach_wheel_visual(rear_left_wheel, rl)
-	if rr: _attach_wheel_visual(rear_right_wheel, rr)
-
-func _attach_wheel_visual(wheel: RaycastWheel, visual_node: Node3D):
-	visual_node.owner = null
-	if visual_node.get_parent():
-		visual_node.get_parent().remove_child(visual_node)
-	wheel.add_child(visual_node)
-	visual_node.position = Vector3.ZERO
-	visual_node.rotation = Vector3.ZERO
-	wheel.wheel_visual = visual_node
+	car_mesh_instance = CarModelLoader.load_car_visuals(self, recipe)
 
 func _setup_wheels():
-	# Perfectly fitted to CarConcept.glb wheel arches:
-	# Front axle at Z = -1.485m, Rear axle at Z = +1.314m, Track half-width = 0.98m, Spindle height = 0.384m
 	var tw_half: float = 0.98
 	var wb_front: float = 1.485
 	var wb_rear: float = 1.314
 	var y_offset: float = 0.384
+	
+	var m_path: String = recipe.get("model_path", "").to_lower()
+	if "mustang_gt" in m_path:
+		tw_half = 0.943
+		wb_front = 1.501
+		wb_rear = 1.335
+		y_offset = 0.383
+	elif "aventador" in m_path:
+		tw_half = 0.857
+		wb_front = 1.360
+		wb_rear = 1.337
+		y_offset = 0.344
+	elif "nissan_gtr" in m_path:
+		tw_half = 0.875
+		wb_front = 1.424
+		wb_rear = 1.348
+		y_offset = 0.350
+	elif "mclaren_p1" in m_path:
+		tw_half = 0.820
+		wb_front = 1.335
+		wb_rear = 1.335
+		y_offset = 0.330
+	elif recipe.has("track_width") and recipe.has("wheelbase"):
+		tw_half = float(recipe.track_width) * 0.5
+		var wb: float = float(recipe.wheelbase)
+		wb_front = wb * 0.52
+		wb_rear = wb * 0.48
+		y_offset = 0.384
 	
 	front_left_wheel = _create_wheel(Vector3(-tw_half, y_offset, -wb_front), true, true)
 	front_right_wheel = _create_wheel(Vector3(tw_half, y_offset, -wb_front), true, false)
