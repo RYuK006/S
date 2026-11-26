@@ -1,22 +1,28 @@
 # scripts/world/prop_mesh_utils.gd
-# Utility for extracting, centering, grounding, and MultiMesh-ready preparing GLB/GLTF prop meshes.
+# Utility for extracting, centering, grounding, LOD-generating, and MultiMesh-preparing GLB/GLTF prop meshes.
 class_name PropMeshUtils
 extends RefCounted
 
+static var _mesh_cache: Dictionary = {}
+
 static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bottom_m: float = 0.05, submesh_filter: String = "") -> Mesh:
+	var cache_key: String = "%s|%.4f|%.4f|%s" % [path, scale_factor, embed_bottom_m, submesh_filter.to_lower()]
+	if _mesh_cache.has(cache_key):
+		return _mesh_cache[cache_key] as Mesh
+
 	if not FileAccess.file_exists(path):
 		return null
 	var root: Node3D = null
-	if path.ends_with(".glb"):
+	if ResourceLoader.exists(path):
+		var packed := load(path) as PackedScene
+		if packed:
+			root = packed.instantiate() as Node3D
+	if not root:
 		var gltf := GLTFDocument.new()
 		var state := GLTFState.new()
 		if gltf.append_from_file(path, state) != OK:
 			return null
 		root = gltf.generate_scene(state) as Node3D
-	else:
-		var packed := load(path) as PackedScene
-		if packed:
-			root = packed.instantiate() as Node3D
 	if not root:
 		return null
 
@@ -42,7 +48,9 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 	var min_y: float = combined_aabb.position.y
 	var shift := Vector3(-ctr.x * scale_factor, -min_y * scale_factor - embed_bottom_m, -ctr.z * scale_factor)
 
-	var out_mesh := ArrayMesh.new()
+	var im := ImporterMesh.new()
+	var mats_out: Array[Material] = []
+
 	for item: Dictionary in collected:
 		var mi: MeshInstance3D = item["node"]
 		var xf: Transform3D = item["xf"]
@@ -62,15 +70,30 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 				out_verts[i] = (xf * verts[i]) * scale_factor + shift
 			clean_arr[Mesh.ARRAY_VERTEX] = out_verts
 
+			var basis_n: Basis = xf.basis.orthonormalized()
 			if src_arr.size() > Mesh.ARRAY_NORMAL and src_arr[Mesh.ARRAY_NORMAL] is PackedVector3Array:
 				var norms: PackedVector3Array = src_arr[Mesh.ARRAY_NORMAL]
 				if norms.size() == verts.size():
-					var basis_n: Basis = xf.basis.orthonormalized()
 					var out_norms := PackedVector3Array()
 					out_norms.resize(norms.size())
 					for i: int in range(norms.size()):
 						out_norms[i] = (basis_n * norms[i]).normalized()
 					clean_arr[Mesh.ARRAY_NORMAL] = out_norms
+
+			if src_arr.size() > Mesh.ARRAY_TANGENT and src_arr[Mesh.ARRAY_TANGENT] is PackedFloat32Array:
+				var tangs: PackedFloat32Array = src_arr[Mesh.ARRAY_TANGENT]
+				if tangs.size() == verts.size() * 4:
+					var out_tangs := PackedFloat32Array()
+					out_tangs.resize(tangs.size())
+					for i: int in range(verts.size()):
+						var bi: int = i * 4
+						var t_vec := basis_n * Vector3(tangs[bi], tangs[bi + 1], tangs[bi + 2])
+						t_vec = t_vec.normalized()
+						out_tangs[bi] = t_vec.x
+						out_tangs[bi + 1] = t_vec.y
+						out_tangs[bi + 2] = t_vec.z
+						out_tangs[bi + 3] = tangs[bi + 3]
+					clean_arr[Mesh.ARRAY_TANGENT] = out_tangs
 
 			if src_arr.size() > Mesh.ARRAY_TEX_UV and src_arr[Mesh.ARRAY_TEX_UV] is PackedVector2Array:
 				var uvs: PackedVector2Array = src_arr[Mesh.ARRAY_TEX_UV]
@@ -87,16 +110,19 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 				if cols.size() == verts.size():
 					clean_arr[Mesh.ARRAY_COLOR] = cols
 
-			if src_arr.size() > Mesh.ARRAY_INDEX and src_arr[Mesh.ARRAY_INDEX] is PackedInt32Array:
-				var idxs: PackedInt32Array = src_arr[Mesh.ARRAY_INDEX]
-				if not idxs.is_empty():
-					clean_arr[Mesh.ARRAY_INDEX] = idxs
+			var idx_arr: PackedInt32Array = src_arr[Mesh.ARRAY_INDEX] if (src_arr.size() > Mesh.ARRAY_INDEX and src_arr[Mesh.ARRAY_INDEX] is PackedInt32Array) else PackedInt32Array()
+			if idx_arr.is_empty():
+				var st_idx := SurfaceTool.new()
+				st_idx.create_from_arrays(clean_arr, Mesh.PRIMITIVE_TRIANGLES)
+				st_idx.index()
+				clean_arr = st_idx.commit_to_arrays()
+			else:
+				clean_arr[Mesh.ARRAY_INDEX] = idx_arr
 
-			var surf_idx: int = out_mesh.get_surface_count()
-			out_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, clean_arr)
+			var mat_dup: Material = null
 			var mat: Material = mi.get_active_material(s)
-			if mat and out_mesh.get_surface_count() > surf_idx:
-				var mat_dup: Material = mat.duplicate()
+			if mat:
+				mat_dup = mat.duplicate()
 				if mat_dup is StandardMaterial3D:
 					var std: StandardMaterial3D = mat_dup
 					var ml: String = (mi.name + " " + std.resource_name + " " + path).to_lower()
@@ -107,10 +133,46 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 							std.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 							std.alpha_scissor_threshold = 0.36
 						std.roughness = maxf(std.roughness, 0.56)
-				out_mesh.surface_set_material(surf_idx, mat_dup)
+
+			im.add_surface(Mesh.PRIMITIVE_TRIANGLES, clean_arr, [], {}, mat_dup, "surf_%d" % mats_out.size(), 0)
+			mats_out.append(mat_dup)
+
+	# Generate automatic GPU hardware LOD chain; decimate ultra-dense >20k photogrammetry surfaces to LOD1 base
+	if im.get_surface_count() > 0:
+		im.generate_lods(deg_to_rad(60.0), deg_to_rad(30.0), [])
+		var rebuilt := ImporterMesh.new()
+		var any_decimated: bool = false
+		for si: int in range(im.get_surface_count()):
+			var s_arr: Array = im.get_surface_arrays(si)
+			var s_idx: PackedInt32Array = s_arr[Mesh.ARRAY_INDEX] if (s_arr.size() > Mesh.ARRAY_INDEX and s_arr[Mesh.ARRAY_INDEX] is PackedInt32Array) else PackedInt32Array()
+			var base_tris: int = int(s_idx.size() / 3.0)
+			if base_tris > 18000 and im.get_surface_lod_count(si) > 0:
+				var chosen_idx: PackedInt32Array = PackedInt32Array()
+				var chosen_lods: Dictionary = {}
+				for li: int in range(im.get_surface_lod_count(si)):
+					var l_idx: PackedInt32Array = im.get_surface_lod_indices(si, li)
+					var l_tris: int = int(l_idx.size() / 3.0)
+					if chosen_idx.is_empty():
+						if l_tris <= 18000 or li == im.get_surface_lod_count(si) - 1:
+							chosen_idx = l_idx
+					else:
+						chosen_lods[im.get_surface_lod_size(si, li)] = l_idx
+				if not chosen_idx.is_empty():
+					s_arr[Mesh.ARRAY_INDEX] = chosen_idx
+					rebuilt.add_surface(Mesh.PRIMITIVE_TRIANGLES, s_arr, [], chosen_lods, im.get_surface_material(si), im.get_surface_name(si), 0)
+					any_decimated = true
+					continue
+			var kept_lods: Dictionary = {}
+			for li: int in range(im.get_surface_lod_count(si)):
+				kept_lods[im.get_surface_lod_size(si, li)] = im.get_surface_lod_indices(si, li)
+			rebuilt.add_surface(Mesh.PRIMITIVE_TRIANGLES, s_arr, [], kept_lods, im.get_surface_material(si), im.get_surface_name(si), 0)
+		var out_mesh: ArrayMesh = rebuilt.get_mesh() if any_decimated else im.get_mesh()
+		root.free()
+		_mesh_cache[cache_key] = out_mesh
+		return out_mesh
 
 	root.free()
-	return out_mesh
+	return null
 
 static func _collect_meshes(node: Node, parent_xf: Transform3D, out: Array[Dictionary], filter: String) -> void:
 	var xf: Transform3D = parent_xf * (node as Node3D).transform if node is Node3D else parent_xf
