@@ -28,7 +28,7 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 
 	var combined_aabb := AABB()
 	var first: bool = true
-	for item in collected:
+	for item: Dictionary in collected:
 		var mi: MeshInstance3D = item["node"]
 		var xf: Transform3D = item["xf"]
 		var ma: AABB = xf * mi.mesh.get_aabb()
@@ -43,7 +43,7 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 	var shift := Vector3(-ctr.x * scale_factor, -min_y * scale_factor - embed_bottom_m, -ctr.z * scale_factor)
 
 	var out_mesh := ArrayMesh.new()
-	for item in collected:
+	for item: Dictionary in collected:
 		var mi: MeshInstance3D = item["node"]
 		var xf: Transform3D = item["xf"]
 		var src: Mesh = mi.mesh
@@ -99,13 +99,14 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 				var mat_dup: Material = mat.duplicate()
 				if mat_dup is StandardMaterial3D:
 					var std: StandardMaterial3D = mat_dup
-					var ml: String = (mi.name + " " + std.resource_name).to_lower()
-					if "leaf" in ml or "branch" in ml or "atlas" in ml or "frond" in ml or "bush" in ml or "grass" in ml or "object_2" in ml:
+					var ml: String = (mi.name + " " + std.resource_name + " " + path).to_lower()
+					var is_foliage: bool = ("leaf" in ml or "branch" in ml or "atlas" in ml or "frond" in ml or "bush" in ml or "grass" in ml or "fir_" in ml or "palm" in ml or "yucca" in ml or "tree" in ml or "fence" in ml or "object_4" in ml)
+					if std.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA or is_foliage:
 						std.cull_mode = BaseMaterial3D.CULL_DISABLED
 						if std.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
 							std.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-							std.alpha_scissor_threshold = 0.42
-						std.roughness = maxf(std.roughness, 0.58)
+							std.alpha_scissor_threshold = 0.36
+						std.roughness = maxf(std.roughness, 0.56)
 				out_mesh.surface_set_material(surf_idx, mat_dup)
 
 	root.free()
