@@ -23,12 +23,13 @@ func _run() -> void:
 	var shots: Array[Dictionary] = [
 		{"file": "01_hub_chase_gtr", "car": "skyline_vspec", "pos": Vector3(0.0, 0.0, 12.0), "yaw": 0.0, "mode": "chase"},
 		{"file": "02_hub_hero_ferrari", "car": "noir_phantom", "pos": Vector3(0.0, 0.0, 4.0), "yaw": 0.15, "mode": "hero"},
-		{"file": "03_dust_bowl_bronco", "car": "desert_corsair", "road": "Dust Bowl", "t": 0.56, "mode": "chase"},
+		{"file": "03_dust_bowl_bronco", "car": "desert_corsair", "road": "Dust Bowl", "t": 0.52, "mode": "chase"},
 		{"file": "04_dust_bowl_hero", "car": "mud_reaper", "road": "Dust Bowl", "t": 0.38, "mode": "hero"},
-		{"file": "05_volcano_ridge", "car": "aurelia_gt", "road": "Volcano Ridge", "t": 0.52, "mode": "chase"},
-		{"file": "06_frozen_pass_sti", "car": "tundra_wolf", "road": "Frozen Pass", "t": 0.48, "mode": "chase"},
+		{"file": "05_volcano_ridge", "car": "aurelia_gt", "road": "Volcano Ridge", "t": 0.42, "mode": "chase"},
+		{"file": "06_frozen_pass_sti", "car": "tundra_wolf", "road": "Frozen Pass", "t": 0.56, "mode": "chase"},
 		{"file": "07_neon_coast_p1", "car": "vandal_hyper", "road": "Neon Coastline", "t": 0.25, "mode": "chase"},
-		{"file": "08_coast_ocean_hero", "car": "countach_apex", "road": "Neon Coastline", "t": 0.36, "mode": "hero_ocean"}
+		{"file": "08_coast_ocean_hero", "car": "countach_apex", "road": "Neon Coastline", "t": 0.36, "mode": "hero_ocean"},
+		{"file": "09_volcano_caldera_overview", "car": "aurelia_gt", "pos": Vector3(1340.0, 0.0, -960.0), "yaw": 0.78, "mode": "panorama_caldera"}
 	]
 
 	var hero_cam := Camera3D.new()
@@ -47,7 +48,11 @@ func _run() -> void:
 
 		var pv: Node3D = world.player_vehicle
 		var cr: CameraRig = world.camera_rig
-		if str(s["mode"]).begins_with("hero") and pv:
+		if str(s["mode"]) == "panorama_caldera" and pv:
+			hero_cam.position = Vector3(1480.0, 295.0, -780.0)
+			hero_cam.look_at(Vector3(980.0, 145.0, -1140.0))
+			hero_cam.current = true
+		elif str(s["mode"]).begins_with("hero") and pv:
 			var forward: Vector3 = -pv.global_transform.basis.z
 			var right: Vector3 = pv.global_transform.basis.x
 			# For ocean hero: stand inland (-right = west) looking east across car toward ocean bay
