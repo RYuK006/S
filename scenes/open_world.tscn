@@ -6,7 +6,7 @@
 [ext_resource type="Script" path="res://scripts/vehicle/camera_rig.gd" id="4_cam"]
 [ext_resource type="Script" path="res://scripts/audio/procedural_audio_engine.gd" id="5_audio"]
 [ext_resource type="Script" path="res://scripts/core/drs_controller.gd" id="6_drs"]
-[ext_resource type="Texture2D" path="res://assets/hdri/autumn_field_1k.hdr" id="7_hdri"]
+[ext_resource type="Texture2D" path="res://assets/hdri/syferfontein_0d_clear_2k.hdr" id="7_hdri"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_world"]
 panorama = ExtResource("7_hdri")
@@ -17,8 +17,8 @@ sky_material = SubResource("PanoramaSkyMaterial_world")
 [sub_resource type="Environment" id="Environment_world"]
 background_mode = 2
 sky = SubResource("Sky_world")
-tonemap_mode = 3
-tonemap_exposure = 1.05
+tonemap_mode = 4
+tonemap_exposure = 1.15
 ssr_enabled = true
 ssao_enabled = true
 ssao_radius = 2.5
@@ -68,6 +68,7 @@ script = ExtResource("2_input")
 [node name="PlayerVehicle" type="RigidBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 25, 0)
 script = ExtResource("3_car")
+car_id = "skyline_vspec"
 
 [node name="CameraRig" type="Node3D" parent="."]
 script = ExtResource("4_cam")
