@@ -1,43 +1,118 @@
-[gd_scene load_steps=8 format=3 uid="uid://b8garage01scene"]
+[gd_scene load_steps=20 format=3 uid="uid://b8garage01scene"]
 
 [ext_resource type="Script" path="res://scripts/ui/garage_controller.gd" id="1_controller"]
+[ext_resource type="Texture2D" path="res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_4k.hdr" id="2_hdri"]
+[ext_resource type="Script" path="res://scripts/ui/debug_overlay.gd" id="3_debug"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
-sky_top_color = Color(0.12, 0.14, 0.18, 1)
-sky_horizon_color = Color(0.25, 0.28, 0.35, 1)
-ground_bottom_color = Color(0.08, 0.08, 0.1, 1)
-ground_horizon_color = Color(0.18, 0.2, 0.25, 1)
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_studio"]
+panorama = ExtResource("2_hdri")
+energy_multiplier = 0.72
 
 [sub_resource type="Sky" id="Sky_1"]
-sky_material = SubResource("ProceduralSkyMaterial_1")
+sky_material = SubResource("PanoramaSkyMaterial_studio")
+radiance_size = 4
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_color = Color(0.4, 0.45, 0.55, 1)
-ambient_light_energy = 0.8
-tonemap_mode = 3
+ambient_light_sky_contribution = 1.0
+reflected_light_source = 2
+tonemap_mode = 4
+tonemap_exposure = 0.94
+tonemap_agx_white = 14.5
+tonemap_agx_contrast = 1.22
+ssr_enabled = true
+ssr_max_steps = 48
+ssr_fade_in = 0.15
+ssr_fade_out = 2.2
+ssr_depth_tolerance = 0.1
 ssao_enabled = true
+ssao_radius = 1.35
+ssao_intensity = 2.35
+ssao_power = 1.65
+ssao_light_affect = 0.0
+ssil_enabled = true
+ssil_radius = 4.0
+ssil_intensity = 0.85
+sdfgi_enabled = false
 glow_enabled = true
-glow_intensity = 0.5
+glow_normalized = false
+glow_intensity = 0.24
+glow_blend_mode = 2
+glow_bloom = 0.04
+glow_hdr_threshold = 1.15
+fog_enabled = false
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.0014
+volumetric_fog_length = 64.0
+volumetric_fog_anisotropy = 0.55
+volumetric_fog_sky_affect = 0.0
+adjustment_enabled = true
+adjustment_brightness = 1.02
+adjustment_contrast = 1.06
+adjustment_saturation = 1.08
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(56, 56)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.11, 0.12, 0.145, 1)
+metallic = 0.25
+roughness = 0.13
+metallic_specular = 0.75
+clearcoat_enabled = true
+clearcoat = 0.65
+clearcoat_roughness = 0.08
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_tt"]
-top_radius = 4.2
-bottom_radius = 4.5
-height = 0.35
-radial_segments = 48
+top_radius = 4.25
+bottom_radius = 4.55
+height = 0.24
+radial_segments = 64
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tt"]
-albedo_color = Color(0.15, 0.16, 0.2, 1)
-metallic = 0.85
-roughness = 0.25
+albedo_color = Color(0.16, 0.175, 0.21, 1)
+metallic = 0.82
+roughness = 0.22
+clearcoat_enabled = true
+clearcoat = 0.8
+clearcoat_roughness = 0.06
 
 [sub_resource type="TorusMesh" id="TorusMesh_ring"]
-inner_radius = 4.3
-outer_radius = 4.4
-rings = 48
-ring_segments = 8
+inner_radius = 4.22
+outer_radius = 4.32
+rings = 64
+ring_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ring"]
+albedo_color = Color(1.0, 0.45, 0.05, 1)
+emission_enabled = true
+emission = Color(1.0, 0.44, 0.05, 1)
+emission_energy_multiplier = 2.4
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(48, 8.5, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.14, 0.155, 0.185, 1)
+metallic = 0.35
+roughness = 0.48
+
+[sub_resource type="BoxMesh" id="BoxMesh_strip"]
+size = Vector3(14, 0.22, 0.18)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_strip_cyan"]
+albedo_color = Color(0.1, 0.82, 1.0, 1)
+emission_enabled = true
+emission = Color(0.1, 0.82, 1.0, 1)
+emission_energy_multiplier = 2.2
+
+[sub_resource type="BoxMesh" id="BoxMesh_pillar"]
+size = Vector3(1.1, 8.5, 1.4)
+
+[sub_resource type="BoxOccluder3D" id="BoxOccluder3D_back"]
+size = Vector3(48, 8.5, 0.8)
 
 [node name="Garage" type="Node3D" node_paths=PackedStringArray("turntable_node", "camera_node", "car_mount")]
 script = ExtResource("1_controller")
@@ -49,32 +124,124 @@ car_mount = NodePath("Turntable/CarMount")
 environment = SubResource("Environment_1")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 10, 15, 10)
-light_color = Color(1, 0.95, 0.9, 1)
-light_energy = 1.2
+transform = Transform3D(0.819152, -0.32899, 0.470667, 0, 0.819152, 0.573576, -0.573576, -0.469846, 0.67101, 10, 14, 10)
+light_color = Color(1, 0.94, 0.86, 1)
+light_energy = 1.65
+light_bake_mode = 2
 shadow_enabled = true
+shadow_bias = 0.015
+shadow_normal_bias = 1.0
+directional_shadow_mode = 2
+directional_shadow_max_distance = 64.0
 
-[node name="SpotLight3D" type="SpotLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 6, 0)
-light_color = Color(0.9, 0.95, 1, 1)
-light_energy = 4.0
-spot_range = 10.0
-spot_angle = 45.0
+[node name="OverheadSpotKey" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 7.2, 0)
+light_color = Color(0.95, 0.97, 1, 1)
+light_energy = 8.5
+light_bake_mode = 1
+shadow_enabled = true
+spot_range = 16.0
+spot_angle = 52.0
+spot_attenuation = 1.4
+
+[node name="WarmRimSpot" type="SpotLight3D" parent="."]
+transform = Transform3D(0.866025, 0.25, -0.433013, 0, 0.866025, 0.5, 0.5, -0.433013, 0.75, -5.8, 3.6, -5.2)
+light_color = Color(1.0, 0.62, 0.28, 1)
+light_energy = 5.5
+light_bake_mode = 1
+spot_range = 18.0
+spot_angle = 55.0
+
+[node name="CoolRimSpot" type="SpotLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 6.2, 3.4, -4.8)
+light_color = Color(0.42, 0.78, 1.0, 1)
+light_energy = 4.8
+light_bake_mode = 1
+spot_range = 18.0
+spot_angle = 55.0
+
+[node name="StudioReflectionProbe" type="ReflectionProbe" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+update_mode = 1
+intensity = 0.95
+max_distance = 36.0
+size = Vector3(28, 8, 28)
+
+[node name="StaticLightmapGI" type="LightmapGI" parent="."]
+quality = 2
+bounces = 3
+directional = true
+supersampling = true
+denoiser_strength = 0.1
+generate_probes_subdiv = 1
+
+[node name="ShowroomFloor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.18, 0)
+gi_mode = 1
+mesh = SubResource("PlaneMesh_floor")
+surface_material_override/0 = SubResource("StandardMaterial3D_floor")
+
+[node name="StudioBackWall" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -10.5)
+gi_mode = 1
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="StudioWallOccluder" type="OccluderInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, -10.5)
+occluder = SubResource("BoxOccluder3D_back")
+
+[node name="WallAccentStrip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4, -10.0)
+gi_mode = 1
+mesh = SubResource("BoxMesh_strip")
+surface_material_override/0 = SubResource("StandardMaterial3D_strip_cyan")
+
+[node name="StudioPillarLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.92, 0, 0.39, 0, 1, 0, -0.39, 0, 0.92, -9.2, 3.5, -8.2)
+gi_mode = 1
+mesh = SubResource("BoxMesh_pillar")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="StudioPillarRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.92, 0, -0.39, 0, 1, 0, 0.39, 0, 0.92, 9.2, 3.5, -8.2)
+gi_mode = 1
+mesh = SubResource("BoxMesh_pillar")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="StudioWingLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.5, 0, -0.866025, 0, 1, 0, 0.866025, 0, 0.5, -20.5, 3.5, 4.0)
+gi_mode = 1
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="StudioWingRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.5, 0, 0.866025, 0, 1, 0, -0.866025, 0, 0.5, 20.5, 3.5, 4.0)
+gi_mode = 1
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="Turntable" type="Node3D" parent="."]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, 0, 0, 0)
 
 [node name="PlatformMesh" type="MeshInstance3D" parent="Turntable"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.175, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.10, 0)
+gi_mode = 1
 mesh = SubResource("CylinderMesh_tt")
 surface_material_override/0 = SubResource("StandardMaterial3D_tt")
 
+[node name="GlowRingMesh" type="MeshInstance3D" parent="Turntable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
+mesh = SubResource("TorusMesh_ring")
+surface_material_override/0 = SubResource("StandardMaterial3D_ring")
+
 [node name="CarMount" type="Node3D" parent="Turntable"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.8, 5.2)
+transform = Transform3D(0.866025, -0.12941, 0.482963, 0, 0.965926, 0.258819, -0.5, -0.224144, 0.836516, 2.7, 1.55, 4.6)
 current = true
-fov = 55.0
+fov = 46.0
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -93,12 +260,12 @@ theme_override_constants/margin_bottom = 10
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/TopBar/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 25
+theme_override_constants/separation = 20
 
 [node name="LabelTitle" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0, 1)
-text = "GRIDLETHAL GARAGE"
+text = "GRIDLETHAL AUTOSHOW"
 
 [node name="LabelCarTitle" type="Label" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
 layout_mode = 2
@@ -119,6 +286,21 @@ text = "GOLD: 50"
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.8, 1, 1)
 text = "SCRAP: 150"
+
+[node name="BtnOpenWorld" type="Button" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(125, 0)
+layout_mode = 2
+text = "OPEN WORLD"
+
+[node name="BtnRace" type="Button" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(115, 0)
+layout_mode = 2
+text = "CIRCUIT"
+
+[node name="BtnMainMenu" type="Button" parent="CanvasLayer/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(105, 0)
+layout_mode = 2
+text = "MENU"
 
 [node name="NavHBox" type="HBoxContainer" parent="CanvasLayer"]
 anchors_preset = 10
@@ -156,9 +338,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = -260.0
+offset_top = -230.0
 offset_right = -20.0
-offset_bottom = -20.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -170,6 +352,18 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
+[node name="DebugOverlay" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("3_debug")
+
+[connection signal="pressed" from="CanvasLayer/TopBar/MarginContainer/HBoxContainer/BtnOpenWorld" to="." method="_on_open_world_pressed"]
+[connection signal="pressed" from="CanvasLayer/TopBar/MarginContainer/HBoxContainer/BtnRace" to="." method="_on_race_pressed"]
+[connection signal="pressed" from="CanvasLayer/TopBar/MarginContainer/HBoxContainer/BtnMainMenu" to="." method="_on_main_menu_pressed"]
 [connection signal="pressed" from="CanvasLayer/NavHBox/BtnShowroom" to="." method="_render_showroom_tab"]
 [connection signal="pressed" from="CanvasLayer/NavHBox/BtnUpgrades" to="." method="_render_upgrades_tab"]
 [connection signal="pressed" from="CanvasLayer/NavHBox/BtnCustomise" to="." method="_render_customise_tab"]
