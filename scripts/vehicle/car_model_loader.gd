@@ -224,6 +224,7 @@ static func _bind_spatial_wheels(controller: RigidBody3D, holder: Node3D, loaded
 			var mi: MeshInstance3D = item["node"]
 			var hx: Transform3D = item["holder_xform"]
 			if mi.get_parent():
+				mi.owner = null
 				mi.get_parent().remove_child(mi)
 			pivot.add_child(mi)
 			var rel_xform: Transform3D = hx
@@ -417,11 +418,13 @@ static func _setup_car_reflection_probe(controller: RigidBody3D) -> void:
 		probe.name = "CarDynamicReflectionProbe"
 		probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
 		probe.intensity = 0.85
-		probe.size = Vector3(28.0, 14.0, 28.0)
+		probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
+		# Bottom at 1.45 - 1.20 = +0.25m above ground so probe NEVER creates dark square shadows on terrain
+		probe.size = Vector3(5.2, 2.4, 6.0)
 		probe.origin_offset = Vector3(0.0, 0.0, 0.0)
-		probe.max_distance = 56.0
+		probe.max_distance = 64.0
 		probe.enable_shadows = false
-		probe.position = Vector3(0.0, 2.2, 0.0)
+		probe.position = Vector3(0.0, 1.45, 0.0)
 		controller.add_child(probe)
 
 static func _apply_fh5_car_materials(root: Node, path_low: String) -> void:
