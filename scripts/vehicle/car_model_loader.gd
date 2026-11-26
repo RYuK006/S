@@ -54,8 +54,8 @@ static func load_car_visuals(controller: RigidBody3D, recipe: Dictionary) -> Nod
 	# 3. Spatial + quadrant-split wheel binding with outlier-resistant radius & vertex straightening
 	_bind_spatial_wheels(controller, holder, loaded_model, path_low)
 
-	# 4. Selective Forza Horizon 5 PBR Paint, Rubber & Light enhancements
-	_apply_fh5_car_materials(holder, path_low)
+	# 4. Selective Forza Horizon 5 PBR Paint, Rubber & Light enhancements across body + wheels
+	_apply_fh5_car_materials(controller, path_low)
 	_setup_car_reflection_probe(controller)
 	return holder
 
@@ -469,6 +469,19 @@ static func _enhance_materials_recursive(node: Node, custom_paint: Color, path_l
 						std.clearcoat_enabled = true
 						std.clearcoat = 1.0
 						std.clearcoat_roughness = 0.03
+					elif "countach" in path_low and rname == "material.008":
+						# Tame clipped pure-white body highlight to pearl white so sun specular doesn't wash out
+						std.albedo_color = Color(0.84, 0.85, 0.88)
+						std.metallic = 0.35
+						std.roughness = 0.16
+						std.clearcoat_enabled = true
+						std.clearcoat = 1.0
+						std.clearcoat_roughness = 0.03
+					elif "undercarriage" in rname:
+						# Eliminate bright white inside Ford Raptor wheel-well fender arches
+						std.albedo_color = Color(0.08, 0.08, 0.09)
+						std.roughness = 0.88
+						std.metallic = 0.05
 					elif has_tex and ("coat" in rname or "body" in rname or "livery" in rname or "texturede" in rname):
 						if "texturede" in rname:
 							std.metallic = 0.45
@@ -476,15 +489,27 @@ static func _enhance_materials_recursive(node: Node, custom_paint: Color, path_l
 						std.clearcoat_enabled = true
 						std.clearcoat = 0.90
 						std.clearcoat_roughness = 0.04
-					elif "glass" in rname or "windscreen" in rname or "windshield" in rname or "window" in rname or "cristal" in rname:
+					elif "glass" in rname or "windscreen" in rname or "windshield" in rname or "window" in rname or "cristal" in rname or "lunas" in rname:
 						std.clearcoat_enabled = true
 						std.clearcoat = 1.0
 						std.clearcoat_roughness = 0.02
-						std.roughness = 0.04
-					elif ("tyre" in rname or "tire" in rname) and ("mclaren" in path_low or "ferrari" in path_low):
+						std.roughness = 0.03
+					elif "sasasa" in rname or "tyre_side" in rname or "volk" in rname or "material_7" in rname or ("countach" in path_low and rname == "material.025") or (("tyre" in rname or "tire" in rname) and ("ferrari" in path_low or "mclaren" in path_low)):
+						# Clean matte dark performance tire sidewalls & treads (removes chalk stencils & harsh specular bumps)
+						std.albedo_texture = null
+						std.normal_enabled = false
+						std.albedo_color = Color(0.06, 0.06, 0.065)
+						std.roughness = 0.88
+						std.metallic = 0.0
+						std.metallic_specular = 0.22
+					elif "carbon" in rname:
 						std.albedo_color = Color(0.09, 0.09, 0.10)
-						std.roughness = 0.82
-					elif ("taillight" in rname or "brakelight" in rname or "redlight" in rname or "reflector_tl" in rname or "reflector_bl" in rname) and not has_tex:
+						std.metallic = 0.25
+						std.roughness = 0.22
+						std.clearcoat_enabled = true
+						std.clearcoat = 0.65
+						std.clearcoat_roughness = 0.08
+					elif ("taillight" in rname or "brakelight" in rname or "redlight" in rname or "led_rojo" in rname or "reflector_tl" in rname or "reflector_bl" in rname) and not has_tex:
 						std.emission_enabled = true
 						std.emission = Color(0.95, 0.04, 0.02)
 						std.emission_energy_multiplier = 1.8
