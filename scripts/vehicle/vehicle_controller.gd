@@ -172,12 +172,16 @@ func _create_wheel(rel_pos: Vector3, is_f: bool, is_l: bool) -> RaycastWheel:
 	w.is_left = is_l
 	add_child(w)
 	var susp: Dictionary = recipe.get("suspension", {}).duplicate()
+	var corner_mass: float = maxf(220.0, mass * 0.25)
+	# Target ~5.5cm static sag regardless of vehicle weight (1100 kg supercar vs 2600 kg Baja truck)
+	var dyn_spring: float = (corner_mass * 9.81) / 0.055
+	var dyn_bump: float = 2.0 * sqrt(dyn_spring * corner_mass) * 0.42
 	susp["rest_length"] = 0.12
-	susp["travel"] = 0.12
+	susp["travel"] = 0.14
 	susp["wheel_radius"] = 0.384
-	susp["spring_rate"] = 45000.0
-	susp["damping_bump"] = 3200.0
-	susp["damping_rebound"] = 4500.0
+	susp["spring_rate"] = dyn_spring
+	susp["damping_bump"] = dyn_bump
+	susp["damping_rebound"] = dyn_bump * 1.35
 	w.setup(susp, recipe.get("tire", {}))
 	return w
 
