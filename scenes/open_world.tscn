@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://ow8world01scene"]
+[gd_scene load_steps=13 format=3 uid="uid://ow8world01scene"]
 
 [ext_resource type="Script" path="res://scripts/world/open_world_manager.gd" id="1_mgr"]
 [ext_resource type="Script" path="res://scripts/core/input_manager.gd" id="2_input"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/audio/procedural_audio_engine.gd" id="5_audio"]
 [ext_resource type="Script" path="res://scripts/core/drs_controller.gd" id="6_drs"]
 [ext_resource type="Texture2D" path="res://assets/hdri/kloofendal_48d_partly_cloudy_puresky_4k.hdr" id="7_hdri"]
+[ext_resource type="Script" path="res://scripts/ui/debug_overlay.gd" id="8_debug"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_world"]
 panorama = ExtResource("7_hdri")
@@ -20,40 +21,53 @@ radiance_size = 4
 background_mode = 2
 sky = SubResource("Sky_world")
 ambient_light_source = 3
-ambient_light_sky_contribution = 0.85
+ambient_light_sky_contribution = 1.0
 reflected_light_source = 2
 tonemap_mode = 4
-tonemap_exposure = 0.86
+tonemap_exposure = 0.88
+tonemap_agx_white = 14.5
+tonemap_agx_contrast = 1.2
 ssr_enabled = true
 ssr_max_steps = 48
-ssr_fade_in = 0.25
+ssr_fade_in = 0.15
+ssr_fade_out = 2.5
+ssr_depth_tolerance = 0.12
 ssao_enabled = true
-ssao_radius = 1.65
-ssao_intensity = 2.45
-ssao_power = 1.75
+ssao_radius = 1.55
+ssao_intensity = 2.25
+ssao_power = 1.65
+ssao_light_affect = 0.0
 ssil_enabled = true
 ssil_radius = 4.5
 ssil_intensity = 0.72
 sdfgi_enabled = false
 glow_enabled = true
-glow_intensity = 0.16
-glow_bloom = 0.03
-glow_hdr_threshold = 2.45
+glow_normalized = false
+glow_intensity = 0.24
+glow_blend_mode = 2
+glow_bloom = 0.04
+glow_hdr_threshold = 1.15
 fog_enabled = true
 fog_mode = 1
 fog_light_color = Color(0.62, 0.75, 0.90, 1)
-fog_sun_scatter = 0.45
-fog_density = 0.14
-fog_sky_affect = 0.04
-fog_depth_begin = 820.0
+fog_sun_scatter = 0.42
+fog_density = 0.12
+fog_aerial_perspective = 1.0
+fog_sky_affect = 0.0
+fog_depth_begin = 680.0
 fog_depth_end = 4200.0
 fog_height = 12.0
-fog_height_density = 0.008
-volumetric_fog_enabled = false
+fog_height_density = 0.006
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.0018
+volumetric_fog_length = 84.0
+volumetric_fog_anisotropy = 0.58
+volumetric_fog_gi_inject = 0.55
+volumetric_fog_sky_affect = 0.0
 adjustment_enabled = true
 adjustment_brightness = 1.03
-adjustment_contrast = 1.09
-adjustment_saturation = 1.15
+adjustment_contrast = 1.07
+adjustment_saturation = 1.12
 
 [node name="OpenWorld" type="Node3D" node_paths=PackedStringArray("player_vehicle", "camera_rig", "world_environment", "sun_light")]
 script = ExtResource("1_mgr")
@@ -69,6 +83,7 @@ environment = SubResource("Environment_world")
 transform = Transform3D(0.819152, -0.259029, 0.511789, 0, 0.892056, 0.451925, -0.573576, -0.370196, 0.73073, 0, 80, 0)
 light_color = Color(1, 0.92, 0.80, 1)
 light_energy = 1.88
+light_bake_mode = 2
 shadow_enabled = true
 shadow_bias = 0.015
 shadow_normal_bias = 1.1
@@ -78,7 +93,7 @@ directional_shadow_split_1 = 0.03
 directional_shadow_split_2 = 0.12
 directional_shadow_split_3 = 0.36
 directional_shadow_blend_splits = true
-directional_shadow_max_distance = 580.0
+directional_shadow_max_distance = 520.0
 
 [node name="InputManager" type="Node" parent="."]
 script = ExtResource("2_input")
@@ -96,3 +111,12 @@ script = ExtResource("5_audio")
 
 [node name="DRSController" type="Node" parent="."]
 script = ExtResource("6_drs")
+
+[node name="DebugOverlay" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8_debug")
