@@ -75,20 +75,8 @@ func _sample_roadside_in_quadrant(x_min: float, x_max: float, z_min: float, z_ma
 func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transform3D], vis_end: float = 850.0, tint: Color = Color(1, 1, 1, 1), cast_shadows: bool = true) -> void:
 	if not mesh or xforms.is_empty():
 		return
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = mesh
-	mm.instance_count = xforms.size()
-	for i: int in range(xforms.size()):
-		mm.set_instance_transform(i, xforms[i])
 
-	var inst := MultiMeshInstance3D.new()
-	inst.name = batch_name
-	inst.multimesh = mm
-	inst.visibility_range_end = vis_end
-	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-
+	var base_mesh: Mesh = mesh
 	if tint != Color(1, 1, 1, 1):
 		var tinted_mesh: Mesh = mesh.duplicate()
 		for s: int in range(tinted_mesh.get_surface_count()):
@@ -97,9 +85,35 @@ func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transf
 				var sd: StandardMaterial3D = m.duplicate()
 				sd.albedo_color = sd.albedo_color * tint
 				tinted_mesh.surface_set_material(s, sd)
-		mm.mesh = tinted_mesh
+		base_mesh = tinted_mesh
 
-	add_child(inst)
+	# Spatial 900m grid clustering enables true Forward+ frustum & occlusion culling + per-cell GPU LODs
+	# while keeping multi-biome Draw Calls super lean.
+	var cells: Dictionary = {}
+	for xf: Transform3D in xforms:
+		var key := Vector2i(int(floorf(xf.origin.x / 900.0)), int(floorf(xf.origin.z / 900.0)))
+		if not cells.has(key):
+			var arr: Array[Transform3D] = []
+			cells[key] = arr
+		(cells[key] as Array[Transform3D]).append(xf)
+
+	var clamped_vis: float = minf(vis_end, 850.0)
+	for key: Vector2i in cells.keys():
+		var cell_xforms: Array[Transform3D] = cells[key]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = base_mesh
+		mm.instance_count = cell_xforms.size()
+		for i: int in range(cell_xforms.size()):
+			mm.set_instance_transform(i, cell_xforms[i])
+
+		var inst := MultiMeshInstance3D.new()
+		inst.name = "%s_%d_%d" % [batch_name, key.x, key.y]
+		inst.multimesh = mm
+		inst.visibility_range_end = clamped_vis
+		inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(inst)
 
 func _populate_pine_forests() -> void:
 	# Note: Object_2 = evergreen summer conifer; Object_3 = snow-laden winter alpine conifer
@@ -248,15 +262,19 @@ func _populate_desert_rocks() -> void:
 		var pt: Vector2 = _sample_roadside_in_quadrant(200.0, 2200.0, -2200.0, -200.0, 8.0, 115.0)
 		if i >= 200:
 			var ang_v: float = rng.randf() * TAU
-			var rad_v: float = rng.randf_range(190.0, 420.0)
+			var rad_v: float = rng.randf_range(245.0, 440.0)
 			pt = Vector2(980.0 + cos(ang_v) * rad_v, -1140.0 + sin(ang_v) * rad_v)
-		if not _is_road_clear(pt.x, pt.y, 11.5):
+		if Vector2(pt.x - 980.0, pt.y + 1140.0).length() < 235.0:
 			continue
-		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.45
-		var sc: float = rng.randf_range(0.85, 2.25)
-		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.18, 0.18), rng.randf() * TAU, rng.randf_range(-0.18, 0.18))).scaled(Vector3(sc, sc * 0.85, sc))
+		if not _is_road_clear(pt.x, pt.y, 12.0):
+			continue
+		if terrain_gen.get_normal(pt.x, pt.y).y < 0.78:
+			continue
+		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.85
+		var sc: float = rng.randf_range(0.75, 1.55)
+		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.10, 0.10), rng.randf() * TAU, rng.randf_range(-0.10, 0.10))).scaled(Vector3(sc, sc * 0.82, sc))
 		x_volcano.append(Transform3D(bas, Vector3(pt.x, ry, pt.y)))
-	_build_multimesh_batch("MultiMesh_VolcanoBasaltCrags", cliff_spire if cliff_spire else granite_boulder, x_volcano, 1150.0, Color(0.24, 0.22, 0.24))
+	_build_multimesh_batch("MultiMesh_VolcanoBasaltCrags", granite_boulder, x_volcano, 850.0, Color(0.24, 0.22, 0.24))
 
 	var x_granite: Array[Transform3D] = []
 	for i: int in range(160):
