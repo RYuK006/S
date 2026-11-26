@@ -55,42 +55,60 @@ void fragment() {
 	w_sand /= total_w;
 	w_snow /= total_w;
 	w_volcano /= total_w;
+
+	// Natural alpine snowline: lush green pine meadows below 48m, snowy mountain peaks above 74m
+	float snowline = smoothstep(48.0, 74.0, world_pos.y);
+	float low_snow = w_snow * (1.0 - snowline);
+	w_snow *= snowline;
+	w_grass += low_snow;
 	
-	// 2. Sample PBR Maps with Micro/Macro Dual Blend
-	vec3 diff_grass = mix(texture(tex_grass_diff, uv_macro).rgb, texture(tex_grass_diff, uv_micro).rgb, 0.35);
-	vec3 diff_sand = mix(texture(tex_sand_diff, uv_macro).rgb, texture(tex_sand_diff, uv_micro).rgb, 0.35);
+	// 2. Sample PBR Maps with Continuous Harmonic Anti-Tiling (zero square grid seams)
+	float blend_t = 0.5 + 0.5 * sin(world_pos.x * 0.013 + cos(world_pos.z * 0.011) * 1.4) * cos(world_pos.z * 0.014);
+	vec2 uv_rot = vec2(uv_macro.x * 0.707 - uv_macro.y * 0.707, uv_macro.x * 0.707 + uv_macro.y * 0.707) + vec2(0.37, 0.71);
+	vec3 diff_grass = mix(texture(tex_grass_diff, uv_macro).rgb, mix(texture(tex_grass_diff, uv_micro).rgb, texture(tex_grass_diff, uv_rot).rgb, blend_t * 0.55), 0.45) * vec3(0.56, 0.76, 0.42);
+	vec3 diff_sand = mix(texture(tex_sand_diff, uv_macro).rgb, mix(texture(tex_sand_diff, uv_micro).rgb, texture(tex_sand_diff, uv_rot).rgb, blend_t * 0.55), 0.42) * vec3(1.16, 0.84, 0.56);
 	vec3 diff_snow = mix(texture(tex_snow_diff, uv_macro).rgb, texture(tex_snow_diff, uv_micro).rgb, 0.35);
-	vec3 diff_volcano = mix(texture(tex_volcano_diff, uv_macro).rgb, texture(tex_volcano_diff, uv_micro).rgb, 0.35) * vec3(0.32, 0.30, 0.28);
-	
-	vec3 nor_grass = texture(tex_grass_nor, uv_macro).rgb * 2.0 - 1.0;
-	vec3 nor_sand = texture(tex_sand_nor, uv_macro).rgb * 2.0 - 1.0;
-	vec3 nor_snow = texture(tex_snow_nor, uv_macro).rgb * 2.0 - 1.0;
-	vec3 nor_volcano = texture(tex_volcano_nor, uv_macro).rgb * 2.0 - 1.0;
-	
+	vec3 diff_volcano = mix(texture(tex_volcano_diff, uv_macro).rgb, texture(tex_volcano_diff, uv_rot).rgb, 0.42 * blend_t) * vec3(0.24, 0.22, 0.24);
+
+	vec3 nor_grass = mix(texture(tex_grass_nor, uv_macro).rgb, texture(tex_grass_nor, uv_micro).rgb, 0.35);
+	vec3 nor_sand = mix(texture(tex_sand_nor, uv_macro).rgb, texture(tex_sand_nor, uv_micro).rgb, 0.35);
+	vec3 nor_snow = mix(texture(tex_snow_nor, uv_macro).rgb, texture(tex_snow_nor, uv_micro).rgb, 0.30);
+	vec3 nor_volcano = mix(texture(tex_volcano_nor, uv_macro).rgb, texture(tex_volcano_nor, uv_micro).rgb, 0.40);
+
 	float r_grass = mix(texture(tex_grass_rough, uv_macro).r, texture(tex_grass_rough, uv_micro).r, 0.35);
 	float r_sand = mix(texture(tex_sand_rough, uv_macro).r, texture(tex_sand_rough, uv_micro).r, 0.35);
 	float r_snow = mix(texture(tex_snow_rough, uv_macro).r, texture(tex_snow_rough, uv_micro).r, 0.35);
 	float r_volcano = mix(texture(tex_volcano_rough, uv_macro).r, texture(tex_volcano_rough, uv_micro).r, 0.35);
-	
+
 	// Biome Blending
 	vec3 base_diff = diff_grass * w_grass + diff_sand * w_sand + diff_snow * w_snow + diff_volcano * w_volcano;
-	vec3 base_nor = nor_grass * w_grass + nor_sand * w_sand + nor_snow * w_snow + nor_volcano * w_volcano;
+	vec3 base_nor_tex = nor_grass * w_grass + nor_sand * w_sand + nor_snow * w_snow + nor_volcano * w_volcano;
 	float base_rough = r_grass * w_grass + r_sand * w_sand + r_snow * w_snow + r_volcano * w_volcano;
-	
-	// 3. Slope-Based Triplanar Cliff Projection
+
+	// 3. True 3-Axis World Triplanar Cliff Projection (crisp vertical mesas & volcano crags)
 	float slope = 1.0 - clamp(world_norm.y, 0.0, 1.0);
-	float cliff_weight = smoothstep(0.32, 0.55, slope);
-	
-	// Triplanar UV for cliffs (projected along vertical walls)
-	vec2 uv_cliff_side = vec2(world_pos.x + world_pos.z, world_pos.y) * uv_scale;
-	vec3 diff_cliff = texture(tex_cliff_diff, uv_cliff_side).rgb;
-	vec3 nor_cliff = texture(tex_cliff_nor, uv_cliff_side).rgb * 2.0 - 1.0;
-	float r_cliff = texture(tex_cliff_rough, uv_cliff_side).r;
-	
+	float cliff_weight = smoothstep(0.28, 0.52, slope);
+
+	vec3 tri_w = pow(abs(world_norm), vec3(4.0));
+	tri_w /= max(0.0001, tri_w.x + tri_w.y + tri_w.z);
+	float c_scale = uv_scale * 0.65;
+	vec2 uv_cx = world_pos.zy * c_scale;
+	vec2 uv_cy = world_pos.xz * c_scale;
+	vec2 uv_cz = world_pos.xy * c_scale;
+	vec3 diff_cliff = texture(tex_cliff_diff, uv_cx).rgb * tri_w.x + texture(tex_cliff_diff, uv_cy).rgb * tri_w.y + texture(tex_cliff_diff, uv_cz).rgb * tri_w.z;
+	diff_cliff = mix(diff_cliff, diff_cliff * vec3(0.30, 0.28, 0.30), clamp(w_volcano * 1.4, 0.0, 1.0));
+	diff_cliff = mix(diff_cliff, diff_cliff * vec3(1.12, 0.86, 0.66), clamp(w_sand, 0.0, 1.0));
+	vec3 nor_cliff_tex = texture(tex_cliff_nor, uv_cx).rgb * tri_w.x + texture(tex_cliff_nor, uv_cy).rgb * tri_w.y + texture(tex_cliff_nor, uv_cz).rgb * tri_w.z;
+	float r_cliff = texture(tex_cliff_rough, uv_cx).r * tri_w.x + texture(tex_cliff_rough, uv_cy).r * tri_w.y + texture(tex_cliff_rough, uv_cz).r * tri_w.z;
+
 	vec3 final_albedo = mix(base_diff, diff_cliff, cliff_weight);
-	vec3 final_nor = mix(base_nor, nor_cliff, cliff_weight);
+	vec3 final_nor_tex = mix(base_nor_tex, nor_cliff_tex, cliff_weight);
 	float final_roughness = mix(base_rough, r_cliff, cliff_weight);
-	
+
+	// Macro tint variation to break large landscape tiling
+	float macro_var = sin(world_pos.x * 0.015) * cos(world_pos.z * 0.015) * 0.06;
+	final_albedo = clamp(final_albedo * (1.02 + macro_var), vec3(0.0), vec3(1.0));
+
 	// 4. Volcanic Glowing Lava Vein Check
 	bool is_magma = (COLOR.r > 1.1 && COLOR.b < 0.2);
 	if (is_magma) {
@@ -102,9 +120,10 @@ void fragment() {
 		SPECULAR = 0.5;
 	} else {
 		ALBEDO = final_albedo;
-		ROUGHNESS = clamp(final_roughness, 0.45, 0.98);
-		SPECULAR = 0.2;
+		ROUGHNESS = clamp(final_roughness, 0.52, 0.96);
+		SPECULAR = 0.22;
 		METALLIC = 0.02;
-		NORMAL = (VIEW_MATRIX * vec4(normalize(world_norm + final_nor * 0.5), 0.0)).xyz;
+		NORMAL_MAP = clamp(final_nor_tex, vec3(0.0), vec3(1.0));
+		NORMAL_MAP_DEPTH = 1.15;
 	}
 }
