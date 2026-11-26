@@ -18,9 +18,10 @@ var terrain_gen: TerrainGenerator
 var road_network: RoadNetwork
 var scenery_populator: SceneryPopulator
 
-var active_chunks: Dictionary = {} # Vector2i(chunk_x, chunk_z) -> MeshInstance3D
+var active_chunks: Dictionary = {} # Vector2i(chunk_x, chunk_z) -> {"node": MeshInstance3D, "hi": bool}
 var current_player_chunk: Vector2i = Vector2i(999, 999)
-const LOAD_RADIUS: int = 2 # 5x5 chunks active around player
+const LOAD_RADIUS: int = 2 # High-res colliding 5x5 chunks around player
+const LOAD_RADIUS_FAR: int = 6 # Outer lightweight visual horizon 13x13 chunks (eliminates floating horizon roads)
 
 # Open World UI
 var open_world_hud: CanvasLayer
@@ -99,16 +100,16 @@ func _setup_weather_particles() -> void:
 	all_args.append_array(OS.get_cmdline_user_args())
 	for arg in all_args:
 		if arg == "--screenshot-volcano":
-			_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65)
+			_teleport_to_road("Volcano Ridge", 0.56)
 			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
 		elif arg == "--screenshot-snow":
-			_teleport_to_biome(Vector3(-1300.0, 0.0, -1300.0), PI * 0.25)
+			_teleport_to_road("Frozen Pass", 0.48)
 			_take_world_screenshot("res://build/screenshots/open_world_snow.png")
 		elif arg == "--screenshot-desert" or arg == "--screenshot-dust-bowl":
-			_teleport_to_biome(Vector3(-1100.0, 0.0, 900.0), -PI * 0.35)
+			_teleport_to_road("Dust Bowl", 0.52)
 			_take_world_screenshot("res://build/screenshots/open_world_desert.png")
 		elif arg == "--screenshot-coast":
-			_teleport_to_biome(Vector3(1200.0, 0.0, 1200.0), PI * 0.25)
+			_teleport_to_road("Neon Coastline", 0.25)
 			_take_world_screenshot("res://build/screenshots/open_world_coast.png")
 		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
 			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
@@ -138,8 +139,18 @@ func _setup_weather_particles() -> void:
 			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
 			_take_world_screenshot("res://build/screenshots/open_world_porsche.png")
 
+func _teleport_to_road(road_substr: String, t_norm: float) -> void:
+	if road_network:
+		var pose: Dictionary = road_network.get_road_pose(road_substr, t_norm)
+		var rp: Vector3 = pose["pos"]
+		var ry: float = float(pose["yaw"])
+		_teleport_to_biome(rp, ry)
+		return
+	_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+
 func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
-	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 0.65
+	var base_y: float = target_xz.y if target_xz.y > 0.5 else terrain_gen.get_height(target_xz.x, target_xz.z)
+	var y: float = maxf(base_y, terrain_gen.get_height(target_xz.x, target_xz.z)) + 0.55
 	var final_pos := Vector3(target_xz.x, y, target_xz.z)
 	if player_vehicle:
 		player_vehicle.global_position = final_pos
@@ -159,13 +170,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_1:
 				_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0) # Festival Hub
 			KEY_2:
-				_teleport_to_biome(Vector3(-1100.0, 0.0, 900.0), -PI * 0.35) # Dust Bowl
+				_teleport_to_road("Dust Bowl", 0.52)
 			KEY_3:
-				_teleport_to_biome(Vector3(-1300.0, 0.0, -1300.0), PI * 0.25) # Frozen Pass
+				_teleport_to_road("Frozen Pass", 0.48)
 			KEY_4:
-				_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65) # Volcano Ridge
+				_teleport_to_road("Volcano Ridge", 0.52)
 			KEY_5:
-				_teleport_to_biome(Vector3(1200.0, 0.0, 1200.0), PI * 0.25) # Neon Coast
+				_teleport_to_road("Neon Coastline", 0.25)
 			KEY_7:
 				switch_player_vehicle("sprinter_r2") # Concept Hypercar
 			KEY_8:
@@ -203,11 +214,11 @@ func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
 	ocean.name = "CoastalOceanWater"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(5000.0, 5000.0)
-	plane.subdivide_width = 48
-	plane.subdivide_depth = 48
+	plane.size = Vector2(3600.0, 5600.0)
+	plane.subdivide_width = 160
+	plane.subdivide_depth = 200
 	ocean.mesh = plane
-	ocean.position = Vector3(2500.0, 1.2, 2500.0)
+	ocean.position = Vector3(3650.0, 1.2, 1200.0)
 	
 	var water_shader := load("res://shaders/ocean_water.gdshader") as Shader
 	if water_shader:
@@ -266,25 +277,32 @@ func _update_chunks_around(pos: Vector3) -> void:
 	
 	var needed_keys: Dictionary = {}
 	
-	for cz in range(center_cz - LOAD_RADIUS, center_cz + LOAD_RADIUS + 1):
-		for cx in range(center_cx - LOAD_RADIUS, center_cx + LOAD_RADIUS + 1):
+	for cz in range(center_cz - LOAD_RADIUS_FAR, center_cz + LOAD_RADIUS_FAR + 1):
+		for cx in range(center_cx - LOAD_RADIUS_FAR, center_cx + LOAD_RADIUS_FAR + 1):
 			if cx >= 0 and cx < OpenWorldConfig.GRID_CHUNKS and cz >= 0 and cz < OpenWorldConfig.GRID_CHUNKS:
 				var key := Vector2i(cx, cz)
-				needed_keys[key] = true
-				if not active_chunks.has(key):
-					var chunk_mesh := terrain_gen.generate_chunk_mesh(cx, cz, 24)
+				var is_hi: bool = absf(float(cx - center_cx)) <= LOAD_RADIUS and absf(float(cz - center_cz)) <= LOAD_RADIUS
+				needed_keys[key] = is_hi
+				var needs_rebuild: bool = not active_chunks.has(key)
+				if not needs_rebuild:
+					var info: Dictionary = active_chunks[key]
+					if bool(info["hi"]) != is_hi:
+						(info["node"] as Node).queue_free()
+						needs_rebuild = true
+				if needs_rebuild:
+					var res: int = 44 if is_hi else 10
+					var chunk_mesh := terrain_gen.generate_chunk_mesh(cx, cz, res, is_hi)
 					add_child(chunk_mesh)
-					active_chunks[key] = chunk_mesh
+					active_chunks[key] = {"node": chunk_mesh, "hi": is_hi}
 					
-	# Cull distant chunks outside radius
 	var to_remove: Array[Vector2i] = []
 	for key in active_chunks.keys():
 		if not needed_keys.has(key):
 			to_remove.append(key)
 			
 	for key in to_remove:
-		var node: Node = active_chunks[key]
-		node.queue_free()
+		var info: Dictionary = active_chunks[key]
+		(info["node"] as Node).queue_free()
 		active_chunks.erase(key)
 
 func _build_open_world_hud() -> void:
