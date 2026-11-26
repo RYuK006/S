@@ -6,6 +6,7 @@ extends RefCounted
 const TerrainGenerator = preload("res://scripts/world/terrain_generator.gd")
 const RoadNetwork = preload("res://scripts/world/road_network.gd")
 const PropMeshUtils = preload("res://scripts/world/prop_mesh_utils.gd")
+const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
 
 static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: RoadNetwork, clear_fn: Callable, mm_fn: Callable) -> void:
 	# 1. Replace cartoon Pepsi gantry with monumental Festival Starting Truss Canopy + Illuminated Motorsport Gantry
@@ -42,6 +43,9 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
 				bl_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz), bz)))
 		mm_fn.call("MultiMesh_FestivalBleachers", bleacher_mesh, bl_xforms, 600.0, Color(1, 1, 1, 1), true)
+		for bi: int in range(bl_xforms.size()):
+			var xf: Transform3D = bl_xforms[bi]
+			parent.add_child(VisualPipeline.build_box_occluder("Occluder_Bleacher_%d" % bi, Vector3(11.0, 4.2, 5.2), xf.origin + Vector3(0.0, 2.2, 0.0), xf.basis.get_euler().y))
 
 	# 4. FIA Catch-Fence Barriers + Red/White Tire Stack Walls lining Hub Start Straight
 	var catch_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/catchfence_barrier.glb", 1.0, 0.04)
@@ -49,12 +53,12 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 		var cf_xforms: Array[Transform3D] = []
 		for z_step: int in range(-66, 68, 8):
 			var bz: float = float(z_step)
-			for sx: float in [-9.2, 9.2]:
+			for sx: float in [-10.2, 10.2]:
 				if not clear_fn.call(sx, bz, 2.0, 0.34):
 					continue
 				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
 				cf_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz) + 0.15, bz)))
-		mm_fn.call("MultiMesh_HubCatchFences", catch_mesh, cf_xforms, 520.0, Color(1, 1, 1, 1), true)
+		mm_fn.call("MultiMesh_HubCatchFences", catch_mesh, cf_xforms, 380.0, Color(1, 1, 1, 1), false)
 
 	var tire_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/tire_barrier_wall.glb", 1.15, 0.04)
 	if tire_mesh:
@@ -202,6 +206,9 @@ static func build_coast_harbor_depot(parent: Node3D, tg: TerrainGenerator, clear
 		mm_fn.call("MultiMesh_HarborContainersRust", c_rust, x_rust, 850.0, Color(1, 1, 1, 1), true)
 	if c_blue:
 		mm_fn.call("MultiMesh_HarborContainersBlue", c_blue, x_blue, 850.0, Color(1, 1, 1, 1), true)
+	for ci: int in range(mini(x_rust.size(), 12)):
+		var xf_c: Transform3D = x_rust[ci]
+		parent.add_child(VisualPipeline.build_box_occluder("Occluder_Container_%d" % ci, Vector3(5.6, 2.2, 2.2), xf_c.origin + Vector3(0.0, 1.2, 0.0), xf_c.basis.get_euler().y))
 
 	# Concrete port apron & wooden pier stretching cleanly out over Neon Coast surf
 	var pier_mat := StandardMaterial3D.new()
