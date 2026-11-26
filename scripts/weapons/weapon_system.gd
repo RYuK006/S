@@ -106,7 +106,8 @@ func fire_front():
 	# Recoil impulse
 	var v_trans = vehicle.global_transform if vehicle.is_inside_tree() else vehicle.transform
 	var forward = -v_trans.basis.z.normalized()
-	vehicle.apply_central_impulse(-forward * 120.0)
+	if vehicle.is_inside_tree():
+		vehicle.apply_central_impulse(-forward * 120.0)
 	
 	# Auto-aim assist: check for enemy inside forward cone
 	var fire_dir = forward
