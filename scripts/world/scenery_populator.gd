@@ -43,17 +43,30 @@ func populate_world_scenery() -> void:
 	_populate_shipping_containers(250)
 	_populate_festival_staging()
 
+func _get_mesh_and_mat(path: String, mesh_name: String = "") -> Dictionary:
+	var scn := load(path) as PackedScene
+	if not scn:
+		return {}
+	var inst := scn.instantiate()
+	var res: Dictionary = {}
+	_find_mesh_node(inst, mesh_name, res)
+	inst.queue_free()
+	return res
+
+func _find_mesh_node(n: Node, target_name: String, res: Dictionary) -> void:
+	if res.has("mesh"):
+		return
+	if n is MeshInstance3D and n.mesh:
+		if target_name.is_empty() or n.name == target_name:
+			res["mesh"] = n.mesh
+			res["material"] = n.get_active_material(0)
+			return
+	for c in n.get_children():
+		_find_mesh_node(c, target_name, res)
+
 func _get_glb_mesh(path: String) -> Mesh:
-	var scene := load(path) as PackedScene
-	if scene:
-		var root := scene.instantiate()
-		for child in root.get_children():
-			if child is MeshInstance3D and child.mesh:
-				var m: Mesh = child.mesh
-				root.queue_free()
-				return m
-		root.queue_free()
-	return null
+	var d := _get_mesh_and_mat(path)
+	return d.get("mesh", null)
 
 func _create_conifer_mesh() -> ArrayMesh:
 	var st := SurfaceTool.new()
@@ -263,41 +276,54 @@ func _populate_festival_trees(count: int) -> void:
 	add_child(inst)
 
 func _populate_desert_rocks_and_cacti(count: int) -> void:
-	# 1. Weathered Desert Sandstone Boulders (Organic low-poly faceted boulders sunk into dunes)
-	var boulder_mesh := SphereMesh.new()
-	boulder_mesh.radial_segments = 7
-	boulder_mesh.rings = 4
-	boulder_mesh.radius = 2.4
-	boulder_mesh.height = 3.2
+	# 1. Authentic 3D Photogrammetry Desert Sandstone Formations & Boulders
+	var rock_data := _get_mesh_and_mat("res://assets/models/props/cliff_rock/scene.gltf", "Object_5")
+	var rock_mesh: Mesh = rock_data.get("mesh", null)
+	var base_mat: Material = rock_data.get("material", null)
 	
-	var boulder_mat := StandardMaterial3D.new()
-	boulder_mat.albedo_color = Color(0.56, 0.36, 0.22) # Desert Sandstone Red/Tan
-	boulder_mat.roughness = 0.95
-	
+	var desert_rock_mat: StandardMaterial3D
+	if base_mat is StandardMaterial3D:
+		desert_rock_mat = base_mat.duplicate() as StandardMaterial3D
+		desert_rock_mat.albedo_color = Color(1.0, 0.88, 0.76) # Warm Sonora sandstone tint
+	else:
+		desert_rock_mat = StandardMaterial3D.new()
+		desert_rock_mat.albedo_color = Color(0.68, 0.52, 0.36)
+		desert_rock_mat.roughness = 0.95
+		
+	if not rock_mesh:
+		var bm := SphereMesh.new()
+		bm.radial_segments = 12
+		bm.rings = 6
+		rock_mesh = bm
+
 	var mm_boulders := MultiMesh.new()
 	mm_boulders.transform_format = MultiMesh.TRANSFORM_3D
-	mm_boulders.mesh = boulder_mesh
+	mm_boulders.mesh = rock_mesh
 	mm_boulders.instance_count = count
-	
+
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3030
-	
+
 	for i in range(count):
 		# Dust Bowl quadrant (South-West: x in -1800 to -250, z in 250 to 1800)
 		var x := rng.randf_range(-1800.0, -250.0)
 		var z := rng.randf_range(250.0, 1800.0)
 		var rot_y := rng.randf_range(0, TAU)
-		var rot_x := rng.randf_range(-0.25, 0.25)
-		var rot_z := rng.randf_range(-0.25, 0.25)
-		var s := rng.randf_range(0.8, 2.8)
-		# Boulders are partially sunk into the sand for a natural embedded look
-		var y := terrain_gen.get_height(x, z) - (s * 0.45)
-		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s * 1.5, s * 0.75, s * 1.25))
+		var rot_x := rng.randf_range(-0.15, 0.15)
+		var rot_z := rng.randf_range(-0.15, 0.15)
+		# Object_5 raw AABB is ~294m. Scale 0.015-0.05 gives 4.5m-15m natural boulders.
+		# Top 12% form massive 30m-60m desert cliff and mesa outcrops (scale 0.10-0.20).
+		var s := rng.randf_range(0.015, 0.05) if rng.randf() > 0.12 else rng.randf_range(0.10, 0.20)
+		var y := terrain_gen.get_height(x, z) - (s * 8.0)
+		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s, s, s))
 		mm_boulders.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
-		
+
 	var inst_boulders := MultiMeshInstance3D.new()
 	inst_boulders.multimesh = mm_boulders
-	inst_boulders.material_override = boulder_mat
+	inst_boulders.material_override = desert_rock_mat
+	inst_boulders.visibility_range_end = 950.0
+	inst_boulders.visibility_range_end_margin = 80.0
+	inst_boulders.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	inst_boulders.name = "MultiMesh_DesertRocks"
 	add_child(inst_boulders)
 	
@@ -330,42 +356,56 @@ func _populate_desert_rocks_and_cacti(count: int) -> void:
 	add_child(inst_cacti)
 
 func _populate_volcanic_spires(count: int) -> void:
-	# Jagged Volcanic Obsidian Crags & Basalt Outcrops (Natural low-profile jagged rock clusters)
-	var crag_mesh := SphereMesh.new()
-	crag_mesh.radial_segments = 6
-	crag_mesh.rings = 3
-	crag_mesh.radius = 2.2
-	crag_mesh.height = 3.6
+	# 3D Photogrammetry Jagged Obsidian Basalt Crags & Caldera Ridges
+	var rock_data := _get_mesh_and_mat("res://assets/models/props/cliff_rock/scene.gltf", "Object_4")
+	var rock_mesh: Mesh = rock_data.get("mesh", null)
+	var base_mat: Material = rock_data.get("material", null)
 	
-	var crag_mat := StandardMaterial3D.new()
-	crag_mat.albedo_color = Color(0.12, 0.10, 0.11) # Charred Volcanic Basalt
-	crag_mat.roughness = 0.88
-	crag_mat.metallic = 0.25
-	
+	var volcano_rock_mat: StandardMaterial3D
+	if base_mat is StandardMaterial3D:
+		volcano_rock_mat = base_mat.duplicate() as StandardMaterial3D
+		volcano_rock_mat.albedo_color = Color(0.24, 0.22, 0.23) # Charred basalt / obsidian
+		volcano_rock_mat.roughness = 0.85
+		volcano_rock_mat.metallic = 0.35
+	else:
+		volcano_rock_mat = StandardMaterial3D.new()
+		volcano_rock_mat.albedo_color = Color(0.14, 0.12, 0.13)
+		volcano_rock_mat.roughness = 0.88
+		volcano_rock_mat.metallic = 0.3
+		
+	if not rock_mesh:
+		var cm := SphereMesh.new()
+		cm.radial_segments = 12
+		cm.rings = 6
+		rock_mesh = cm
+
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = crag_mesh
+	mm.mesh = rock_mesh
 	mm.instance_count = count
-	
+
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4040
-	
+
 	for i in range(count):
 		# Volcano Ridge quadrant (North-East: x in 250 to 1800, z in -1800 to -250)
 		var x := rng.randf_range(280.0, 1750.0)
 		var z := rng.randf_range(-1750.0, -280.0)
 		var rot_y := rng.randf_range(0, TAU)
-		var rot_x := rng.randf_range(-0.4, 0.4)
-		var rot_z := rng.randf_range(-0.4, 0.4)
-		var s := rng.randf_range(0.8, 3.2)
-		# Embed rocks naturally into volcanic slopes
-		var y := terrain_gen.get_height(x, z) - (s * 0.3)
-		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s * 1.4, s * 0.9, s * 1.2))
+		var rot_x := rng.randf_range(-0.25, 0.25)
+		var rot_z := rng.randf_range(-0.25, 0.25)
+		# Varied crags: jagged obsidian (scale 0.02-0.06 = 6m-18m), caldera ridges (scale 0.08-0.18 = 24m-52m)
+		var s := rng.randf_range(0.02, 0.06) if rng.randf() > 0.15 else rng.randf_range(0.08, 0.18)
+		var y := terrain_gen.get_height(x, z) - (s * 10.0)
+		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s, s * 1.3, s))
 		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
-		
+
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
-	inst.material_override = crag_mat
+	inst.material_override = volcano_rock_mat
+	inst.visibility_range_end = 950.0
+	inst.visibility_range_end_margin = 80.0
+	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	inst.name = "MultiMesh_VolcanicSpires"
 	add_child(inst)
 
@@ -431,7 +471,6 @@ func _populate_festival_staging() -> void:
 		var y := terrain_gen.get_height(0, -25.0) + 0.38
 		arch.position = Vector3(0, y, -25.0)
 		arch.scale = Vector3(1.6, 1.6, 1.6)
-		_assign_palette_recursive(arch, pal_mat)
 		staging.add_child(arch)
 		
 	# 2. Paddock Event Tents (Left of track)
@@ -502,29 +541,35 @@ func _populate_festival_staging() -> void:
 		staging.add_child(fount)
 		
 	# 6. Sleek Armco Steel W-Beam Crash Barriers along Track Edges
-	var rail_mat := StandardMaterial3D.new()
-	rail_mat.albedo_color = Color(0.78, 0.80, 0.84)
-	rail_mat.metallic = 0.92
-	rail_mat.roughness = 0.28
-	
-	var rail_mesh := BoxMesh.new()
-	rail_mesh.size = Vector3(0.14, 0.45, 3.2)
+	var rail_data := _get_mesh_and_mat("res://assets/models/props/highway_guardrail.glb", "Object_4")
+	var rail_mesh: Mesh = rail_data.get("mesh", null)
+	var rail_mat: Material = rail_data.get("material", null)
+	var rail_scale := Vector3(2.7, 2.7, 2.7)
+	if not rail_mesh:
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.14, 0.45, 3.2)
+		rail_mesh = bm
+		rail_scale = Vector3.ONE
+	if not rail_mat:
+		var rm := StandardMaterial3D.new()
+		rm.albedo_color = Color(0.78, 0.80, 0.84)
+		rm.metallic = 0.92
+		rm.roughness = 0.28
+		rail_mat = rm
 	
 	for i in range(24):
 		var z_pos := -45.0 + (i * 3.2)
-		
-		# Left guardrail
 		var b_left := MeshInstance3D.new()
 		b_left.mesh = rail_mesh
-		var y_l := terrain_gen.get_height(-7.8, z_pos) + 0.65
-		b_left.position = Vector3(-7.8, y_l, z_pos)
+		b_left.scale = rail_scale
 		b_left.material_override = rail_mat
+		b_left.position = Vector3(-7.8, terrain_gen.get_height(-7.8, z_pos) + 0.65, z_pos)
 		staging.add_child(b_left)
 		
-		# Right guardrail
 		var b_right := MeshInstance3D.new()
 		b_right.mesh = rail_mesh
-		var y_r := terrain_gen.get_height(7.8, z_pos) + 0.65
-		b_right.position = Vector3(7.8, y_r, z_pos)
+		b_right.scale = rail_scale
+		b_right.rotation.y = PI
 		b_right.material_override = rail_mat
+		b_right.position = Vector3(7.8, terrain_gen.get_height(7.8, z_pos) + 0.65, z_pos)
 		staging.add_child(b_right)
