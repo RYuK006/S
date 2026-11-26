@@ -1,5 +1,5 @@
 # scripts/vehicle/car_model_loader.gd
-# Dedicated multi-model loader, wheel binding, and Forza Horizon 5 PBR material pipeline.
+# Generalized multi-model loader, spatial/quadrant wheel hub binder, and FH5 clearcoat PBR material pipeline.
 class_name CarModelLoader
 extends RefCounted
 
@@ -7,278 +7,487 @@ const ProceduralCarMesh = preload("res://scripts/vehicle/procedural_car_mesh.gd"
 const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
 
 static func load_car_visuals(controller: RigidBody3D, recipe: Dictionary) -> Node3D:
-	var glb_path := "res://assets/models/cars/CarConcept.glb"
-	if recipe.has("model_path") and FileAccess.file_exists(recipe.model_path):
-		glb_path = recipe.model_path
-		
+	var glb_path: String = "res://assets/models/cars/subaru_sti.glb"
+	if recipe.has("model_path") and FileAccess.file_exists(str(recipe.model_path)):
+		glb_path = str(recipe.model_path)
+
 	var loaded_model: Node3D = null
 	if FileAccess.file_exists(glb_path):
 		var gltf := GLTFDocument.new()
 		var state := GLTFState.new()
-		var err := gltf.append_from_file(glb_path, state)
-		if err == OK:
+		if gltf.append_from_file(glb_path, state) == OK:
 			loaded_model = gltf.generate_scene(state) as Node3D
-			
+
 	if not loaded_model:
 		var proc := ProceduralCarMesh.new()
 		var mesh_inst: Node3D = proc.build_car(recipe)
 		controller.add_child(mesh_inst)
-		_bind_model_wheels(controller, proc, glb_path)
 		_setup_car_reflection_probe(controller)
 		return mesh_inst
-		
-	# Apply model-specific rotation and scaling to align forward with -Z
-	if "mustang_gt" in glb_path.to_lower():
-		loaded_model.rotation.y = PI * 0.5
-		loaded_model.scale = Vector3.ONE
-	elif "aventador" in glb_path.to_lower():
-		loaded_model.rotation.y = -PI * 0.5
-		loaded_model.scale = Vector3(0.175, 0.175, 0.175)
-	elif "nissan_gtr" in glb_path.to_lower():
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(100.0, 100.0, 100.0)
-	elif "mclaren_p1" in glb_path.to_lower():
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.82, 0.82, 0.82)
-	elif "porsche_911" in glb_path.to_lower():
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.688, 0.688, 0.688)
-	elif "countach" in glb_path.to_lower():
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3(0.495, 0.495, 0.495)
-	elif "carconcept" in glb_path.to_lower():
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3.ONE
-	else:
-		loaded_model.rotation.y = PI
-		loaded_model.scale = Vector3.ONE
-		
-	controller.add_child(loaded_model)
-	_bind_model_wheels(controller, loaded_model, glb_path)
-	_apply_fh5_car_materials(loaded_model, glb_path)
+
+	var path_low: String = glb_path.to_lower()
+	var holder := Node3D.new()
+	holder.name = "CarVisualHolder"
+	controller.add_child(holder)
+	holder.add_child(loaded_model)
+
+	# 1. Strip baked shadow planes / studio floors before measuring AABB
+	_strip_studio_artifacts(loaded_model, path_low)
+
+	# 2. Orient model front toward -Z and normalize horizontal length
+	var spec: Dictionary = _get_model_spec(path_low)
+	loaded_model.rotation.y = float(spec.get("rot_y", PI))
+	var target_len: float = float(spec.get("target_len", 4.65))
+
+	var body_aabb: AABB = _calc_hierarchy_aabb(holder, loaded_model, Transform3D.IDENTITY)
+	var max_horiz: float = maxf(body_aabb.size.x, body_aabb.size.z)
+	if "mclaren" in path_low:
+		max_horiz = body_aabb.size.z
+	if max_horiz > 0.0001:
+		var s: float = target_len / max_horiz
+		loaded_model.scale = Vector3(s, s, s)
+
+	var scaled_aabb: AABB = _calc_hierarchy_aabb(holder, loaded_model, Transform3D.IDENTITY)
+	var ctr: Vector3 = scaled_aabb.get_center()
+	loaded_model.position -= Vector3(ctr.x, scaled_aabb.position.y, ctr.z)
+
+	# 3. Spatial + quadrant-split wheel binding with outlier-resistant radius & vertex straightening
+	_bind_spatial_wheels(controller, holder, loaded_model, path_low)
+
+	# 4. Selective Forza Horizon 5 PBR Paint, Rubber & Light enhancements
+	_apply_fh5_car_materials(holder, path_low)
 	_setup_car_reflection_probe(controller)
-	return loaded_model
+	return holder
+
+static func _get_model_spec(path_low: String) -> Dictionary:
+	if "ford_bronco" in path_low:
+		return {"rot_y": PI, "target_len": 4.42}
+	if "ford_raptor" in path_low:
+		return {"rot_y": 0.0, "target_len": 5.38}
+	if "subaru_sti" in path_low:
+		return {"rot_y": PI, "target_len": 4.46}
+	if "dodge_challenger" in path_low:
+		return {"rot_y": PI, "target_len": 4.95}
+	if "ferrari_488" in path_low:
+		return {"rot_y": PI * 0.5, "target_len": 4.65}
+	if "nissan_gtr" in path_low:
+		return {"rot_y": PI, "target_len": 4.72}
+	if "mclaren_p1" in path_low:
+		return {"rot_y": PI, "target_len": 4.59}
+	if "porsche_911" in path_low:
+		return {"rot_y": PI, "target_len": 4.35}
+	if "bmw_m4" in path_low:
+		return {"rot_y": PI, "target_len": 4.76}
+	if "aventador" in path_low:
+		return {"rot_y": -PI * 0.5, "target_len": 4.78}
+	if "countach" in path_low:
+		return {"rot_y": 0.0, "target_len": 4.80}
+	if "mustang_gt" in path_low:
+		return {"rot_y": PI * 0.5, "target_len": 4.78}
+	return {"rot_y": PI, "target_len": 4.65}
+
+static func _strip_studio_artifacts(node: Node, path_low: String) -> void:
+	var to_remove: Array[Node] = []
+	for child in node.get_children():
+		var nl: String = child.name.to_lower()
+		var is_junk: bool = false
+		if "shadow_plane" in nl or "clouds" in nl:
+			is_junk = true
+		elif "dodge_challenger" in path_low and nl == "object_5":
+			is_junk = true
+		elif "gt_sports" in path_low and "plane" in nl:
+			is_junk = true
+		elif child is MeshInstance3D:
+			var mi: MeshInstance3D = child
+			if mi.mesh:
+				var aabb: AABB = mi.mesh.get_aabb()
+				if aabb.size.y < 0.02 and maxf(aabb.size.x, aabb.size.z) > 8.0 and not ("challenger" in path_low):
+					is_junk = true
+		if is_junk:
+			to_remove.append(child)
+		else:
+			_strip_studio_artifacts(child, path_low)
+	for n in to_remove:
+		n.visible = false
+		if n.get_parent():
+			n.get_parent().remove_child(n)
+		n.queue_free()
+
+static func _calc_hierarchy_aabb(space_root: Node3D, node: Node, parent_xform: Transform3D) -> AABB:
+	var cur_xform: Transform3D = parent_xform
+	if node is Node3D and node != space_root:
+		var n3: Node3D = node
+		cur_xform = parent_xform * n3.transform
+	var total := AABB()
+	var has_aabb: bool = false
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		if mi.visible and mi.mesh:
+			total = cur_xform * mi.mesh.get_aabb()
+			has_aabb = true
+	for c in node.get_children():
+		var sub: AABB = _calc_hierarchy_aabb(space_root, c, cur_xform)
+		if sub.size != Vector3.ZERO or sub.position != Vector3.ZERO:
+			if has_aabb:
+				total = total.merge(sub)
+			else:
+				total = sub
+				has_aabb = true
+	return total
+
+static func _bind_spatial_wheels(controller: RigidBody3D, holder: Node3D, loaded_model: Node3D, path_low: String) -> void:
+	if not ("front_left_wheel" in controller):
+		return
+	var corner_meshes: Dictionary = {"FL": [], "FR": [], "RL": [], "RR": []}
+	var to_split: Array[Dictionary] = []
+	_collect_wheel_meshes(loaded_model, loaded_model.transform, corner_meshes, to_split, path_low)
+
+	for item in to_split:
+		_split_mesh_by_quadrants(item["node"], item["holder_xform"], corner_meshes)
+
+	var wheel_map: Dictionary = {
+		"FL": controller.get("front_left_wheel"),
+		"FR": controller.get("front_right_wheel"),
+		"RL": controller.get("rear_left_wheel"),
+		"RR": controller.get("rear_right_wheel")
+	}
+
+	var corner_aabbs: Dictionary = {}
+	var bottoms: Array[float] = []
+	var radii: Array[float] = []
+	var sum_x: float = 0.0
+	var bound_count: int = 0
+
+	for key: String in ["FL", "FR", "RL", "RR"]:
+		var list: Array = corner_meshes[key]
+		if list.is_empty():
+			continue
+		var w_aabb := AABB()
+		var first: bool = true
+		for item in list:
+			var mi: MeshInstance3D = item["node"]
+			var hx: Transform3D = item["holder_xform"]
+			var ma: AABB = _calc_hierarchy_aabb(mi, mi, hx)
+			if first:
+				w_aabb = ma
+				first = false
+			else:
+				w_aabb = w_aabb.merge(ma)
+		corner_aabbs[key] = w_aabb
+		bottoms.append(w_aabb.position.y)
+		radii.append(clampf(w_aabb.size.y * 0.5, 0.28, 0.54))
+		sum_x += w_aabb.get_center().x
+		bound_count += 1
+
+	if bound_count == 0:
+		return
+
+	# Outlier-resistant ground Y and tire radius across all bound corners
+	bottoms.sort()
+	radii.sort()
+	var tire_ground_y: float = bottoms[int(floorf(float(bottoms.size()) * 0.5))]
+	var median_radius: float = radii[int(floorf(float(radii.size()) * 0.5))]
+	var mid_wheel_x: float = sum_x / float(bound_count)
+
+	if absf(tire_ground_y) > 0.002 or absf(mid_wheel_x) > 0.01:
+		loaded_model.position.y -= tire_ground_y
+		loaded_model.position.x -= mid_wheel_x
+
+	for key: String in ["FL", "FR", "RL", "RR"]:
+		var list: Array = corner_meshes[key]
+		var rw: RaycastWheel = wheel_map.get(key, null) as RaycastWheel
+		if list.is_empty() or not rw or not corner_aabbs.has(key):
+			continue
+
+		var raw_aabb: AABB = corner_aabbs[key]
+		var raw_r: float = clampf(raw_aabb.size.y * 0.5, 0.28, 0.54)
+		var wheel_r: float = median_radius if absf(raw_r - median_radius) > median_radius * 0.12 else raw_r
+
+		var hub_center: Vector3 = raw_aabb.get_center()
+		hub_center.x -= mid_wheel_x
+		hub_center.y = wheel_r + maxf(0.0, raw_aabb.position.y - tire_ground_y)
+
+		rw.position = hub_center
+		rw.wheel_radius = wheel_r
+		if rw.raycast:
+			rw.raycast.target_position = Vector3(0.0, -(rw.rest_length + rw.travel + wheel_r), 0.0)
+
+		var pivot := Node3D.new()
+		pivot.name = "WheelPivot_" + key
+		rw.add_child(pivot)
+		pivot.position = Vector3.ZERO
+		pivot.rotation = Vector3.ZERO
+		rw.wheel_visual = pivot
+
+		var raw_ctr_shifted := Vector3(raw_aabb.get_center().x - mid_wheel_x, raw_aabb.get_center().y - tire_ground_y, raw_aabb.get_center().z)
+		for item in list:
+			var mi: MeshInstance3D = item["node"]
+			var hx: Transform3D = item["holder_xform"]
+			if mi.get_parent():
+				mi.get_parent().remove_child(mi)
+			pivot.add_child(mi)
+			var rel_xform: Transform3D = hx
+			rel_xform.origin.x -= mid_wheel_x
+			rel_xform.origin.y -= tire_ground_y
+			rel_xform.origin -= raw_ctr_shifted
+			mi.transform = rel_xform
+
+		# Auto-unbake static steering poses on front wheels using exact vertex X-span minimization
+		if key.begins_with("F"):
+			_auto_straighten_pivot_vertices(pivot)
+
+static func _auto_straighten_pivot_vertices(pivot: Node3D) -> void:
+	var pts: PackedVector3Array = _gather_pivot_vertices(pivot, pivot, Transform3D.IDENTITY)
+	if pts.is_empty():
+		return
+	var init_span: float = _calc_x_span(pts, 0.0)
+	if init_span <= 0.45:
+		return
+	var best_x: float = init_span
+	var best_yaw: float = 0.0
+	for deg: int in range(-45, 46, 2):
+		var rad: float = deg_to_rad(float(deg))
+		var sp: float = _calc_x_span(pts, rad)
+		if sp < best_x:
+			best_x = sp
+			best_yaw = rad
+	if best_x < init_span * 0.85:
+		var rot_b := Basis(Vector3.UP, best_yaw)
+		for c in pivot.get_children():
+			if c is Node3D:
+				var cn: Node3D = c
+				cn.transform = Transform3D(rot_b, Vector3.ZERO) * cn.transform
+
+static func _gather_pivot_vertices(root: Node3D, node: Node, parent_xf: Transform3D) -> PackedVector3Array:
+	var xf: Transform3D = parent_xf
+	if node is Node3D and node != root:
+		xf = parent_xf * (node as Node3D).transform
+	var out := PackedVector3Array()
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		if mi.mesh and mi.mesh.get_surface_count() > 0:
+			var arr: Array = mi.mesh.surface_get_arrays(0)
+			if arr.size() > Mesh.ARRAY_VERTEX and arr[Mesh.ARRAY_VERTEX] is PackedVector3Array:
+				var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+				var step: int = maxi(1, int(floorf(float(v.size()) / 160.0)))
+				var i: int = 0
+				while i < v.size():
+					out.append(xf * v[i])
+					i += step
+	for c in node.get_children():
+		out.append_array(_gather_pivot_vertices(root, c, xf))
+	return out
+
+static func _calc_x_span(pts: PackedVector3Array, yaw_rad: float) -> float:
+	var cs: float = cos(yaw_rad)
+	var sn: float = sin(yaw_rad)
+	var min_x: float = 1e9
+	var max_x: float = -1e9
+	for p: Vector3 in pts:
+		var rx: float = p.x * cs + p.z * sn
+		if rx < min_x: min_x = rx
+		if rx > max_x: max_x = rx
+	return max_x - min_x
+
+static func _collect_wheel_meshes(node: Node, cur_xform: Transform3D, corners: Dictionary, to_split: Array[Dictionary], path_low: String) -> void:
+	for c in node.get_children():
+		var next_xform: Transform3D = cur_xform
+		if c is Node3D:
+			next_xform = cur_xform * (c as Node3D).transform
+		if c is MeshInstance3D:
+			var mi: MeshInstance3D = c
+			if mi.visible and mi.mesh and _is_wheel_candidate(mi, path_low):
+				var ma: AABB = next_xform * mi.mesh.get_aabb()
+				var max_d: float = maxf(ma.size.x, maxf(ma.size.y, ma.size.z))
+				var ctr: Vector3 = ma.get_center()
+				var min_sz: float = 0.28 if ("porsche" in path_low or "countach" in path_low) else 0.04
+				if max_d > min_sz and max_d < 1.25 and ma.size.y > 0.20 and ctr.y < 0.85 and absf(ctr.x) > 0.42 and absf(ctr.z) > 0.72:
+					var key: String = ("F" if ctr.z < 0.0 else "R") + ("L" if ctr.x < 0.0 else "R")
+					corners[key].append({"node": mi, "holder_xform": next_xform})
+					continue
+				elif not ("countach" in path_low) and (ma.size.x > 1.25 or ma.size.z > 1.60) and ma.size.y > 0.30 and ctr.y < 0.85:
+					to_split.append({"node": mi, "holder_xform": next_xform})
+					continue
+		_collect_wheel_meshes(c, next_xform, corners, to_split, path_low)
+
+static func _split_mesh_by_quadrants(mi: MeshInstance3D, hx: Transform3D, corners: Dictionary) -> void:
+	var src_mesh: Mesh = mi.mesh
+	if not src_mesh:
+		return
+	var quad_meshes: Dictionary = {"FL": ArrayMesh.new(), "FR": ArrayMesh.new(), "RL": ArrayMesh.new(), "RR": ArrayMesh.new(), "CENTER": ArrayMesh.new()}
+	var quad_mats: Dictionary = {"FL": [], "FR": [], "RL": [], "RR": [], "CENTER": []}
+
+	for s: int in range(src_mesh.get_surface_count()):
+		var arrays: Array = src_mesh.surface_get_arrays(s)
+		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		if verts.is_empty():
+			continue
+		var has_n: bool = arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array and (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array).size() == verts.size()
+		var has_u: bool = arrays[Mesh.ARRAY_TEX_UV] is PackedVector2Array and (arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).size() == verts.size()
+		var norms: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL] if has_n else PackedVector3Array()
+		var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV] if has_u else PackedVector2Array()
+		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] is PackedInt32Array else PackedInt32Array()
+
+		var tri_count: int = int(idx.size() / 3.0) if not idx.is_empty() else int(verts.size() / 3.0)
+		var b_v: Dictionary = {"FL": PackedVector3Array(), "FR": PackedVector3Array(), "RL": PackedVector3Array(), "RR": PackedVector3Array(), "CENTER": PackedVector3Array()}
+		var b_n: Dictionary = {"FL": PackedVector3Array(), "FR": PackedVector3Array(), "RL": PackedVector3Array(), "RR": PackedVector3Array(), "CENTER": PackedVector3Array()}
+		var b_u: Dictionary = {"FL": PackedVector2Array(), "FR": PackedVector2Array(), "RL": PackedVector2Array(), "RR": PackedVector2Array(), "CENTER": PackedVector2Array()}
+
+		for t: int in range(tri_count):
+			var i0: int = idx[t * 3] if not idx.is_empty() else t * 3
+			var i1: int = idx[t * 3 + 1] if not idx.is_empty() else t * 3 + 1
+			var i2: int = idx[t * 3 + 2] if not idx.is_empty() else t * 3 + 2
+			var c_world: Vector3 = hx * ((verts[i0] + verts[i1] + verts[i2]) / 3.0)
+			var q: String = "CENTER"
+			if absf(c_world.x) > 0.48 and absf(c_world.z) > 0.65 and c_world.y < 0.85:
+				q = ("F" if c_world.z < 0.0 else "R") + ("L" if c_world.x < 0.0 else "R")
+			b_v[q].append(verts[i0]); b_v[q].append(verts[i1]); b_v[q].append(verts[i2])
+			if has_n:
+				b_n[q].append(norms[i0]); b_n[q].append(norms[i1]); b_n[q].append(norms[i2])
+			if has_u:
+				b_u[q].append(uvs[i0]); b_u[q].append(uvs[i1]); b_u[q].append(uvs[i2])
+
+		var mat: Material = mi.get_active_material(s)
+		for q: String in ["FL", "FR", "RL", "RR", "CENTER"]:
+			var qv: PackedVector3Array = b_v[q]
+			if qv.is_empty():
+				continue
+			var out_arr: Array = []
+			out_arr.resize(Mesh.ARRAY_MAX)
+			out_arr[Mesh.ARRAY_VERTEX] = qv
+			if has_n: out_arr[Mesh.ARRAY_NORMAL] = b_n[q]
+			if has_u: out_arr[Mesh.ARRAY_TEX_UV] = b_u[q]
+			(quad_meshes[q] as ArrayMesh).add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out_arr)
+			quad_mats[q].append(mat)
+
+	var par: Node = mi.get_parent()
+	for q: String in ["FL", "FR", "RL", "RR"]:
+		var qm: ArrayMesh = quad_meshes[q]
+		if qm.get_surface_count() > 0:
+			var sub := MeshInstance3D.new()
+			sub.name = mi.name + "_" + q
+			sub.mesh = qm
+			var mats: Array = quad_mats[q]
+			for s_idx: int in range(mats.size()):
+				sub.set_surface_override_material(s_idx, mats[s_idx] as Material)
+			par.add_child(sub)
+			corners[q].append({"node": sub, "holder_xform": hx})
+
+	var cm: ArrayMesh = quad_meshes["CENTER"]
+	if cm.get_surface_count() > 0:
+		mi.mesh = cm
+		var cmats: Array = quad_mats["CENTER"]
+		for s_idx: int in range(cmats.size()):
+			mi.set_surface_override_material(s_idx, cmats[s_idx] as Material)
+	else:
+		mi.visible = false
+
+static func _is_wheel_candidate(mi: MeshInstance3D, path_low: String) -> bool:
+	var combined: String = mi.name.to_lower()
+	var mats_low: String = ""
+	var p: Node = mi.get_parent()
+	for _depth in range(3):
+		if not p:
+			break
+		combined += " " + p.name.to_lower()
+		p = p.get_parent()
+	if mi.mesh:
+		for s in range(mi.mesh.get_surface_count()):
+			var mat: Material = mi.get_active_material(s)
+			if mat and mat.resource_name:
+				var rl: String = mat.resource_name.to_lower()
+				combined += " " + rl
+				mats_low += " " + rl
+	if "steering" in combined or "caliper" in combined or "calliper" in combined or "brake" in combined or "disc" in combined or "rotor" in combined or "__paint_2_" in combined:
+		return false
+	if "porsche" in path_low and "circle_048" in combined:
+		return false
+	# Challenger: ONLY Material__301 (full wheels/tires; avoids Object_23 chrome trunk strip)
+	if "dodge_challenger" in path_low and "material__301" in mats_low:
+		return true
+	if "countach" in path_low and ("material.025" in mats_low or "material.011" in mats_low):
+		return true
+	if "bmw_m4" in path_low and "meshesm8rim" in mats_low:
+		return true
+	return ("wheel" in combined or "rim" in combined or "tyre" in combined or "tire" in combined or "matte2" in combined or "matte3" in combined or "matte4" in combined or "matte5" in combined or "metal2" in combined or "metal3" in combined or "metal4" in combined or "metal5" in combined or "930_rim" in combined or "930_tire" in combined or "tyrewallblack" in combined)
 
 static func _setup_car_reflection_probe(controller: RigidBody3D) -> void:
-	var existing = controller.get_node_or_null("CarDynamicReflectionProbe")
-	if not existing:
+	if not controller.get_node_or_null("CarDynamicReflectionProbe"):
 		var probe := ReflectionProbe.new()
 		probe.name = "CarDynamicReflectionProbe"
 		probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
-		probe.size = Vector3(32.0, 16.0, 32.0)
-		probe.origin_offset = Vector3(0.0, 1.2, 0.0)
-		probe.max_distance = 64.0
+		probe.intensity = 0.85
+		probe.size = Vector3(28.0, 14.0, 28.0)
+		probe.origin_offset = Vector3(0.0, 0.0, 0.0)
+		probe.max_distance = 56.0
 		probe.enable_shadows = false
-		probe.position = Vector3(0.0, 0.8, 0.0)
+		probe.position = Vector3(0.0, 2.2, 0.0)
 		controller.add_child(probe)
 
-static func _bind_model_wheels(controller: RigidBody3D, root: Node3D, glb_path: String) -> void:
-	var fl: Node3D = null
-	var fr: Node3D = null
-	var rl: Node3D = null
-	var rr: Node3D = null
-	var rot_l := Vector3.ZERO
-	var rot_r := Vector3.ZERO
-	var offset_l := Vector3.ZERO
-	var offset_r := Vector3.ZERO
-	var base_scale := Vector3.ONE
-	
-	var path_low := glb_path.to_lower()
-	if "mustang_gt" in path_low:
-		fl = _find_child_recursive(root, ["wheel0"])
-		fr = _find_child_recursive(root, ["wheel2"])
-		rl = _find_child_recursive(root, ["wheel1"])
-		rr = _find_child_recursive(root, ["wheel3"])
-		rot_l = Vector3(0.0, -PI * 0.5, 0.0)
-		rot_r = Vector3(0.0, -PI * 0.5, 0.0)
-		offset_r = Vector3.ZERO
-		base_scale = Vector3.ONE
-	elif "aventador" in path_low:
-		fl = _find_child_recursive(root, ["Obj_WheelHub_FL"])
-		fr = _find_child_recursive(root, ["Obj_WheelHub_FR"])
-		rl = _find_child_recursive(root, ["Obj_WheelHub_RL"])
-		rr = _find_child_recursive(root, ["Obj_WheelHub_RR"])
-		rot_l = Vector3(0.0, PI * 0.5, 0.0)
-		rot_r = Vector3(0.0, -PI * 0.5, 0.0)
-		base_scale = Vector3(0.175, 0.175, 0.175)
-	elif "nissan_gtr" in path_low:
-		fl = _find_child_recursive(root, ["3DWheel Front L_60", "3DWheel Front L"])
-		fr = _find_child_recursive(root, ["3DWheel Front R_173", "3DWheel Front R"])
-		rl = _find_child_recursive(root, ["3DWheel Rear L_286", "3DWheel Rear L"])
-		rr = _find_child_recursive(root, ["3DWheel Rear R_403", "3DWheel Rear R"])
-		rot_l = Vector3.ZERO
-		rot_r = Vector3.ZERO
-		base_scale = Vector3.ONE
+static func _apply_fh5_car_materials(root: Node, path_low: String) -> void:
+	var custom_paint: Color = Color(-1, 0, 0)
+	if "nissan_gtr" in path_low:
+		custom_paint = Color(0.04, 0.14, 0.48) # Bayside Midnight Blue Metallic
 	elif "mclaren_p1" in path_low:
-		fl = _find_child_recursive(root, ["WHEEL_LF"])
-		fr = _find_child_recursive(root, ["WHEEL_RF"])
-		rl = _find_child_recursive(root, ["WHEEL_LR"])
-		rr = _find_child_recursive(root, ["WHEEL_RR"])
-		rot_l = Vector3.ZERO
-		rot_r = Vector3(0.0, PI, 0.0)
-		base_scale = Vector3(0.0225, 0.0225, 0.0225)
-	else:
-		fl = _find_child_recursive(root, ["WheelFrontL", "wheel_FL", "Wheel_FL"])
-		fr = _find_child_recursive(root, ["WheelFrontR", "wheel_FR", "Wheel_FR"])
-		rl = _find_child_recursive(root, ["WheelRearL", "wheel_RL", "Wheel_RL"])
-		rr = _find_child_recursive(root, ["WheelRearR", "wheel_RR", "Wheel_RR"])
-		rot_l = Vector3.ZERO
-		rot_r = Vector3.ZERO
-		base_scale = Vector3.ONE
-		
-	if "front_left_wheel" in controller and controller.front_left_wheel and fl:
-		_attach_wheel_visual(controller.front_left_wheel, fl, rot_l, base_scale, offset_l)
-	if "front_right_wheel" in controller and controller.front_right_wheel and fr:
-		_attach_wheel_visual(controller.front_right_wheel, fr, rot_r, base_scale, offset_r)
-	if "rear_left_wheel" in controller and controller.rear_left_wheel and rl:
-		_attach_wheel_visual(controller.rear_left_wheel, rl, rot_l, base_scale, offset_l)
-	if "rear_right_wheel" in controller and controller.rear_right_wheel and rr:
-		_attach_wheel_visual(controller.rear_right_wheel, rr, rot_r, base_scale, offset_r)
-
-static func _attach_wheel_visual(wheel: RaycastWheel, visual_node: Node3D, base_rot: Vector3 = Vector3.ZERO, base_scale: Vector3 = Vector3.ONE, offset: Vector3 = Vector3.ZERO) -> void:
-	visual_node.owner = null
-	if visual_node.get_parent():
-		visual_node.get_parent().remove_child(visual_node)
-		
-	var pivot := Node3D.new()
-	pivot.name = "WheelPivot"
-	wheel.add_child(pivot)
-	pivot.position = offset
-	pivot.rotation = Vector3.ZERO
-	
-	pivot.add_child(visual_node)
-	visual_node.position = Vector3.ZERO
-	visual_node.rotation = base_rot
-	visual_node.scale = base_scale
-	
-	wheel.wheel_visual = pivot
-
-static func _find_child_recursive(node: Node, names: Array[String]) -> Node3D:
-	for n in names:
-		if node.name.nocasecmp_to(n) == 0:
-			return node as Node3D
-	for child in node.get_children():
-		var res := _find_child_recursive(child, names)
-		if res:
-			return res
-	return null
-
-static func _apply_fh5_car_materials(root: Node, glb_path: String) -> void:
-	var path_low := glb_path.to_lower()
-	
-	# Base Car Paint Color
-	var paint_color := Color(0.82, 0.08, 0.06) # Default Rosso Corsa
-	if "mustang" in path_low:
-		paint_color = Color(0.08, 0.28, 0.78) # Radiant Velocity Blue Metallic
+		custom_paint = Color(0.95, 0.34, 0.03) # Volcano Papaya Orange
+	elif "porsche_911" in path_low:
+		custom_paint = Color(0.78, 0.05, 0.04) # Guards Red
 	elif "aventador" in path_low:
-		paint_color = Color(0.95, 0.72, 0.05) # Giallo Orion Pearl Yellow
-	elif "nissan_gtr" in path_low:
-		paint_color = Color(0.10, 0.14, 0.42) # Bayside Midnight Blue Metallic
-	elif "mclaren_p1" in path_low:
-		paint_color = Color(0.95, 0.38, 0.04) # Volcano Papaya Orange Pearl
-	elif "porsche" in path_low:
-		paint_color = Color(0.86, 0.08, 0.05) # Guards Red Gloss
-		
-	# Forza Horizon 5 Multi-Layer Clearcoat Material
-	var paint_mat := StandardMaterial3D.new()
-	paint_mat.albedo_color = paint_color
-	paint_mat.metallic = 0.88
-	paint_mat.roughness = 0.14
-	paint_mat.clearcoat_enabled = true
-	paint_mat.clearcoat = 1.0
-	paint_mat.clearcoat_roughness = 0.03
-	
-	# Smoked Tinted Automotive Glass
-	var glass_mat := StandardMaterial3D.new()
-	glass_mat.albedo_color = Color(0.05, 0.07, 0.10, 0.65)
-	glass_mat.metallic = 0.0
-	glass_mat.roughness = 0.03
-	glass_mat.clearcoat_enabled = true
-	glass_mat.clearcoat = 1.0
-	glass_mat.clearcoat_roughness = 0.02
-	glass_mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
-	
-	# Matte Rubber Gaskets & Wipers
-	var rubber_mat := StandardMaterial3D.new()
-	rubber_mat.albedo_color = Color(0.06, 0.06, 0.07)
-	rubber_mat.metallic = 0.0
-	rubber_mat.roughness = 0.85
-	
-	# High-Intensity Projector Xenon Headlights
-	var headlight_mat := StandardMaterial3D.new()
-	headlight_mat.albedo_color = Color(0.95, 0.98, 1.0)
-	headlight_mat.emission_enabled = true
-	headlight_mat.emission = Color(1.2, 1.35, 1.6)
-	headlight_mat.emission_energy_multiplier = 1.8
-	
-	# Radiant Neon Taillights
-	var taillight_mat := StandardMaterial3D.new()
-	taillight_mat.albedo_color = Color(0.85, 0.04, 0.02)
-	taillight_mat.emission_enabled = true
-	taillight_mat.emission = Color(1.4, 0.05, 0.02)
-	taillight_mat.emission_energy_multiplier = 2.0
-	
-	# Carbon Fiber Aero & Underside
-	var carbon_mat := StandardMaterial3D.new()
-	carbon_mat.albedo_color = Color(0.10, 0.10, 0.11)
-	carbon_mat.metallic = 0.30
-	carbon_mat.roughness = 0.30
-	
-	# Forged Gunmetal Rims
-	var rim_mat := StandardMaterial3D.new()
-	rim_mat.albedo_color = Color(0.30, 0.32, 0.35)
-	rim_mat.metallic = 0.92
-	rim_mat.roughness = 0.16
-	
-	# Carbon-Ceramic Perforated Brake Discs
-	var disc_mat := StandardMaterial3D.new()
-	disc_mat.albedo_color = Color(0.55, 0.56, 0.58)
-	disc_mat.metallic = 0.95
-	disc_mat.roughness = 0.22
-	
-	# Racing Calipers (Red for Mustang/CarConcept, Yellow for Lambo)
-	var caliper_mat := StandardMaterial3D.new()
-	caliper_mat.albedo_color = Color(0.92, 0.70, 0.05) if "aventador" in path_low else Color(0.85, 0.06, 0.04)
-	caliper_mat.metallic = 0.45
-	caliper_mat.roughness = 0.20
-	
-	# Semi-Slick Vulcanized Tires
-	var tire_mat := StandardMaterial3D.new()
-	tire_mat.albedo_color = Color(0.08, 0.08, 0.09)
-	tire_mat.metallic = 0.0
-	tire_mat.roughness = 0.88
-	
-	_assign_materials_recursive(root, paint_mat, glass_mat, rubber_mat, headlight_mat, taillight_mat, carbon_mat, rim_mat, disc_mat, caliper_mat, tire_mat)
+		custom_paint = Color(0.94, 0.68, 0.04) # Giallo Orion
+	elif "ferrari_488" in path_low:
+		custom_paint = Color(0.76, 0.02, 0.03) # Rosso Corsa
+	elif "mustang_gt" in path_low:
+		custom_paint = Color(0.06, 0.25, 0.72)
 
-static func _assign_materials_recursive(node: Node, paint: Material, glass: Material, rubber: Material, hl: Material, tl: Material, carbon: Material, rim: Material, disc: Material, cal: Material, tire: Material) -> void:
+	var processed_mats: Dictionary = {}
+	_enhance_materials_recursive(root, custom_paint, path_low, processed_mats)
+
+static func _enhance_materials_recursive(node: Node, custom_paint: Color, path_low: String, seen: Dictionary) -> void:
 	if node is MeshInstance3D:
-		var n_lower := node.name.to_lower()
-		var p_lower := node.get_parent().name.to_lower() if node.get_parent() else ""
-		var combined := n_lower + " " + p_lower
-		if node.mesh:
-			for s in range(node.mesh.get_surface_count()):
-				var mat = node.get_active_material(s)
-				if mat and mat.resource_name:
-					combined += " " + mat.resource_name.to_lower()
-					
-		if "windshield" in combined or "window" in combined or "glass" in combined or "windscreen" in combined:
-			node.material_override = glass
-		elif "headlight" in combined or "lamp" in combined or "lighte" in combined or "light_geo" in combined:
-			node.material_override = hl
-		elif "taillight" in combined or "turnsignal" in combined or "tail_led" in combined or "tail_light" in combined:
-			node.material_override = tl
-		elif "rim" in combined or "wheelhub" in combined or "chrome" in combined or "aimgain_g2m" in combined:
-			node.material_override = rim
-		elif "brakepad" in combined or "caliper" in combined or "calliper" in combined:
-			node.material_override = cal
-		elif "rotor" in combined or "discrotor" in combined or "brakedisc" in combined:
-			node.material_override = disc
-		elif "tyre" in combined or "tire" in combined:
-			node.material_override = tire
-		elif "diffuser" in combined or "spoiler" in combined or "skirt" in combined or "underbody" in combined or "color2" in combined or "carbon" in combined:
-			node.material_override = carbon
-		elif "color1" in combined or "paint" in combined or "hood" in combined or "door" in combined or "bumper" in combined or "boot" in combined or "fender" in combined or "body" in combined or "carrosserie" in combined:
-			node.material_override = paint
-			
-	for child in node.get_children():
-		_assign_materials_recursive(child, paint, glass, rubber, hl, tl, carbon, rim, disc, cal, tire)
+		var mi: MeshInstance3D = node
+		if mi.mesh:
+			for s in range(mi.mesh.get_surface_count()):
+				var mat: Material = mi.get_active_material(s)
+				if mat is StandardMaterial3D:
+					var std: StandardMaterial3D = mat
+					var rid: int = std.get_instance_id()
+					if seen.has(rid):
+						continue
+					seen[rid] = true
+					var rname: String = std.resource_name.to_lower()
+					var has_tex: bool = std.albedo_texture != null
+
+					var is_secondary: bool = ("black" in rname or rname.ends_with("2") or "paint2" in rname or "coat2" in rname)
+					if not has_tex and ("paint" in rname or "coat" in rname or "scocca" in rname or "coloured" in rname or rname == "mt_body" or rname == "mt_mirrorcover"):
+						if custom_paint.r >= 0.0 and not is_secondary:
+							std.albedo_color = custom_paint
+						std.metallic = maxf(std.metallic, 0.78)
+						std.roughness = minf(maxf(std.roughness, 0.14), 0.24)
+						std.clearcoat_enabled = true
+						std.clearcoat = 1.0
+						std.clearcoat_roughness = 0.03
+					elif has_tex and ("coat" in rname or "body" in rname or "livery" in rname or "texturede" in rname):
+						if "texturede" in rname:
+							std.metallic = 0.45
+							std.roughness = 0.22
+						std.clearcoat_enabled = true
+						std.clearcoat = 0.90
+						std.clearcoat_roughness = 0.04
+					elif "glass" in rname or "windscreen" in rname or "windshield" in rname or "window" in rname or "cristal" in rname:
+						std.clearcoat_enabled = true
+						std.clearcoat = 1.0
+						std.clearcoat_roughness = 0.02
+						std.roughness = 0.04
+					elif ("tyre" in rname or "tire" in rname) and ("mclaren" in path_low or "ferrari" in path_low):
+						std.albedo_color = Color(0.09, 0.09, 0.10)
+						std.roughness = 0.82
+					elif ("taillight" in rname or "brakelight" in rname or "redlight" in rname or "reflector_tl" in rname or "reflector_bl" in rname) and not has_tex:
+						std.emission_enabled = true
+						std.emission = Color(0.95, 0.04, 0.02)
+						std.emission_energy_multiplier = 1.8
+					elif ("headlight" in rname or "light_emissive" in rname) and not has_tex and not ("glass" in rname):
+						std.emission_enabled = true
+						std.emission = Color(1.0, 0.96, 0.90)
+						std.emission_energy_multiplier = 1.4
+	for c in node.get_children():
+		_enhance_materials_recursive(c, custom_paint, path_low, seen)
