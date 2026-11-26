@@ -2,6 +2,9 @@
 class_name GarageController
 extends Node3D
 
+const CarModelLoader = preload("res://scripts/vehicle/car_model_loader.gd")
+const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
+
 @export var turntable_node: Node3D
 @export var camera_node: Camera3D
 @export var car_mount: Node3D
@@ -10,6 +13,10 @@ var save_manager: SaveManager
 var current_car_mesh: Node3D
 var active_tab: String = "showroom"
 var preview_car_id: String = "sprinter_r2"
+var orbit_yaw: float = 0.42
+var orbit_pitch: float = 0.19
+var orbit_dist: float = 4.95
+var is_orbit_dragging: bool = false
 
 # UI Nodes
 @onready var ui_canvas: CanvasLayer = $CanvasLayer
@@ -25,15 +32,52 @@ func _ready() -> void:
 	_spawn_preview_car(preview_car_id)
 	_update_header()
 	_render_showroom_tab()
-	
+	_update_orbit_camera()
+
+	var mats: Array[Material] = []
+	VisualPipeline.collect_materials_from_node(self, mats)
+	VisualPipeline.spawn_prewarm_batch(self, camera_node, mats)
+
 	# Screenshot mode support
-	for arg in OS.get_cmdline_args():
+	var args: PackedStringArray = OS.get_cmdline_args()
+	args.append_array(OS.get_cmdline_user_args())
+	for arg: String in args:
 		if arg == "--screenshot" or arg == "-screenshot":
 			_take_garage_screenshot()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			is_orbit_dragging = mb.pressed
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+			orbit_dist = clampf(orbit_dist - 0.35, 3.2, 8.5)
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+			orbit_dist = clampf(orbit_dist + 0.35, 3.2, 8.5)
+	elif event is InputEventMouseMotion and is_orbit_dragging:
+		var mm: InputEventMouseMotion = event as InputEventMouseMotion
+		orbit_yaw -= mm.relative.x * 0.008
+		orbit_pitch = clampf(orbit_pitch + mm.relative.y * 0.006, 0.05, 0.65)
+	elif event.is_action_pressed("pause_game"):
+		_on_main_menu_pressed()
+
 func _process(delta: float) -> void:
-	if turntable_node:
-		turntable_node.rotate_y(delta * 0.4)
+	if turntable_node and not is_orbit_dragging:
+		turntable_node.rotate_y(delta * 0.28)
+	_update_orbit_camera()
+
+func _update_orbit_camera() -> void:
+	if not camera_node:
+		return
+	var target := Vector3(0.0, 0.68, 0.0)
+	var horiz: float = cos(orbit_pitch) * orbit_dist
+	var cam_pos := Vector3(
+		sin(orbit_yaw) * horiz,
+		0.72 + sin(orbit_pitch) * orbit_dist,
+		cos(orbit_yaw) * horiz
+	)
+	camera_node.position = cam_pos
+	camera_node.look_at(target, Vector3.UP)
 
 func _spawn_preview_car(car_id: String) -> void:
 	if current_car_mesh:
@@ -42,9 +86,10 @@ func _spawn_preview_car(car_id: String) -> void:
 		
 	var owned: Dictionary = save_manager.save_data.get("owned_cars", {})
 	var car_info: Dictionary = owned.get(car_id, {})
-	var color_hex: String = car_info.get("paint_color", "#ee1808")
+	var color_hex: String = str(car_info.get("paint_color", "#ee1808"))
 	var paint_color := Color.from_string(color_hex, Color.RED)
-	var finish: String = car_info.get("finish", "metallic")
+	var finish: String = str(car_info.get("finish", "metallic"))
+	var has_custom_paint: bool = bool(car_info.get("custom_painted", false))
 	
 	# Find vehicle data from data/vehicles.json or fallback
 	var recipe: Dictionary = {}
@@ -64,43 +109,26 @@ func _spawn_preview_car(car_id: String) -> void:
 			"name": "Sprinter R2",
 			"wheelbase": 2.45,
 			"track_width": 1.76,
-			"mass": 1050.0
+			"mass": 1050.0,
+			"model_path": "res://assets/models/cars/subaru_sti.glb"
 		}
-		
+
+	var host: Node3D = car_mount if car_mount else self
+	if recipe.has("model_path") and FileAccess.file_exists(str(recipe["model_path"])):
+		var showcase := CarModelLoader.load_car_visuals(host, recipe)
+		if showcase:
+			if has_custom_paint:
+				CarModelLoader.apply_custom_paint(showcase, paint_color, finish)
+			current_car_mesh = showcase
+			return
+
 	var proc := ProceduralCarMesh.new()
 	proc.build_car(recipe)
-	
-	# Apply finish and paint color to body_mesh_instance if available
 	if proc.body_mesh_instance and proc.body_mesh_instance.material_override:
 		var mat: Material = proc.body_mesh_instance.material_override
 		if mat is ShaderMaterial:
 			mat.set_shader_parameter("base_color", paint_color)
-			if finish == "metallic":
-				mat.set_shader_parameter("metallic", 0.90)
-				mat.set_shader_parameter("roughness", 0.10)
-				mat.set_shader_parameter("clearcoat", 1.0)
-			elif finish == "gloss":
-				mat.set_shader_parameter("metallic", 0.15)
-				mat.set_shader_parameter("roughness", 0.08)
-				mat.set_shader_parameter("clearcoat", 0.8)
-			elif finish == "matte":
-				mat.set_shader_parameter("metallic", 0.05)
-				mat.set_shader_parameter("roughness", 0.65)
-				mat.set_shader_parameter("clearcoat", 0.0)
-			elif finish == "satin":
-				mat.set_shader_parameter("metallic", 0.45)
-				mat.set_shader_parameter("roughness", 0.35)
-				mat.set_shader_parameter("clearcoat", 0.4)
-			elif finish == "pearl":
-				mat.set_shader_parameter("metallic", 0.70)
-				mat.set_shader_parameter("roughness", 0.15)
-				mat.set_shader_parameter("clearcoat", 1.0)
-				mat.set_shader_parameter("pearl_color", Color(1.0, 0.7, 0.2))
-				
-	if car_mount:
-		car_mount.add_child(proc)
-	else:
-		add_child(proc)
+	host.add_child(proc)
 	current_car_mesh = proc
 
 func _update_header() -> void:
@@ -158,6 +186,12 @@ func _render_showroom_tab() -> void:
 		vbox_info.add_child(lbl_stats)
 		hbox.add_child(vbox_info)
 		
+		var btn_prev := Button.new()
+		btn_prev.custom_minimum_size = Vector2(100, 40)
+		btn_prev.text = "VIEW 3D"
+		btn_prev.pressed.connect(func(): _preview_car_only(car_id))
+		hbox.add_child(btn_prev)
+
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(160, 40)
 		if is_selected:
@@ -330,10 +364,16 @@ func _buy_upgrade(car_id: String, category: String, cost: int) -> void:
 		_update_header()
 		_render_upgrades_tab()
 
+func _preview_car_only(car_id: String) -> void:
+	preview_car_id = car_id
+	_spawn_preview_car(car_id)
+	_update_header()
+
 func _set_paint_color(hex: String) -> void:
 	var owned: Dictionary = save_manager.save_data.get("owned_cars", {})
 	if owned.has(preview_car_id):
 		owned[preview_car_id]["paint_color"] = hex
+		owned[preview_car_id]["custom_painted"] = true
 		save_manager.save_slot(save_manager.current_slot)
 		_spawn_preview_car(preview_car_id)
 
@@ -341,8 +381,18 @@ func _set_finish(finish: String) -> void:
 	var owned: Dictionary = save_manager.save_data.get("owned_cars", {})
 	if owned.has(preview_car_id):
 		owned[preview_car_id]["finish"] = finish
+		owned[preview_car_id]["custom_painted"] = true
 		save_manager.save_slot(save_manager.current_slot)
 		_spawn_preview_car(preview_car_id)
+
+func _on_open_world_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/open_world.tscn")
+
+func _on_race_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/track_test.tscn")
+
+func _on_main_menu_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 func _assign_driver(driver_id: String) -> void:
 	save_manager.save_data["selected_driver"] = driver_id
@@ -361,7 +411,7 @@ func _format_number(n: int) -> String:
 	return out
 
 func _take_garage_screenshot() -> void:
-	await get_tree().create_timer(0.6).timeout
+	await get_tree().create_timer(1.0).timeout
 	var vp := get_viewport()
 	if vp:
 		var img := vp.get_texture().get_image()
