@@ -10,41 +10,50 @@
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_world"]
 panorama = ExtResource("7_hdri")
+energy_multiplier = 1.05
 
 [sub_resource type="Sky" id="Sky_world"]
 sky_material = SubResource("PanoramaSkyMaterial_world")
+radiance_size = 4
 
 [sub_resource type="Environment" id="Environment_world"]
 background_mode = 2
 sky = SubResource("Sky_world")
+ambient_light_source = 3
+ambient_light_sky_contribution = 0.85
+reflected_light_source = 2
 tonemap_mode = 4
-tonemap_exposure = 0.88
+tonemap_exposure = 0.86
 ssr_enabled = true
+ssr_max_steps = 48
+ssr_fade_in = 0.25
 ssao_enabled = true
-ssao_radius = 2.2
-ssao_intensity = 2.1
-ssao_power = 1.6
+ssao_radius = 1.65
+ssao_intensity = 2.45
+ssao_power = 1.75
 ssil_enabled = true
-ssil_radius = 5.0
-ssil_intensity = 0.90
-sdfgi_enabled = true
+ssil_radius = 4.5
+ssil_intensity = 0.72
+sdfgi_enabled = false
 glow_enabled = true
-glow_intensity = 0.20
-glow_bloom = 0.04
-glow_hdr_threshold = 1.85
+glow_intensity = 0.16
+glow_bloom = 0.03
+glow_hdr_threshold = 2.45
 fog_enabled = true
 fog_mode = 1
-fog_light_color = Color(0.55, 0.72, 0.92, 1)
-fog_sun_scatter = 0.35
-fog_density = 0.18
-fog_sky_affect = 0.08
-fog_depth_begin = 900.0
+fog_light_color = Color(0.62, 0.75, 0.90, 1)
+fog_sun_scatter = 0.45
+fog_density = 0.14
+fog_sky_affect = 0.04
+fog_depth_begin = 820.0
 fog_depth_end = 4200.0
+fog_height = 12.0
+fog_height_density = 0.008
 volumetric_fog_enabled = false
 adjustment_enabled = true
-adjustment_brightness = 1.02
-adjustment_contrast = 1.08
-adjustment_saturation = 1.18
+adjustment_brightness = 1.03
+adjustment_contrast = 1.09
+adjustment_saturation = 1.15
 
 [node name="OpenWorld" type="Node3D" node_paths=PackedStringArray("player_vehicle", "camera_rig", "world_environment", "sun_light")]
 script = ExtResource("1_mgr")
@@ -57,20 +66,19 @@ sun_light = NodePath("SunLight")
 environment = SubResource("Environment_world")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 50, 0)
-light_color = Color(1, 0.95, 0.88, 1)
-light_energy = 2.05
-light_volumetric_fog_energy = 1.2
+transform = Transform3D(0.819152, -0.259029, 0.511789, 0, 0.892056, 0.451925, -0.573576, -0.370196, 0.73073, 0, 80, 0)
+light_color = Color(1, 0.92, 0.80, 1)
+light_energy = 1.88
 shadow_enabled = true
 shadow_bias = 0.015
-shadow_normal_bias = 1.2
-shadow_blur = 1.1
+shadow_normal_bias = 1.1
+shadow_blur = 1.05
 directional_shadow_mode = 2
 directional_shadow_split_1 = 0.03
 directional_shadow_split_2 = 0.12
-directional_shadow_split_3 = 0.35
+directional_shadow_split_3 = 0.36
 directional_shadow_blend_splits = true
-directional_shadow_max_distance = 520.0
+directional_shadow_max_distance = 580.0
 
 [node name="InputManager" type="Node" parent="."]
 script = ExtResource("2_input")
