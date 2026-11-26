@@ -1,8 +1,8 @@
 # tools/commit_and_push_all.ps1
 $ErrorActionPreference = "Stop"
 
-# Get all changed and untracked files
-$status = git status --porcelain
+# Get all changed and untracked files individually (-uall ensures directory contents commit one-by-one)
+$status = git status --porcelain -uall
 if (-not $status) {
     Write-Host "No files to commit."
     exit 0
