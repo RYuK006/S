@@ -1,575 +1,343 @@
 # scripts/world/scenery_populator.gd
+# FH5-grade photogrammetry foliage, roadside ecosystem, canyon rock, and Festival staging MultiMesh populator.
 class_name SceneryPopulator
 extends Node3D
 
 const TerrainGenerator = preload("res://scripts/world/terrain_generator.gd")
 const RoadNetwork = preload("res://scripts/world/road_network.gd")
-const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
+const PropMeshUtils = preload("res://scripts/world/prop_mesh_utils.gd")
 
 var terrain_gen: TerrainGenerator
-var road_network: RoadNetwork
-var shared_palette_mat: StandardMaterial3D
-
-func _get_palette_mat() -> StandardMaterial3D:
-	if not shared_palette_mat:
-		shared_palette_mat = StandardMaterial3D.new()
-		var tex := load("res://assets/models/props/Textures/colormap.png") as Texture2D
-		if tex:
-			shared_palette_mat.albedo_texture = tex
-		shared_palette_mat.roughness = 0.65
-		shared_palette_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	return shared_palette_mat
-
-func _assign_palette_recursive(node: Node, mat: Material) -> void:
-	if node is MeshInstance3D:
-		node.material_override = mat
-	for child in node.get_children():
-		_assign_palette_recursive(child, mat)
+var road_net: RoadNetwork
+var rng := RandomNumberGenerator.new()
 
 func _init(tg: TerrainGenerator = null, rn: RoadNetwork = null) -> void:
 	terrain_gen = tg if tg else TerrainGenerator.new()
-	road_network = rn
+	road_net = rn
+	rng.seed = 202605
 
 func populate_world_scenery() -> void:
-	# 1. Highway Light Poles & Guardrails along Perimeter Highway
-	if road_network and road_network.highway_waypoints.size() > 0:
-		_populate_highway_props()
-		
-	# 2. Regional Biome Foliage & Rock MultiMeshes
-	_populate_alpine_pines(550)
-	_populate_festival_trees(300)
-	_populate_desert_rocks_and_cacti(450)
-	_populate_volcanic_spires(450)
-	_populate_shipping_containers(250)
-	_populate_festival_staging()
+	_build_festival_hub_staging()
+	_populate_pine_forests()
+	_populate_palm_promenade()
+	_populate_desert_flora()
+	_populate_desert_rocks()
+	_populate_ground_grass()
+	_build_coast_harbor_depot()
 
-func _get_mesh_and_mat(path: String, mesh_name: String = "") -> Dictionary:
-	var scn := load(path) as PackedScene
-	if not scn:
-		return {}
-	var inst := scn.instantiate()
-	var res: Dictionary = {}
-	_find_mesh_node(inst, mesh_name, res)
-	inst.queue_free()
-	return res
+func _is_road_clear(x: float, z: float, min_clearance: float = 11.5, ignore_offset: float = -1.0) -> bool:
+	if not road_net:
+		return true
+	var segs: Array[Dictionary] = road_net.all_road_segments
+	var p2 := Vector2(x, z)
+	for seg: Dictionary in segs:
+		if ignore_offset >= 0.0 and absf(float(seg.get("offset", 0.0)) - ignore_offset) < 0.005:
+			continue
+		var a3: Vector3 = seg["p0"]
+		var b3: Vector3 = seg["p1"]
+		var a := Vector2(a3.x, a3.z)
+		var b := Vector2(b3.x, b3.z)
+		if absf(a.x - x) > 90.0 and absf(b.x - x) > 90.0:
+			continue
+		if absf(a.y - z) > 90.0 and absf(b.y - z) > 90.0:
+			continue
+		var ab: Vector2 = b - a
+		var lsq: float = ab.length_squared()
+		var t: float = clampf((p2 - a).dot(ab) / lsq, 0.0, 1.0) if lsq > 0.001 else 0.0
+		var d: float = p2.distance_to(a + ab * t)
+		if d < float(seg["half_w"]) + min_clearance:
+			return false
+	return true
 
-func _find_mesh_node(n: Node, target_name: String, res: Dictionary) -> void:
-	if res.has("mesh"):
+func _sample_roadside_in_quadrant(x_min: float, x_max: float, z_min: float, z_max: float, min_d: float, max_d: float) -> Vector2:
+	if road_net and not road_net.all_road_segments.is_empty():
+		var segs: Array[Dictionary] = road_net.all_road_segments
+		for _try: int in range(18):
+			var seg: Dictionary = segs[rng.randi_range(0, segs.size() - 1)]
+			var a3: Vector3 = seg["p0"]
+			var b3: Vector3 = seg["p1"]
+			var mid: Vector3 = a3.lerp(b3, rng.randf())
+			if mid.x < x_min or mid.x > x_max or mid.z < z_min or mid.z > z_max:
+				continue
+			var ang: float = rng.randf() * TAU
+			var dist_out: float = float(seg["half_w"]) + rng.randf_range(min_d, max_d)
+			var cx: float = mid.x + cos(ang) * dist_out
+			var cz: float = mid.z + sin(ang) * dist_out
+			if cx >= x_min and cx <= x_max and cz >= z_min and cz <= z_max:
+				return Vector2(cx, cz)
+	return Vector2(rng.randf_range(x_min, x_max), rng.randf_range(z_min, z_max))
+
+func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transform3D], vis_end: float = 850.0, tint: Color = Color(1, 1, 1, 1), cast_shadows: bool = true) -> void:
+	if not mesh or xforms.is_empty():
 		return
-	if n is MeshInstance3D and n.mesh:
-		if target_name.is_empty() or n.name == target_name:
-			res["mesh"] = n.mesh
-			res["material"] = n.get_active_material(0)
-			return
-	for c in n.get_children():
-		_find_mesh_node(c, target_name, res)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i: int in range(xforms.size()):
+		mm.set_instance_transform(i, xforms[i])
 
-func _get_glb_mesh(path: String) -> Mesh:
-	var d := _get_mesh_and_mat(path)
-	return d.get("mesh", null)
+	var inst := MultiMeshInstance3D.new()
+	inst.name = batch_name
+	inst.multimesh = mm
+	inst.visibility_range_end = vis_end
+	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
-func _create_conifer_mesh() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	
-	var segs := 8
-	
-	# Sturdy tree trunk extending down to anchor deeply in mountain slopes
-	var trunk_col := Color(0.22, 0.14, 0.08)
-	var trunk_bot_r := 0.45
-	var trunk_top_r := 0.35
-	var trunk_bot_y := -2.0
-	var trunk_top_y := 3.2
-	for i in range(segs):
-		var a0 := (float(i) / float(segs)) * TAU
-		var a1 := (float(i + 1) / float(segs)) * TAU
-		var p_b0 := Vector3(cos(a0) * trunk_bot_r, trunk_bot_y, sin(a0) * trunk_bot_r)
-		var p_b1 := Vector3(cos(a1) * trunk_bot_r, trunk_bot_y, sin(a1) * trunk_bot_r)
-		var p_t0 := Vector3(cos(a0) * trunk_top_r, trunk_top_y, sin(a0) * trunk_top_r)
-		var p_t1 := Vector3(cos(a1) * trunk_top_r, trunk_top_y, sin(a1) * trunk_top_r)
-		st.set_color(trunk_col); st.add_vertex(p_b0)
-		st.set_color(trunk_col); st.add_vertex(p_t0)
-		st.set_color(trunk_col); st.add_vertex(p_b1)
-		st.set_color(trunk_col); st.add_vertex(p_t0)
-		st.set_color(trunk_col); st.add_vertex(p_t1)
-		st.set_color(trunk_col); st.add_vertex(p_b1)
-	
-	# Tiered bough skirts (4 stacked cone frustums sweeping close to ground)
-	var tiers := [
-		{"bot_r": 3.2, "top_r": 0.6, "h": 2.6, "y": 0.4, "col": Color(0.04, 0.16, 0.08)},
-		{"bot_r": 2.5, "top_r": 0.5, "h": 2.4, "y": 2.4, "col": Color(0.06, 0.20, 0.10)},
-		{"bot_r": 1.8, "top_r": 0.35, "h": 2.2, "y": 4.4, "col": Color(0.08, 0.24, 0.12)},
-		{"bot_r": 1.0, "top_r": 0.05, "h": 2.0, "y": 6.2, "col": Color(0.12, 0.28, 0.15)}
-	]
-	
-	for tier in tiers:
-		var bot_r: float = tier.bot_r
-		var top_r: float = tier.top_r
-		var h: float = tier.h
-		var base_y: float = tier.y
-		var col: Color = tier.col
-		
-		for i in range(segs):
-			var a0 := (float(i) / float(segs)) * TAU
-			var a1 := (float(i + 1) / float(segs)) * TAU
-			
-			var p_b0 := Vector3(cos(a0) * bot_r, base_y, sin(a0) * bot_r)
-			var p_b1 := Vector3(cos(a1) * bot_r, base_y, sin(a1) * bot_r)
-			var p_t0 := Vector3(cos(a0) * top_r, base_y + h, sin(a0) * top_r)
-			var p_t1 := Vector3(cos(a1) * top_r, base_y + h, sin(a1) * top_r)
-			
-			st.set_color(col); st.add_vertex(p_b0)
-			st.set_color(col); st.add_vertex(p_t0)
-			st.set_color(col); st.add_vertex(p_b1)
-			
-			st.set_color(col); st.add_vertex(p_t0)
-			st.set_color(col); st.add_vertex(p_t1)
-			st.set_color(col); st.add_vertex(p_b1)
-			
-	st.generate_normals()
-	return st.commit()
+	if tint != Color(1, 1, 1, 1):
+		var tinted_mesh: Mesh = mesh.duplicate()
+		for s: int in range(tinted_mesh.get_surface_count()):
+			var m: Material = tinted_mesh.surface_get_material(s)
+			if m is StandardMaterial3D:
+				var sd: StandardMaterial3D = m.duplicate()
+				sd.albedo_color = sd.albedo_color * tint
+				tinted_mesh.surface_set_material(s, sd)
+		mm.mesh = tinted_mesh
 
-func _create_saguaro_mesh() -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var col := Color(0.18, 0.38, 0.16)
-	var segs := 8
-	
-	# Helper lambda to add cylinder tube
-	var add_cylinder = func(bot_r: float, top_r: float, base_y: float, h: float, offset_x: float, offset_z: float):
-		for i in range(segs):
-			var a0 := (float(i) / float(segs)) * TAU
-			var a1 := (float(i + 1) / float(segs)) * TAU
-			var p_b0 := Vector3(offset_x + cos(a0) * bot_r, base_y, offset_z + sin(a0) * bot_r)
-			var p_b1 := Vector3(offset_x + cos(a1) * bot_r, base_y, offset_z + sin(a1) * bot_r)
-			var p_t0 := Vector3(offset_x + cos(a0) * top_r, base_y + h, offset_z + sin(a0) * top_r)
-			var p_t1 := Vector3(offset_x + cos(a1) * top_r, base_y + h, offset_z + sin(a1) * top_r)
-			
-			st.set_color(col); st.add_vertex(p_b0)
-			st.set_color(col); st.add_vertex(p_t0)
-			st.set_color(col); st.add_vertex(p_b1)
-			
-			st.set_color(col); st.add_vertex(p_t0)
-			st.set_color(col); st.add_vertex(p_t1)
-			st.set_color(col); st.add_vertex(p_b1)
-			
-	# Main central trunk (6m tall, starts at -1.0m to bury securely in dunes)
-	add_cylinder.call(0.32, 0.28, -1.0, 7.0, 0.0, 0.0)
-	# Left arm: branch horizontal + vertical
-	add_cylinder.call(0.18, 0.18, 2.4, 0.4, -0.4, 0.0)
-	add_cylinder.call(0.18, 0.16, 2.6, 2.2, -0.65, 0.0)
-	# Right arm: branch horizontal + vertical
-	add_cylinder.call(0.18, 0.18, 3.4, 0.4, 0.4, 0.0)
-	add_cylinder.call(0.18, 0.16, 3.6, 2.0, 0.65, 0.0)
-	
-	st.generate_normals()
-	return st.commit()
+	add_child(inst)
 
-func _populate_highway_props() -> void:
-	var wps := road_network.highway_waypoints
-	var count := wps.size()
-	
-	# Light Poles MultiMesh (use 3D Kenney lightpost model if available)
-	var pole_mesh: Mesh = _get_glb_mesh("res://assets/models/props/highway_lightpost.glb")
-	if not pole_mesh:
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.12
-		cyl.bottom_radius = 0.18
-		cyl.height = 7.5
-		pole_mesh = cyl
-	
-	var mm_poles := MultiMesh.new()
-	mm_poles.transform_format = MultiMesh.TRANSFORM_3D
-	mm_poles.mesh = pole_mesh
-	mm_poles.instance_count = count * 2 # Both sides of highway
-	
-	for i in range(count):
-		var p := wps[i]
-		var next_p := wps[(i + 1) % count]
-		var fwd := (next_p - p).normalized()
-		var right := fwd.cross(Vector3.UP).normalized()
-		
-		var left_pos := p - (right * 8.5)
-		var right_pos := p + (right * 8.5)
-		left_pos.y = terrain_gen.get_height(left_pos.x, left_pos.z)
-		right_pos.y = terrain_gen.get_height(right_pos.x, right_pos.z)
-		
-		var rot_y := atan2(fwd.x, fwd.z)
-		var basis := Basis(Vector3.UP, rot_y)
-		mm_poles.set_instance_transform(i * 2, Transform3D(basis, left_pos))
-		mm_poles.set_instance_transform(i * 2 + 1, Transform3D(basis, right_pos))
-		
-	var inst_poles := MultiMeshInstance3D.new()
-	inst_poles.multimesh = mm_poles
-	inst_poles.material_override = _get_palette_mat()
-	inst_poles.visibility_range_end = 650.0
-	inst_poles.visibility_range_end_margin = 50.0
-	inst_poles.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst_poles.name = "MultiMesh_HighwayPoles"
-	add_child(inst_poles)
+func _build_festival_hub_staging() -> void:
+	var gantry_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/starting_line_gantry.glb", 0.046, 0.05)
+	if gantry_mesh:
+		var gantry_y: float = terrain_gen.get_height(0.0, -12.0) + 0.34
+		var mi := MeshInstance3D.new()
+		mi.name = "Mesh_FestivalStartGantry"
+		mi.mesh = gantry_mesh
+		mi.position = Vector3(0.0, gantry_y, -12.0)
+		add_child(mi)
 
-func _populate_alpine_pines(count: int) -> void:
-	# Layered Conifer Pine Foliage (Multi-tiered evergreen trees for Frozen Pass)
-	var pine_mesh := _get_glb_mesh("res://assets/models/foliage/pine_cluster.glb")
+	var truss_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/festival_truss.glb", 0.95, 0.05)
+	if truss_mesh:
+		var truss_xforms: Array[Transform3D] = []
+		for i: int in range(12):
+			var ang: float = (float(i) / 12.0) * TAU
+			var tx: float = cos(ang) * 98.0
+			var tz: float = sin(ang) * 98.0
+			if not _is_road_clear(tx, tz, 9.0):
+				continue
+			var ty: float = terrain_gen.get_height(tx, tz)
+			truss_xforms.append(Transform3D(Basis(Vector3.UP, ang + PI * 0.5), Vector3(tx, ty, tz)))
+		_build_multimesh_batch("MultiMesh_FestivalTrusses", truss_mesh, truss_xforms, 700.0)
+
+	# Concrete barriers lined tightly along clear edges of Starting Grid
+	var barrier_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/concrete_road_barrier_02/concrete_road_barrier_02.gltf", 0.78, 0.04)
+	if barrier_mesh:
+		var b_xforms: Array[Transform3D] = []
+		for z_step: int in range(-66, 68, 2):
+			var bz: float = float(z_step)
+			for side_x: float in [-8.2, 8.2]:
+				if not _is_road_clear(side_x, bz, 15.0, 0.34):
+					continue
+				var by: float = terrain_gen.get_height(side_x, bz) + 0.15
+				b_xforms.append(Transform3D(Basis(Vector3.UP, PI * 0.5), Vector3(side_x, by, bz)))
+		_build_multimesh_batch("MultiMesh_HubConcreteBarriers", barrier_mesh, b_xforms, 450.0)
+
+	var light_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/flood_lights/flood_lights.gltf", 1.85, 0.02, "standing_double_a")
+	if light_mesh:
+		var l_xforms: Array[Transform3D] = []
+		for bz: float in [-58.0, -24.0, 24.0, 58.0]:
+			for sx: float in [-11.5, 11.5]:
+				if not _is_road_clear(sx, bz, 15.0, 0.34):
+					continue
+				var ly: float = terrain_gen.get_height(sx, bz)
+				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
+				l_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, ly, bz)))
+		_build_multimesh_batch("MultiMesh_HubFloodLights", light_mesh, l_xforms, 420.0)
+
+func _populate_pine_forests() -> void:
+	var pine_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/pine_tree_opt.glb", 0.24, 0.15)
 	if not pine_mesh:
-		pine_mesh = _create_conifer_mesh()
-	
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = pine_mesh
-	mm.instance_count = count
-	
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 2026
-	
-	for i in range(count):
-		# Frozen Pass quadrant (North-West: x in -3200 to -400, z in -3200 to -400)
-		var x := rng.randf_range(-3200.0, -400.0)
-		var z := rng.randf_range(-3200.0, -400.0)
-		var s := rng.randf_range(1.4, 3.2)
-		var y := terrain_gen.get_height(x, z) - 0.2
-		var rot_y := rng.randf_range(0, TAU)
-		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
-		
-	var inst := MultiMeshInstance3D.new()
-	inst.multimesh = mm
-	inst.material_override = _get_palette_mat()
-	inst.visibility_range_end = 850.0
-	inst.visibility_range_end_margin = 50.0
-	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst.name = "MultiMesh_AlpinePines"
-	add_child(inst)
-
-func _populate_festival_trees(count: int) -> void:
-	var tree_mesh := _get_glb_mesh("res://assets/models/foliage/trees_tall.glb")
-	if not tree_mesh:
 		return
-		
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = tree_mesh
-	mm.instance_count = count
-	
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1010
-	
-	for i in range(count):
-		# Central Hub meadow (radius 80m to 500m)
-		var angle := rng.randf_range(0, TAU)
-		var r := rng.randf_range(80.0, 480.0)
-		var x := cos(angle) * r
-		var z := sin(angle) * r
-		var s := rng.randf_range(1.5, 3.2)
-		var y := terrain_gen.get_height(x, z) - 0.2
-		var rot_y := rng.randf_range(0, TAU)
-		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
-		
-	var inst := MultiMeshInstance3D.new()
-	inst.multimesh = mm
-	inst.material_override = _get_palette_mat()
-	inst.visibility_range_end = 750.0
-	inst.visibility_range_end_margin = 50.0
-	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst.name = "MultiMesh_FestivalTrees"
-	add_child(inst)
+	var xforms_alpine: Array[Transform3D] = []
+	var xforms_hub: Array[Transform3D] = []
 
-func _populate_desert_rocks_and_cacti(count: int) -> void:
-	# 1. Authentic 3D Photogrammetry Desert Sandstone Formations & Boulders
-	var rock_data := _get_mesh_and_mat("res://assets/models/props/cliff_rock/scene.gltf", "Object_5")
-	var rock_mesh: Mesh = rock_data.get("mesh", null)
-	var base_mat: Material = rock_data.get("material", null)
-	
-	var desert_rock_mat: StandardMaterial3D
-	if base_mat is StandardMaterial3D:
-		desert_rock_mat = base_mat.duplicate() as StandardMaterial3D
-		desert_rock_mat.albedo_color = Color(1.0, 0.88, 0.76) # Warm Sonora sandstone tint
-	else:
-		desert_rock_mat = StandardMaterial3D.new()
-		desert_rock_mat.albedo_color = Color(0.68, 0.52, 0.36)
-		desert_rock_mat.roughness = 0.95
-		
-	if not rock_mesh:
-		var bm := SphereMesh.new()
-		bm.radial_segments = 12
-		bm.rings = 6
-		rock_mesh = bm
+	# Dense Alpine pine forest hugging Frozen Pass Hillclimb & snow slopes
+	for i: int in range(1100):
+		var pt: Vector2 = _sample_roadside_in_quadrant(-2450.0, -160.0, -2450.0, -160.0, 10.0, 125.0) if i < 880 else Vector2(rng.randf_range(-2400.0, -180.0), rng.randf_range(-2400.0, -180.0))
+		if not _is_road_clear(pt.x, pt.y, 12.0):
+			continue
+		if terrain_gen.get_normal(pt.x, pt.y).y < 0.70:
+			continue
+		var py: float = terrain_gen.get_height(pt.x, pt.y)
+		var sc: float = rng.randf_range(0.75, 1.45)
+		var bas := Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.92, 1.18), sc))
+		xforms_alpine.append(Transform3D(bas, Vector3(pt.x, py, pt.y)))
 
-	var mm_boulders := MultiMesh.new()
-	mm_boulders.transform_format = MultiMesh.TRANSFORM_3D
-	mm_boulders.mesh = rock_mesh
-	mm_boulders.instance_count = count
+	# Dense perimeter Hub pines framing meadows & surrounding hills
+	for i: int in range(460):
+		var ang: float = rng.randf() * TAU
+		var rad: float = rng.randf_range(85.0, 520.0)
+		var px: float = cos(ang) * rad
+		var pz: float = sin(ang) * rad
+		if px > 420.0 and pz < -420.0:
+			continue
+		if not _is_road_clear(px, pz, 12.5):
+			continue
+		var py: float = terrain_gen.get_height(px, pz)
+		var sc: float = rng.randf_range(0.75, 1.32)
+		xforms_hub.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(px, py, pz)))
 
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 3030
+	_build_multimesh_batch("MultiMesh_FrozenPassPines", pine_mesh, xforms_alpine, 1100.0, Color(0.88, 0.94, 0.98))
+	_build_multimesh_batch("MultiMesh_HubPines", pine_mesh, xforms_hub, 950.0)
 
-	for i in range(count):
-		# Dust Bowl quadrant (South-West: x in -1800 to -250, z in 250 to 1800)
-		var x := rng.randf_range(-1800.0, -250.0)
-		var z := rng.randf_range(250.0, 1800.0)
-		var rot_y := rng.randf_range(0, TAU)
-		var rot_x := rng.randf_range(-0.15, 0.15)
-		var rot_z := rng.randf_range(-0.15, 0.15)
-		# Object_5 raw AABB is ~294m. Scale 0.015-0.05 gives 4.5m-15m natural boulders.
-		# Top 12% form massive 30m-60m desert cliff and mesa outcrops (scale 0.10-0.20).
-		var s := rng.randf_range(0.015, 0.05) if rng.randf() > 0.12 else rng.randf_range(0.10, 0.20)
-		var y := terrain_gen.get_height(x, z) - (s * 8.0)
-		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s, s, s))
-		mm_boulders.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+func _populate_palm_promenade() -> void:
+	var palm_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/palm_tree_opt.glb", 2.0, 0.12)
+	if not palm_mesh:
+		return
+	var palm_xforms: Array[Transform3D] = []
+	for i: int in range(420):
+		var pt: Vector2 = _sample_roadside_in_quadrant(950.0, 2600.0, 250.0, 2400.0, 7.5, 95.0) if i < 340 else Vector2(rng.randf_range(950.0, 2550.0), rng.randf_range(250.0, 2350.0))
+		var py: float = terrain_gen.get_height(pt.x, pt.y)
+		if py < 2.2:
+			continue
+		if not _is_road_clear(pt.x, pt.y, 9.5):
+			continue
+		var sc: float = rng.randf_range(0.85, 1.38)
+		palm_xforms.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.9, 1.18), sc)), Vector3(pt.x, py, pt.y)))
+	_build_multimesh_batch("MultiMesh_CoastPalms", palm_mesh, palm_xforms, 950.0)
 
-	var inst_boulders := MultiMeshInstance3D.new()
-	inst_boulders.multimesh = mm_boulders
-	inst_boulders.material_override = desert_rock_mat
-	inst_boulders.visibility_range_end = 950.0
-	inst_boulders.visibility_range_end_margin = 80.0
-	inst_boulders.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst_boulders.name = "MultiMesh_DesertRocks"
-	add_child(inst_boulders)
-	
-	# 2. Multi-Branched Saguaro Cacti (Iconic Sonora / Baja desert landscape feature)
-	var cactus_mesh := _create_saguaro_mesh()
-	
-	var cactus_mat := StandardMaterial3D.new()
-	cactus_mat.vertex_color_use_as_albedo = true
-	cactus_mat.roughness = 0.82
-	cactus_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	
-	var mm_cacti := MultiMesh.new()
-	mm_cacti.transform_format = MultiMesh.TRANSFORM_3D
-	mm_cacti.mesh = cactus_mesh
-	mm_cacti.instance_count = int(count * 0.75)
-	
-	for i in range(mm_cacti.instance_count):
-		var x := rng.randf_range(-1750.0, -280.0)
-		var z := rng.randf_range(280.0, 1750.0)
-		var s := rng.randf_range(0.7, 1.4)
-		var y := terrain_gen.get_height(x, z) - 0.25
-		var rot_y := rng.randf_range(0, TAU)
-		var basis := Basis(Vector3.UP, rot_y).scaled(Vector3(s, s, s))
-		mm_cacti.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
-		
-	var inst_cacti := MultiMeshInstance3D.new()
-	inst_cacti.multimesh = mm_cacti
-	inst_cacti.material_override = cactus_mat
-	inst_cacti.name = "MultiMesh_SaguaroCacti"
-	add_child(inst_cacti)
+func _populate_desert_flora() -> void:
+	var saguaro_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/saguaro_cactus.glb", 1.30, 0.12, "bark")
+	var bush_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/desert_bush.glb", 0.36, 0.06)
 
-func _populate_volcanic_spires(count: int) -> void:
-	# 3D Photogrammetry Jagged Obsidian Basalt Crags & Caldera Ridges
-	var rock_data := _get_mesh_and_mat("res://assets/models/props/cliff_rock/scene.gltf", "Object_4")
-	var rock_mesh: Mesh = rock_data.get("mesh", null)
-	var base_mat: Material = rock_data.get("material", null)
-	
-	var volcano_rock_mat: StandardMaterial3D
-	if base_mat is StandardMaterial3D:
-		volcano_rock_mat = base_mat.duplicate() as StandardMaterial3D
-		volcano_rock_mat.albedo_color = Color(0.24, 0.22, 0.23) # Charred basalt / obsidian
-		volcano_rock_mat.roughness = 0.85
-		volcano_rock_mat.metallic = 0.35
-	else:
-		volcano_rock_mat = StandardMaterial3D.new()
-		volcano_rock_mat.albedo_color = Color(0.14, 0.12, 0.13)
-		volcano_rock_mat.roughness = 0.88
-		volcano_rock_mat.metallic = 0.3
-		
-	if not rock_mesh:
-		var cm := SphereMesh.new()
-		cm.radial_segments = 12
-		cm.rings = 6
-		rock_mesh = cm
+	if saguaro_mesh:
+		var cactus_xforms: Array[Transform3D] = []
+		for i: int in range(420):
+			var pt: Vector2 = _sample_roadside_in_quadrant(-2350.0, -220.0, 220.0, 2350.0, 7.0, 85.0) if i < 360 else Vector2(rng.randf_range(-2350.0, -240.0), rng.randf_range(240.0, 2350.0))
+			if not _is_road_clear(pt.x, pt.y, 9.5):
+				continue
+			if terrain_gen.get_normal(pt.x, pt.y).y < 0.78:
+				continue
+			var cy: float = terrain_gen.get_height(pt.x, pt.y)
+			var sc: float = rng.randf_range(0.85, 1.50)
+			cactus_xforms.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.9, 1.2), sc)), Vector3(pt.x, cy, pt.y)))
+		_build_multimesh_batch("MultiMesh_DustBowlSaguaros", saguaro_mesh, cactus_xforms, 720.0)
 
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = rock_mesh
-	mm.instance_count = count
+	if bush_mesh:
+		var desert_bushes: Array[Transform3D] = []
+		var hub_bushes: Array[Transform3D] = []
+		for i: int in range(1100):
+			var pt: Vector2 = _sample_roadside_in_quadrant(-2350.0, -180.0, 180.0, 2350.0, 4.0, 68.0)
+			if not _is_road_clear(pt.x, pt.y, 7.5):
+				continue
+			var by: float = terrain_gen.get_height(pt.x, pt.y)
+			var sc: float = rng.randf_range(0.65, 1.45)
+			desert_bushes.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(pt.x, by, pt.y)))
+		for i: int in range(360):
+			var ang: float = rng.randf() * TAU
+			var rad: float = rng.randf_range(20.0, 280.0)
+			var bx: float = cos(ang) * rad
+			var bz: float = sin(ang) * rad
+			if not _is_road_clear(bx, bz, 8.5):
+				continue
+			var by: float = terrain_gen.get_height(bx, bz)
+			var sc: float = rng.randf_range(0.55, 1.15)
+			hub_bushes.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(bx, by, bz)))
+		_build_multimesh_batch("MultiMesh_DesertBushes", bush_mesh, desert_bushes, 450.0)
+		_build_multimesh_batch("MultiMesh_HubBushes", bush_mesh, hub_bushes, 380.0, Color(0.68, 0.85, 0.56))
 
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 4040
+func _populate_desert_rocks() -> void:
+	# Poly Haven real photogrammetry organic boulders (replaces angular quarry blocks!)
+	var granite_boulder: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/rocks/boulder_01/boulder_01.gltf", 2.1, 0.30)
+	var sandstone_slab: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/rocks/namaqualand_boulder_02/namaqualand_boulder_02.gltf", 2.3, 0.25)
+	var desert_outcrop: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/rocks/namaqualand_boulder_04/namaqualand_boulder_04.gltf", 2.4, 0.45)
 
-	for i in range(count):
-		# Volcano Ridge quadrant (North-East: x in 250 to 1800, z in -1800 to -250)
-		var x := rng.randf_range(280.0, 1750.0)
-		var z := rng.randf_range(-1750.0, -280.0)
-		var rot_y := rng.randf_range(0, TAU)
-		var rot_x := rng.randf_range(-0.25, 0.25)
-		var rot_z := rng.randf_range(-0.25, 0.25)
-		# Varied crags: jagged obsidian (scale 0.02-0.06 = 6m-18m), caldera ridges (scale 0.08-0.18 = 24m-52m)
-		var s := rng.randf_range(0.02, 0.06) if rng.randf() > 0.15 else rng.randf_range(0.08, 0.18)
-		var y := terrain_gen.get_height(x, z) - (s * 10.0)
-		var basis := Basis.from_euler(Vector3(rot_x, rot_y, rot_z)).scaled(Vector3(s, s * 1.3, s))
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(x, y, z)))
+	# 1. Dust Bowl Photogrammetry Desert Boulders & Sandstone Outcrops
+	var x_dust: Array[Transform3D] = []
+	for i: int in range(110):
+		var pt: Vector2 = _sample_roadside_in_quadrant(-2350.0, -220.0, 220.0, 2350.0, 9.0, 95.0)
+		if not _is_road_clear(pt.x, pt.y, 11.5):
+			continue
+		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.35
+		var sc: float = rng.randf_range(0.60, 1.40)
+		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.15, 0.15), rng.randf() * TAU, rng.randf_range(-0.15, 0.15))).scaled(Vector3(sc * rng.randf_range(1.0, 1.3), sc * 0.85, sc))
+		x_dust.append(Transform3D(bas, Vector3(pt.x, ry, pt.y)))
+	_build_multimesh_batch("MultiMesh_DustBowlRocks", desert_outcrop, x_dust, 650.0, Color(0.95, 0.78, 0.62))
 
-	var inst := MultiMeshInstance3D.new()
-	inst.multimesh = mm
-	inst.material_override = volcano_rock_mat
-	inst.visibility_range_end = 950.0
-	inst.visibility_range_end_margin = 80.0
-	inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	inst.name = "MultiMesh_VolcanicSpires"
-	add_child(inst)
+	# 2. Volcano Basalt Boulders & Obsidian Crags
+	var x_volcano: Array[Transform3D] = []
+	for i: int in range(140):
+		var pt: Vector2 = _sample_roadside_in_quadrant(200.0, 2200.0, -2200.0, -200.0, 9.0, 110.0)
+		if not _is_road_clear(pt.x, pt.y, 11.5):
+			continue
+		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.40
+		var sc: float = rng.randf_range(0.65, 1.55)
+		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.18, 0.18), rng.randf() * TAU, rng.randf_range(-0.18, 0.18))).scaled(Vector3(sc, sc * 0.80, sc))
+		x_volcano.append(Transform3D(bas, Vector3(pt.x, ry, pt.y)))
+	_build_multimesh_batch("MultiMesh_VolcanoBasaltCrags", granite_boulder, x_volcano, 700.0, Color(0.28, 0.25, 0.27))
 
-func _populate_shipping_containers(count: int) -> void:
-	# Standard 40ft ISO Shipping Containers in organized harbor stacks
-	var cont_mesh := BoxMesh.new()
-	cont_mesh.size = Vector3(2.44, 2.59, 12.19)
-	
-	var cont_mat := StandardMaterial3D.new()
-	cont_mat.vertex_color_use_as_albedo = true
-	cont_mat.roughness = 0.45
-	cont_mat.metallic = 0.65
-	
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.use_colors = true
-	mm.mesh = cont_mesh
-	mm.instance_count = count
-	
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 5050
-	
-	var colors := [
-		Color(0.20, 0.45, 0.75), # Marine Blue
-		Color(0.12, 0.48, 0.25), # Evergreen Green
-		Color(0.92, 0.45, 0.08), # Freight Orange
-		Color(0.72, 0.16, 0.14), # Cargo Red
-		Color(0.88, 0.72, 0.15)  # Industrial Yellow
-	]
-	
-	# Organized harbor container terminal layout in Neon Coast (SE)
-	for i in range(count):
-		# Grid-aligned stacks in harbor depot
-		var row := (i / 5) % 10
-		var col := i % 5
-		var tier := (i / 50) % 2 # 2-high stacks
-		
-		var base_x := 650.0 + (col * 3.6)
-		var base_z := 650.0 + (row * 14.5)
-		var y := terrain_gen.get_height(base_x, base_z) + 1.3 + (tier * 2.6)
-		
-		var basis := Basis(Vector3.UP, 0.0)
-		mm.set_instance_transform(i, Transform3D(basis, Vector3(base_x, y, base_z)))
-		mm.set_instance_color(i, colors[(row + col + tier) % colors.size()])
-		
-	var inst := MultiMeshInstance3D.new()
-	inst.multimesh = mm
-	inst.material_override = cont_mat
-	inst.name = "MultiMesh_ShippingContainers"
-	add_child(inst)
+	# 3. Frozen Pass Alpine Granite Outcrops
+	var x_granite: Array[Transform3D] = []
+	for i: int in range(110):
+		var pt: Vector2 = _sample_roadside_in_quadrant(-2300.0, -260.0, -2300.0, -260.0, 10.0, 110.0)
+		if not _is_road_clear(pt.x, pt.y, 12.0):
+			continue
+		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.35
+		var sc: float = rng.randf_range(0.65, 1.40)
+		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.15, 0.15), rng.randf() * TAU, rng.randf_range(-0.15, 0.15))).scaled(Vector3(sc, sc * 0.85, sc))
+		x_granite.append(Transform3D(bas, Vector3(pt.x, ry, pt.y)))
+	_build_multimesh_batch("MultiMesh_SnowGraniteBoulders", sandstone_slab, x_granite, 650.0, Color(0.72, 0.76, 0.82))
 
-func _populate_festival_staging() -> void:
-	var staging := Node3D.new()
-	staging.name = "FestivalStagingComplex"
-	add_child(staging)
-	
-	var pal_mat: StandardMaterial3D = _get_palette_mat()
-	
-	# 1. Authentic 3D Finish / Gantry Arch
-	var arch_scene := load("res://assets/models/props/track_finish_arch.glb") as PackedScene
-	if arch_scene:
-		var arch := arch_scene.instantiate()
-		var y := terrain_gen.get_height(0, -25.0) + 0.38
-		arch.position = Vector3(0, y, -25.0)
-		arch.scale = Vector3(1.6, 1.6, 1.6)
-		staging.add_child(arch)
-		
-	# 2. Paddock Event Tents (Left of track)
-	var tent_scene := load("res://assets/models/props/festival_tents.glb") as PackedScene
-	if tent_scene:
-		for z_tent: float in [-12.0, 18.0]:
-			var tent := tent_scene.instantiate()
-			var y := terrain_gen.get_height(-16.0, z_tent)
-			tent.position = Vector3(-16.0, y, z_tent)
-			tent.scale = Vector3(1.5, 1.5, 1.5)
-			_assign_palette_recursive(tent, pal_mat)
-			staging.add_child(tent)
-		
-	# 3. Pit Garages Workshop (Right of track)
-	var garage_scene := load("res://assets/models/props/pit_garage.glb") as PackedScene
-	if garage_scene:
-		for z_gar: float in [-12.0, 18.0]:
-			var garage := garage_scene.instantiate()
-			var y := terrain_gen.get_height(16.0, z_gar)
-			garage.position = Vector3(16.0, y, z_gar)
-			garage.rotation.y = PI
-			garage.scale = Vector3(1.6, 1.6, 1.6)
-			_assign_palette_recursive(garage, pal_mat)
-			staging.add_child(garage)
-			
-	# 4. Flanking Festival Trees & Foliage Canopy
-	var tree_scene := load("res://assets/models/foliage/trees_tall.glb") as PackedScene
-	var med_tree_scene := load("res://assets/models/foliage/trees_medium.glb") as PackedScene
-	for z_tr: float in [-35.0, -18.0, 5.0, 25.0, 42.0]:
-		var scn := tree_scene if int(z_tr) % 2 == 0 else med_tree_scene
-		if scn:
-			var t_left := scn.instantiate()
-			t_left.position = Vector3(-25.0, terrain_gen.get_height(-25.0, z_tr), z_tr)
-			t_left.scale = Vector3(1.4, 1.4, 1.4)
-			_assign_palette_recursive(t_left, pal_mat)
-			staging.add_child(t_left)
-			
-			var t_right := scn.instantiate()
-			t_right.position = Vector3(25.0, terrain_gen.get_height(25.0, z_tr), z_tr)
-			t_right.scale = Vector3(1.4, 1.4, 1.4)
-			_assign_palette_recursive(t_right, pal_mat)
-			staging.add_child(t_right)
-			
-	# 5. Paddock Facilities & Celebration Plaza
-	var bld_a_scene := load("res://assets/models/props/paddock_building_a.glb") as PackedScene
-	if bld_a_scene:
-		var bld_a := bld_a_scene.instantiate()
-		bld_a.position = Vector3(-20.0, terrain_gen.get_height(-20.0, -32.0), -32.0)
-		bld_a.scale = Vector3(1.5, 1.5, 1.5)
-		_assign_palette_recursive(bld_a, pal_mat)
-		staging.add_child(bld_a)
-		
-	var bld_b_scene := load("res://assets/models/props/paddock_building_b.glb") as PackedScene
-	if bld_b_scene:
-		var bld_b := bld_b_scene.instantiate()
-		bld_b.position = Vector3(20.0, terrain_gen.get_height(20.0, -32.0), -32.0)
-		bld_b.rotation.y = PI
-		bld_b.scale = Vector3(1.5, 1.5, 1.5)
-		_assign_palette_recursive(bld_b, pal_mat)
-		staging.add_child(bld_b)
-		
-	var fountain_scene := load("res://assets/models/props/plaza_fountain.glb") as PackedScene
-	if fountain_scene:
-		var fount := fountain_scene.instantiate()
-		fount.position = Vector3(-28.0, terrain_gen.get_height(-28.0, 0.0), 0.0)
-		fount.scale = Vector3(1.3, 1.3, 1.3)
-		_assign_palette_recursive(fount, pal_mat)
-		staging.add_child(fount)
-		
-	# 6. Sleek Armco Steel W-Beam Crash Barriers along Track Edges
-	var rail_data := _get_mesh_and_mat("res://assets/models/props/highway_guardrail.glb", "Object_4")
-	var rail_mesh: Mesh = rail_data.get("mesh", null)
-	var rail_mat: Material = rail_data.get("material", null)
-	var rail_scale := Vector3(2.7, 2.7, 2.7)
-	if not rail_mesh:
-		var bm := BoxMesh.new()
-		bm.size = Vector3(0.14, 0.45, 3.2)
-		rail_mesh = bm
-		rail_scale = Vector3.ONE
-	if not rail_mat:
-		var rm := StandardMaterial3D.new()
-		rm.albedo_color = Color(0.78, 0.80, 0.84)
-		rm.metallic = 0.92
-		rm.roughness = 0.28
-		rail_mat = rm
-	
-	for i in range(24):
-		var z_pos := -45.0 + (i * 3.2)
-		var b_left := MeshInstance3D.new()
-		b_left.mesh = rail_mesh
-		b_left.scale = rail_scale
-		b_left.material_override = rail_mat
-		b_left.position = Vector3(-7.8, terrain_gen.get_height(-7.8, z_pos) + 0.65, z_pos)
-		staging.add_child(b_left)
-		
-		var b_right := MeshInstance3D.new()
-		b_right.mesh = rail_mesh
-		b_right.scale = rail_scale
-		b_right.rotation.y = PI
-		b_right.material_override = rail_mat
-		b_right.position = Vector3(7.8, terrain_gen.get_height(7.8, z_pos) + 0.65, z_pos)
-		staging.add_child(b_right)
+func _populate_ground_grass() -> void:
+	var green_grass: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/grass_medium_01/grass_medium_01.gltf", 3.4, 0.02, "small_a_lod0")
+	var dry_grass: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/foliage/dry_grass.glb", 0.0068, 0.03, "grasspatch1")
+
+	if green_grass:
+		var hub_g: Array[Transform3D] = []
+		for i: int in range(2200):
+			var pt: Vector2 = _sample_roadside_in_quadrant(-280.0, 280.0, -280.0, 280.0, 1.5, 45.0)
+			if not _is_road_clear(pt.x, pt.y, 2.5):
+				continue
+			var gy: float = terrain_gen.get_height(pt.x, pt.y)
+			var sc: float = rng.randf_range(0.85, 1.60)
+			hub_g.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(pt.x, gy, pt.y)))
+		_build_multimesh_batch("MultiMesh_HubMeadowGrass", green_grass, hub_g, 210.0, Color(1, 1, 1, 1), false)
+
+	if dry_grass:
+		var dg_xforms: Array[Transform3D] = []
+		for i: int in range(2200):
+			var pt: Vector2 = _sample_roadside_in_quadrant(-2100.0, -280.0, 280.0, 2100.0, 1.8, 38.0)
+			if not _is_road_clear(pt.x, pt.y, 2.2):
+				continue
+			var gy: float = terrain_gen.get_height(pt.x, pt.y)
+			var sc: float = rng.randf_range(0.85, 1.65)
+			dg_xforms.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc, sc)), Vector3(pt.x, gy, pt.y)))
+		_build_multimesh_batch("MultiMesh_DesertDryGrass", dry_grass, dg_xforms, 260.0, Color(1, 1, 1, 1), false)
+
+func _build_coast_harbor_depot() -> void:
+	var c_box := BoxMesh.new()
+	c_box.size = Vector3(2.5, 2.6, 6.2)
+	var rib_nor: Texture2D = load("res://assets/textures/cliff_nor.jpg") as Texture2D
+	var cols: Array[Color] = [Color(0.55, 0.14, 0.12), Color(0.12, 0.28, 0.50), Color(0.62, 0.42, 0.14)]
+	for ci: int in range(cols.size()):
+		var xf_list: Array[Transform3D] = []
+		var cmat := StandardMaterial3D.new()
+		cmat.albedo_color = cols[ci]
+		cmat.metallic = 0.55
+		cmat.roughness = 0.48
+		if rib_nor:
+			cmat.normal_enabled = true
+			cmat.normal_texture = rib_nor
+			cmat.uv1_scale = Vector3(2.0, 1.0, 4.0)
+		for r: int in range(6):
+			var cx: float = 1910.0 + float(ci) * 10.0 + float(r % 2) * 3.2
+			var cz: float = 1220.0 + float(r) * 14.0
+			if not _is_road_clear(cx, cz, 12.0):
+				continue
+			var cy: float = terrain_gen.get_height(cx, cz) + 1.3
+			if cy < 2.5:
+				continue
+			xf_list.append(Transform3D(Basis(Vector3.UP, 0.15), Vector3(cx, cy, cz)))
+		if not xf_list.is_empty():
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = c_box
+			mm.instance_count = xf_list.size()
+			for i: int in range(xf_list.size()):
+				mm.set_instance_transform(i, xf_list[i])
+			var inst := MultiMeshInstance3D.new()
+			inst.name = "MultiMesh_HarborContainers_%d" % ci
+			inst.multimesh = mm
+			inst.material_override = cmat
+			inst.visibility_range_end = 750.0
+			add_child(inst)
