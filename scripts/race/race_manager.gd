@@ -72,10 +72,12 @@ func _physics_process(delta: float):
 
 func _process_countdown(delta: float):
 	countdown_timer -= delta
-	# Lock player and AI throttle during countdown
+	# Hold cars cleanly with handbrake in 1st gear during countdown (avoids reversing on brake input)
 	for c in cars:
 		c.throttle_input = 0.0
-		c.brake_input = 1.0
+		c.brake_input = 0.0
+		c.handbrake_input = true
+		c.current_gear = 1
 	
 	if countdown_timer > 3.0:
 		countdown_tick.emit(3, "3")
@@ -89,6 +91,7 @@ func _process_countdown(delta: float):
 		state = RaceState.RACING
 		countdown_tick.emit(-1, "")
 		for c in cars:
+			c.handbrake_input = false
 			c.brake_input = 0.0
 
 func _get_node_pos(node: Node3D) -> Vector3:
