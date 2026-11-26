@@ -6,13 +6,17 @@ extends RefCounted
 const ProceduralCarMesh = preload("res://scripts/vehicle/procedural_car_mesh.gd")
 const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
 
-static func load_car_visuals(controller: RigidBody3D, recipe: Dictionary) -> Node3D:
+static func load_car_visuals(controller: Node3D, recipe: Dictionary) -> Node3D:
 	var glb_path: String = "res://assets/models/cars/subaru_sti.glb"
 	if recipe.has("model_path") and FileAccess.file_exists(str(recipe.model_path)):
 		glb_path = str(recipe.model_path)
 
 	var loaded_model: Node3D = null
-	if FileAccess.file_exists(glb_path):
+	if ResourceLoader.exists(glb_path):
+		var packed_car: Resource = load(glb_path)
+		if packed_car is PackedScene:
+			loaded_model = packed_car.instantiate() as Node3D
+	if not loaded_model and FileAccess.file_exists(glb_path):
 		var gltf := GLTFDocument.new()
 		var state := GLTFState.new()
 		if gltf.append_from_file(glb_path, state) == OK:
@@ -135,7 +139,7 @@ static func _calc_hierarchy_aabb(space_root: Node3D, node: Node, parent_xform: T
 				has_aabb = true
 	return total
 
-static func _bind_spatial_wheels(controller: RigidBody3D, holder: Node3D, loaded_model: Node3D, path_low: String) -> void:
+static func _bind_spatial_wheels(controller: Node3D, holder: Node3D, loaded_model: Node3D, path_low: String) -> void:
 	if not ("front_left_wheel" in controller):
 		return
 	var corner_meshes: Dictionary = {"FL": [], "FR": [], "RL": [], "RR": []}
@@ -412,20 +416,78 @@ static func _is_wheel_candidate(mi: MeshInstance3D, path_low: String) -> bool:
 		return true
 	return ("wheel" in combined or "rim" in combined or "tyre" in combined or "tire" in combined or "matte2" in combined or "matte3" in combined or "matte4" in combined or "matte5" in combined or "metal2" in combined or "metal3" in combined or "metal4" in combined or "metal5" in combined or "930_rim" in combined or "930_tire" in combined or "tyrewallblack" in combined)
 
-static func _setup_car_reflection_probe(controller: RigidBody3D) -> void:
+static func _setup_car_reflection_probe(controller: Node3D) -> void:
 	if not controller.get_node_or_null("CarDynamicReflectionProbe"):
 		var probe := ReflectionProbe.new()
 		probe.name = "CarDynamicReflectionProbe"
-		probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
-		probe.intensity = 0.85
+		# Bake sky + local biome cubemap once on spawn/biome change instead of re-rendering 6 faces every frame
+		probe.update_mode = ReflectionProbe.UPDATE_ONCE
+		probe.intensity = 0.80
 		probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
 		# Bottom at 1.45 - 1.20 = +0.25m above ground so probe NEVER creates dark square shadows on terrain
 		probe.size = Vector3(5.2, 2.4, 6.0)
 		probe.origin_offset = Vector3(0.0, 0.0, 0.0)
-		probe.max_distance = 64.0
+		probe.max_distance = 48.0
 		probe.enable_shadows = false
 		probe.position = Vector3(0.0, 1.45, 0.0)
 		controller.add_child(probe)
+
+static func apply_custom_paint(root: Node, custom_paint: Color, finish: String = "metallic") -> void:
+	var seen: Dictionary = {}
+	_apply_custom_paint_recursive(root, custom_paint, finish, seen)
+
+static func _apply_custom_paint_recursive(node: Node, custom_paint: Color, finish: String, seen: Dictionary) -> void:
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		if mi.mesh:
+			for s: int in range(mi.mesh.get_surface_count()):
+				var mat: Material = mi.get_active_material(s)
+				if mat is StandardMaterial3D:
+					var std: StandardMaterial3D = mat
+					var rid: int = std.get_instance_id()
+					if seen.has(rid):
+						continue
+					seen[rid] = true
+					var rname: String = std.resource_name.to_lower()
+					var is_secondary: bool = ("black" in rname or rname.ends_with("2") or "paint2" in rname or "coat2" in rname or "interior" in rname or "glass" in rname or "tire" in rname or "tyre" in rname or "rim" in rname or "brake" in rname or "caliper" in rname or "carbon" in rname or "chrome" in rname)
+					if is_secondary:
+						continue
+					var is_body: bool = ("paint" in rname or "coat" in rname or "scocca" in rname or "coloured" in rname or "body" in rname or "livery" in rname or rname == "mt_body" or rname == "mt_mirrorcover" or rname == "material.008")
+					if is_body:
+						if std.albedo_texture == null:
+							std.albedo_color = custom_paint
+						match finish:
+							"metallic":
+								std.metallic = 0.85
+								std.roughness = 0.14
+								std.clearcoat_enabled = true
+								std.clearcoat = 1.0
+								std.clearcoat_roughness = 0.03
+							"gloss":
+								std.metallic = 0.15
+								std.roughness = 0.08
+								std.clearcoat_enabled = true
+								std.clearcoat = 0.90
+								std.clearcoat_roughness = 0.02
+							"matte":
+								std.metallic = 0.05
+								std.roughness = 0.68
+								std.clearcoat_enabled = false
+								std.clearcoat = 0.0
+							"satin":
+								std.metallic = 0.45
+								std.roughness = 0.34
+								std.clearcoat_enabled = true
+								std.clearcoat = 0.40
+								std.clearcoat_roughness = 0.15
+							"pearl":
+								std.metallic = 0.72
+								std.roughness = 0.15
+								std.clearcoat_enabled = true
+								std.clearcoat = 1.0
+								std.clearcoat_roughness = 0.03
+	for c: Node in node.get_children():
+		_apply_custom_paint_recursive(c, custom_paint, finish, seen)
 
 static func _apply_fh5_car_materials(root: Node, path_low: String) -> void:
 	var custom_paint: Color = Color(-1, 0, 0)
