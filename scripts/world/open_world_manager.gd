@@ -8,6 +8,8 @@ const RoadNetwork = preload("res://scripts/world/road_network.gd")
 const SceneryPopulator = preload("res://scripts/world/scenery_populator.gd")
 const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 const CameraRig = preload("res://scripts/vehicle/camera_rig.gd")
+const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
+const DebugOverlay = preload("res://scripts/ui/debug_overlay.gd")
 
 @export var player_vehicle: VehicleController
 @export var camera_rig: CameraRig
@@ -21,13 +23,18 @@ var scenery_populator: SceneryPopulator
 var active_chunks: Dictionary = {} # Vector2i(chunk_x, chunk_z) -> {"node": MeshInstance3D, "hi": bool}
 var current_player_chunk: Vector2i = Vector2i(999, 999)
 const LOAD_RADIUS: int = 2 # High-res colliding 5x5 chunks around player
-const LOAD_RADIUS_FAR: int = 7 # Full 15x15 horizon chunks reaching map bounds cleanly
+const LOAD_RADIUS_FAR: int = 5 # 11x11 horizon chunks (5.5km coverage, seamless fog blend)
 
 # Open World UI
 var open_world_hud: CanvasLayer
 var label_biome: Label
 var label_coords: Label
 var label_speed_record: Label
+var label_ow_speed: Label
+var label_ow_gear_rpm: Label
+var bar_ow_rpm: ProgressBar
+var bar_ow_nitro: ProgressBar
+var pause_panel: PanelContainer
 var last_reported_biome: int = -1
 
 var weather_particles: GPUParticles3D
@@ -48,20 +55,31 @@ func _ready() -> void:
 	# 3. Add Reflective Ocean Water for Neon Coast
 	_build_coastal_ocean()
 	
-	# 4. Position Player at Central Festival Hub on Starting Grid
+	# 4. Position Player at Central Festival Hub on Starting Grid (honor Garage selected car)
+	var save_mgr := SaveManager.new()
+	var chosen_car: String = str(save_mgr.save_data.get("selected_car", "skyline_vspec"))
+	if player_vehicle and chosen_car != "sprinter_r2" and chosen_car != player_vehicle.car_id:
+		player_vehicle.car_id = chosen_car
 	var spawn_pos := Vector3(0.0, terrain_gen.get_height(0, 15.0) + 0.65, 15.0)
 	if player_vehicle:
 		player_vehicle.global_position = spawn_pos
 		player_vehicle.global_rotation = Vector3.ZERO
 		if camera_rig:
 			camera_rig.target_vehicle = player_vehicle
+		var dbg := get_node_or_null("DebugOverlay") as DebugOverlay
+		if dbg:
+			dbg.set_target_vehicle(player_vehicle)
 			
 	# 5. Initial chunk generation around spawn
 	_update_chunks_around(Vector3.ZERO)
 	
-	# 6. Build Open World HUD & Weather
+	# 6. Build Open World HUD, Weather, and Startup Shader Pre-Warming
 	_build_open_world_hud()
 	_setup_weather_particles()
+	var prewarm_mats: Array[Material] = []
+	VisualPipeline.collect_materials_from_node(self, prewarm_mats)
+	if camera_rig and camera_rig.camera:
+		VisualPipeline.spawn_prewarm_batch(self, camera_rig.camera, prewarm_mats)
 
 func _setup_weather_particles() -> void:
 	weather_particles = GPUParticles3D.new()
@@ -175,6 +193,11 @@ func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
 		weather_particles.restart()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause_game"):
+		if pause_panel:
+			pause_panel.visible = not pause_panel.visible
+			get_tree().paused = pause_panel.visible
+		return
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_1:
@@ -219,14 +242,18 @@ func switch_player_vehicle(car_id_to_spawn: String) -> void:
 	if camera_rig:
 		camera_rig.target_vehicle = new_v
 		camera_rig.snap_to_target()
+	var dbg := get_node_or_null("DebugOverlay") as DebugOverlay
+	if dbg:
+		dbg.set_target_vehicle(new_v)
 
 func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
 	ocean.name = "CoastalOceanWater"
+	ocean.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(3600.0, 6400.0)
-	plane.subdivide_width = 180
-	plane.subdivide_depth = 240
+	plane.subdivide_width = 72
+	plane.subdivide_depth = 110
 	ocean.mesh = plane
 	ocean.position = Vector3(3650.0, 0.85, 1100.0)
 	
@@ -312,21 +339,25 @@ func _update_chunks_around(pos: Vector3) -> void:
 			
 	for key in to_remove:
 		var info: Dictionary = active_chunks[key]
-		(info["node"] as Node).queue_free()
+		var old_chunk: MeshInstance3D = info["node"] as MeshInstance3D
+		if old_chunk:
+			old_chunk.mesh = null
+			old_chunk.queue_free()
 		active_chunks.erase(key)
 
 func _build_open_world_hud() -> void:
 	open_world_hud = CanvasLayer.new()
 	open_world_hud.name = "OpenWorldHUD"
+	open_world_hud.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(open_world_hud)
 	
 	var top_panel := PanelContainer.new()
 	top_panel.anchor_left = 0.5
 	top_panel.anchor_right = 0.5
-	top_panel.offset_left = -250.0
-	top_panel.offset_right = 250.0
-	top_panel.offset_top = 15.0
-	top_panel.offset_bottom = 65.0
+	top_panel.offset_left = -280.0
+	top_panel.offset_right = 280.0
+	top_panel.offset_top = 14.0
+	top_panel.offset_bottom = 70.0
 	open_world_hud.add_child(top_panel)
 	
 	var vbox := VBoxContainer.new()
@@ -345,11 +376,124 @@ func _build_open_world_hud() -> void:
 	vbox.add_child(label_coords)
 	
 	var label_hint := Label.new()
-	label_hint.text = "FAST TRAVEL: [1] Hub | [2] Desert | [3] Snow | [4] Volcano | [5] Coast"
+	label_hint.text = "[1-5] Fast Travel | [7-0] Swap Car | [F3] VRAM/Perf | [Esc] Menu"
 	label_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label_hint.add_theme_font_size_override("font_size", 11)
-	label_hint.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+	label_hint.add_theme_color_override("font_color", Color(0.65, 0.75, 0.86))
 	vbox.add_child(label_hint)
+
+	# Bottom-Right FH5 Tachometer / Speedo / Nitro Cluster
+	var speed_panel := PanelContainer.new()
+	speed_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	speed_panel.offset_left = -290.0
+	speed_panel.offset_top = -150.0
+	speed_panel.offset_right = -24.0
+	speed_panel.offset_bottom = -20.0
+	var s_style := StyleBoxFlat.new()
+	s_style.bg_color = Color(0.05, 0.07, 0.11, 0.78)
+	s_style.border_width_bottom = 3
+	s_style.border_color = Color(1.0, 0.45, 0.06, 0.95)
+	s_style.content_margin_left = 14
+	s_style.content_margin_right = 14
+	s_style.content_margin_top = 8
+	s_style.content_margin_bottom = 10
+	s_style.corner_radius_top_left = 6
+	s_style.corner_radius_top_right = 6
+	s_style.corner_radius_bottom_left = 6
+	s_style.corner_radius_bottom_right = 6
+	speed_panel.add_theme_stylebox_override("panel", s_style)
+	open_world_hud.add_child(speed_panel)
+
+	var svbox := VBoxContainer.new()
+	svbox.add_theme_constant_override("separation", 4)
+	speed_panel.add_child(svbox)
+
+	label_ow_speed = Label.new()
+	label_ow_speed.text = "0 KM/H"
+	label_ow_speed.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label_ow_speed.add_theme_font_size_override("font_size", 42)
+	label_ow_speed.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
+	svbox.add_child(label_ow_speed)
+
+	label_ow_gear_rpm = Label.new()
+	label_ow_gear_rpm.text = "GEAR 1  |  900 RPM"
+	label_ow_gear_rpm.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label_ow_gear_rpm.add_theme_font_size_override("font_size", 15)
+	label_ow_gear_rpm.add_theme_color_override("font_color", Color(1.0, 0.65, 0.12))
+	svbox.add_child(label_ow_gear_rpm)
+
+	bar_ow_rpm = ProgressBar.new()
+	bar_ow_rpm.min_value = 0.0
+	bar_ow_rpm.max_value = 8500.0
+	bar_ow_rpm.value = 900.0
+	bar_ow_rpm.show_percentage = false
+	bar_ow_rpm.custom_minimum_size = Vector2(220, 8)
+	svbox.add_child(bar_ow_rpm)
+
+	bar_ow_nitro = ProgressBar.new()
+	bar_ow_nitro.min_value = 0.0
+	bar_ow_nitro.max_value = 100.0
+	bar_ow_nitro.value = 100.0
+	bar_ow_nitro.show_percentage = false
+	bar_ow_nitro.custom_minimum_size = Vector2(220, 6)
+	svbox.add_child(bar_ow_nitro)
+
+	# Esc Pause & Mode Switch Menu
+	pause_panel = PanelContainer.new()
+	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
+	pause_panel.offset_left = -180.0
+	pause_panel.offset_top = -155.0
+	pause_panel.offset_right = 180.0
+	pause_panel.offset_bottom = 155.0
+	pause_panel.visible = false
+	open_world_hud.add_child(pause_panel)
+
+	var pvbox := VBoxContainer.new()
+	pvbox.add_theme_constant_override("separation", 10)
+	pause_panel.add_child(pvbox)
+
+	var ptitle := Label.new()
+	ptitle.text = "GRIDLETHAL HORIZON MENU"
+	ptitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ptitle.add_theme_font_size_override("font_size", 20)
+	ptitle.add_theme_color_override("font_color", Color(1.0, 0.50, 0.08))
+	pvbox.add_child(ptitle)
+
+	var actions: Array[Array] = [
+		["RESUME DRIVING", Callable(self, "_on_pause_resume")],
+		["CIRCUIT COMBAT RACE", Callable(self, "_on_pause_circuit")],
+		["GARAGE AUTOSHOW", Callable(self, "_on_pause_garage")],
+		["TOGGLE F3 VRAM TELEMETRY", Callable(self, "_on_pause_telemetry")],
+		["MAIN MENU", Callable(self, "_on_pause_menu")]
+	]
+	for act: Array in actions:
+		var btn := Button.new()
+		btn.text = str(act[0])
+		btn.custom_minimum_size = Vector2(0, 36)
+		btn.pressed.connect(act[1] as Callable)
+		pvbox.add_child(btn)
+
+func _on_pause_resume() -> void:
+	if pause_panel:
+		pause_panel.visible = false
+	get_tree().paused = false
+
+func _on_pause_circuit() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/track_test.tscn")
+
+func _on_pause_garage() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/garage.tscn")
+
+func _on_pause_telemetry() -> void:
+	var dbg := get_node_or_null("DebugOverlay") as DebugOverlay
+	if dbg:
+		dbg.toggle_visible()
+
+func _on_pause_menu() -> void:
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 func _update_hud(pos: Vector3) -> void:
 	if not label_biome or not label_coords:
@@ -360,11 +504,23 @@ func _update_hud(pos: Vector3) -> void:
 		last_reported_biome = int(biome_type)
 		var b_info: Dictionary = OpenWorldConfig.BIOME_DATA[biome_type]
 		label_biome.text = b_info["name"].to_upper()
+		if player_vehicle:
+			var p := player_vehicle.get_node_or_null("CarDynamicReflectionProbe") as ReflectionProbe
+			if p:
+				p.update_mode = ReflectionProbe.UPDATE_ONCE
 		
 	label_coords.text = "GPS: X: %dm | Z: %dm | ALT: %dm" % [int(pos.x), int(pos.z), int(pos.y)]
+	if player_vehicle and label_ow_speed and label_ow_gear_rpm:
+		label_ow_speed.text = "%d KM/H" % int(roundf(player_vehicle.speed_kmh))
+		var g_str: String = "R" if player_vehicle.current_gear == 0 else str(player_vehicle.current_gear)
+		label_ow_gear_rpm.text = "GEAR %s  |  %d RPM" % [g_str, int(player_vehicle.engine_rpm)]
+		if bar_ow_rpm:
+			bar_ow_rpm.value = player_vehicle.engine_rpm
+		if bar_ow_nitro:
+			bar_ow_nitro.value = player_vehicle.nitro_amount
 
 func _take_world_screenshot(out_path: String = "res://build/screenshots/open_world_overview.png") -> void:
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(1.8).timeout
 	var vp := get_viewport()
 	if vp:
 		var img := vp.get_texture().get_image()
