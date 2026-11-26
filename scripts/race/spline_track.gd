@@ -103,41 +103,42 @@ func _generate_road_mesh():
 		var next_i = (i + 1) % num_pts
 		var pt0 = track_points[i]
 		var pt1 = track_points[next_i]
+		var road_lift := Vector3(0.0, 0.10, 0.0)
 		
 		var half_w = pt0.width * 0.5
-		var l0 = pt0.pos - (pt0.right * half_w)
-		var r0 = pt0.pos + (pt0.right * half_w)
-		var l1 = pt1.pos - (pt1.right * half_w)
-		var r1 = pt1.pos + (pt1.right * half_w)
+		var l0 = pt0.pos - (pt0.right * half_w) + road_lift
+		var r0 = pt0.pos + (pt0.right * half_w) + road_lift
+		var l1 = pt1.pos - (pt1.right * half_w) + road_lift
+		var r1 = pt1.pos + (pt1.right * half_w) + road_lift
 		
-		# Quad 1: Road Surface
-		st.set_uv(Vector2(0, float(i) * 0.2))
+		# Quad 1: Road Surface (using world-meter-ish road UV.y so asphalt detail & lane lines look sharp!)
+		st.set_uv(Vector2(0.0, float(i) * 0.45))
 		st.add_vertex(l0)
-		st.set_uv(Vector2(1, float(i) * 0.2))
+		st.set_uv(Vector2(1.0, float(i) * 0.45))
 		st.add_vertex(r0)
-		st.set_uv(Vector2(1, float(i + 1) * 0.2))
+		st.set_uv(Vector2(1.0, float(i + 1) * 0.45))
 		st.add_vertex(r1)
 		
-		st.set_uv(Vector2(0, float(i) * 0.2))
+		st.set_uv(Vector2(0.0, float(i) * 0.45))
 		st.add_vertex(l0)
-		st.set_uv(Vector2(1, float(i + 1) * 0.2))
+		st.set_uv(Vector2(1.0, float(i + 1) * 0.45))
 		st.add_vertex(r1)
-		st.set_uv(Vector2(0, float(i + 1) * 0.2))
+		st.set_uv(Vector2(0.0, float(i + 1) * 0.45))
 		st.add_vertex(l1)
 		
-		# Curbs & Kerbs on track edges
-		var curb_l0 = l0 - (pt0.right * shoulder_width) + Vector3(0, 0.12, 0)
-		var curb_r0 = r0 + (pt0.right * shoulder_width) + Vector3(0, 0.12, 0)
-		var curb_l1 = l1 - (pt1.right * shoulder_width) + Vector3(0, 0.12, 0)
-		var curb_r1 = r1 + (pt1.right * shoulder_width) + Vector3(0, 0.12, 0)
+		# Embankment kerbs slope back down cleanly into ground terrain (-0.02 -> 0.12)
+		var curb_l0 = l0 - (pt0.right * shoulder_width) - Vector3(0, 0.12, 0)
+		var curb_r0 = r0 + (pt0.right * shoulder_width) - Vector3(0, 0.12, 0)
+		var curb_l1 = l1 - (pt1.right * shoulder_width) - Vector3(0, 0.12, 0)
+		var curb_r1 = r1 + (pt1.right * shoulder_width) - Vector3(0, 0.12, 0)
 		
 		# Left Kerb
-		st.set_uv(Vector2(0, float(i)))
+		st.set_uv(Vector2(0.0, float(i) * 0.45))
 		st.add_vertex(curb_l0); st.add_vertex(l0); st.add_vertex(l1)
 		st.add_vertex(curb_l0); st.add_vertex(l1); st.add_vertex(curb_l1)
 		
 		# Right Kerb
-		st.set_uv(Vector2(0, float(i)))
+		st.set_uv(Vector2(1.0, float(i) * 0.45))
 		st.add_vertex(r0); st.add_vertex(curb_r0); st.add_vertex(curb_r1)
 		st.add_vertex(r0); st.add_vertex(curb_r1); st.add_vertex(r1)
 		
@@ -148,18 +149,27 @@ func _generate_road_mesh():
 	var mesh_inst = MeshInstance3D.new()
 	mesh_inst.mesh = road_mesh
 	
-	# High-Fidelity Wet Asphalt & Kerb Material
-	var road_shader = load("res://shaders/wet_road.gdshader") as Shader
+	# High-Fidelity PBR Highway + Gravel Shoulder Shader
+	var road_shader = load("res://shaders/road.gdshader") as Shader
 	if road_shader:
 		var road_mat = ShaderMaterial.new()
 		road_mat.shader = road_shader
-		road_mat.set_shader_parameter("asphalt_color", Color(0.20, 0.20, 0.22, 1.0))
-		road_mat.set_shader_parameter("wet_color", Color(0.08, 0.08, 0.09, 1.0))
-		road_mat.set_shader_parameter("wetness", 0.65)
+		var tex_diff := load("res://assets/textures/asphalt_diff.jpg") as Texture2D
+		var tex_nor := load("res://assets/textures/asphalt_nor.jpg") as Texture2D
+		var tex_rough := load("res://assets/textures/asphalt_rough.jpg") as Texture2D
+		var tex_g_diff := load("res://assets/textures/gravel_diff.jpg") as Texture2D
+		var tex_g_nor := load("res://assets/textures/gravel_nor.jpg") as Texture2D
+		var tex_g_rough := load("res://assets/textures/gravel_rough.jpg") as Texture2D
+		if tex_diff: road_mat.set_shader_parameter("texture_albedo", tex_diff)
+		if tex_nor: road_mat.set_shader_parameter("texture_normal", tex_nor)
+		if tex_rough: road_mat.set_shader_parameter("texture_roughness", tex_rough)
+		if tex_g_diff: road_mat.set_shader_parameter("texture_gravel_diff", tex_g_diff)
+		if tex_g_nor: road_mat.set_shader_parameter("texture_gravel_nor", tex_g_nor)
+		if tex_g_rough: road_mat.set_shader_parameter("texture_gravel_rough", tex_g_rough)
 		mesh_inst.material_override = road_mat
 	else:
 		var mat = StandardMaterial3D.new()
-		mat.albedo_color = Color(0.20, 0.20, 0.22) # Dark worn asphalt
+		mat.albedo_color = Color(0.20, 0.20, 0.22)
 		mat.roughness = 0.65
 		mat.metallic = 0.05
 		mesh_inst.material_override = mat
