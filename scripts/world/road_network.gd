@@ -382,6 +382,7 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 	var inst := MeshInstance3D.new()
 	inst.mesh = mesh
 	inst.name = road_name
+	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	var road_shader := load("res://shaders/road.gdshader") as Shader
 	if road_shader:
