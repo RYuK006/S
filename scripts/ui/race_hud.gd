@@ -21,6 +21,7 @@ var countdown_label: Label
 var results_panel: PanelContainer
 var results_label: Label
 var minimap_rect: Control
+var hud_layer: CanvasLayer
 
 func setup(p_player: VehicleController, p_race: RaceManager, p_track: SplineTrack):
 	player_car = p_player
@@ -29,82 +30,119 @@ func setup(p_player: VehicleController, p_race: RaceManager, p_track: SplineTrac
 	
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_layer = CanvasLayer.new()
+	hud_layer.name = "RaceHUDLayer"
+	add_child(hud_layer)
 	_build_ui()
 	
 	race_mgr.countdown_tick.connect(_on_countdown_tick)
 	race_mgr.race_finished.connect(_on_race_finished)
 
 func _build_ui():
-	# 1. Top Left: Position & Lap
+	# 1. Top Left: Position & Lap inside crisp glassmorphic backing
+	var tl_panel = PanelContainer.new()
+	tl_panel.position = Vector2(24, 24)
+	tl_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hud_style := StyleBoxFlat.new()
+	hud_style.bg_color = Color(0.05, 0.07, 0.11, 0.72)
+	hud_style.border_width_left = 3
+	hud_style.border_color = Color(1.0, 0.45, 0.06, 0.92)
+	hud_style.content_margin_left = 14
+	hud_style.content_margin_right = 14
+	hud_style.content_margin_top = 8
+	hud_style.content_margin_bottom = 8
+	hud_style.corner_radius_top_left = 6
+	hud_style.corner_radius_top_right = 6
+	hud_style.corner_radius_bottom_left = 6
+	hud_style.corner_radius_bottom_right = 6
+	tl_panel.add_theme_stylebox_override("panel", hud_style)
+	hud_layer.add_child(tl_panel)
+
 	var top_left = VBoxContainer.new()
-	top_left.position = Vector2(32, 24)
 	top_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(top_left)
+	tl_panel.add_child(top_left)
 	
 	position_label = Label.new()
 	position_label.text = "1ST / 6"
-	position_label.add_theme_font_size_override("font_size", 42)
+	position_label.add_theme_font_size_override("font_size", 40)
 	position_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.0))
 	top_left.add_child(position_label)
 	
 	lap_label = Label.new()
 	lap_label.text = "LAP 1 / 3"
-	lap_label.add_theme_font_size_override("font_size", 22)
-	lap_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	lap_label.add_theme_font_size_override("font_size", 20)
+	lap_label.add_theme_color_override("font_color", Color(0.95, 0.96, 0.98))
 	top_left.add_child(lap_label)
 	
 	time_label = Label.new()
 	time_label.text = "TIME: 0:00.00 | BEST: --:--.--"
-	time_label.add_theme_font_size_override("font_size", 16)
-	time_label.add_theme_color_override("font_color", Color(0.65, 0.75, 0.85))
+	time_label.add_theme_font_size_override("font_size", 15)
+	time_label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.95))
 	top_left.add_child(time_label)
 	
 	# 2. Bottom Right: Speedometer, Gear, Nitro & Health
+	var br_panel = PanelContainer.new()
+	br_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	br_panel.offset_left = -330.0
+	br_panel.offset_top = -126.0
+	br_panel.offset_right = -24.0
+	br_panel.offset_bottom = -24.0
+	br_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	br_panel.add_theme_stylebox_override("panel", hud_style)
+	hud_layer.add_child(br_panel)
+
 	var bottom_right = VBoxContainer.new()
-	bottom_right.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	bottom_right.position = Vector2(-260, -180)
 	bottom_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bottom_right)
+	br_panel.add_child(bottom_right)
 	
 	speed_label = Label.new()
 	speed_label.text = "0 KM/H"
-	speed_label.add_theme_font_size_override("font_size", 52)
-	speed_label.add_theme_color_override("font_color", Color(0.0, 0.9, 1.0))
+	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	speed_label.add_theme_font_size_override("font_size", 46)
+	speed_label.add_theme_color_override("font_color", Color(0.95, 0.98, 1.0))
 	bottom_right.add_child(speed_label)
 	
 	rpm_gear_label = Label.new()
-	rpm_gear_label.text = "GEAR 1 | 900 RPM"
-	rpm_gear_label.add_theme_font_size_override("font_size", 20)
-	rpm_gear_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+	rpm_gear_label.text = "GEAR 1 | 900 RPM | NITRO 100%"
+	rpm_gear_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	rpm_gear_label.add_theme_font_size_override("font_size", 16)
+	rpm_gear_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.14))
 	bottom_right.add_child(rpm_gear_label)
 	
 	# 3. Center Screen: 3-2-1-GO Countdown Banner
 	countdown_label = Label.new()
 	countdown_label.set_anchors_preset(Control.PRESET_CENTER)
-	countdown_label.position = Vector2(-150, -80)
-	countdown_label.size = Vector2(300, 160)
+	countdown_label.offset_left = -160.0
+	countdown_label.offset_top = -80.0
+	countdown_label.offset_right = 160.0
+	countdown_label.offset_bottom = 80.0
 	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	countdown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	countdown_label.add_theme_font_size_override("font_size", 96)
 	countdown_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0))
 	countdown_label.visible = false
-	add_child(countdown_label)
+	hud_layer.add_child(countdown_label)
 	
-	# 4. Top Right: Dynamic 2D Minimap Radar
+	# 4. Top Right: Dynamic 2D Minimap Radar (responsive PRESET_TOP_RIGHT anchoring)
 	minimap_rect = Control.new()
-	minimap_rect.position = Vector2(1640, 24)
-	minimap_rect.size = Vector2(240, 240)
+	minimap_rect.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	minimap_rect.offset_left = -264.0
+	minimap_rect.offset_top = 24.0
+	minimap_rect.offset_right = -24.0
+	minimap_rect.offset_bottom = 264.0
 	minimap_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	minimap_rect.draw.connect(_draw_minimap)
-	add_child(minimap_rect)
+	hud_layer.add_child(minimap_rect)
 	
 	# 5. Post-Race Results Modal Panel
 	results_panel = PanelContainer.new()
 	results_panel.set_anchors_preset(Control.PRESET_CENTER)
-	results_panel.position = Vector2(-250, -180)
-	results_panel.size = Vector2(500, 360)
+	results_panel.offset_left = -250.0
+	results_panel.offset_top = -180.0
+	results_panel.offset_right = 250.0
+	results_panel.offset_bottom = 180.0
 	results_panel.visible = false
-	add_child(results_panel)
+	hud_layer.add_child(results_panel)
 	
 	var res_box = VBoxContainer.new()
 	results_panel.add_child(res_box)
@@ -164,8 +202,8 @@ func _draw_minimap():
 	
 	# Track bounds scaling (center around ~130, 0, -70)
 	var center_x = 130.0
-	var center_z = -70.0
-	var scale_factor = 0.65
+	var center_z = -55.0
+	var scale_factor = 0.44
 	
 	var prev_screen_pt = Vector2.ZERO
 	var first_screen_pt = Vector2.ZERO
