@@ -95,7 +95,9 @@ func _setup_weather_particles() -> void:
 	add_child(weather_particles)
 	
 	# 7. Screenshot command check
-	for arg in OS.get_cmdline_args():
+	var all_args := OS.get_cmdline_args()
+	all_args.append_array(OS.get_cmdline_user_args())
+	for arg in all_args:
 		if arg == "--screenshot-volcano":
 			_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65)
 			_take_world_screenshot("res://build/screenshots/open_world_volcano.png")
@@ -111,6 +113,30 @@ func _setup_weather_particles() -> void:
 		elif arg == "--screenshot-hub" or arg == "--screenshot" or arg == "-screenshot":
 			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
 			_take_world_screenshot("res://build/screenshots/open_world_hub.png")
+		elif arg == "--screenshot-mustang":
+			switch_player_vehicle("iron_charger")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_mustang.png")
+		elif arg == "--screenshot-aventador":
+			switch_player_vehicle("aurelia_gt")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_aventador.png")
+		elif arg == "--screenshot-bmw":
+			switch_player_vehicle("bavarian_evo")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_bmw.png")
+		elif arg == "--screenshot-gtr":
+			switch_player_vehicle("skyline_vspec")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_gtr.png")
+		elif arg == "--screenshot-p1":
+			switch_player_vehicle("vandal_hyper")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_p1.png")
+		elif arg == "--screenshot-porsche":
+			switch_player_vehicle("turbo_930")
+			_teleport_to_biome(Vector3(0.0, 0.0, 15.0), 0.0)
+			_take_world_screenshot("res://build/screenshots/open_world_porsche.png")
 
 func _teleport_to_biome(target_xz: Vector3, yaw_rad: float = 0.0) -> void:
 	var y := terrain_gen.get_height(target_xz.x, target_xz.z) + 0.65
@@ -140,6 +166,38 @@ func _unhandled_input(event: InputEvent) -> void:
 				_teleport_to_biome(Vector3(1100.0, 0.0, -1100.0), PI * 0.65) # Volcano Ridge
 			KEY_5:
 				_teleport_to_biome(Vector3(1200.0, 0.0, 1200.0), PI * 0.25) # Neon Coast
+			KEY_7:
+				switch_player_vehicle("sprinter_r2") # Concept Hypercar
+			KEY_8:
+				switch_player_vehicle("iron_charger") # Ford Mustang GT
+			KEY_9:
+				switch_player_vehicle("aurelia_gt") # Lamborghini Aventador
+			KEY_0:
+				switch_player_vehicle("bavarian_evo") # BMW M4 Competition
+
+func switch_player_vehicle(car_id_to_spawn: String) -> void:
+	if not player_vehicle:
+		return
+	var old_pos := player_vehicle.global_position
+	var old_rot := player_vehicle.global_rotation
+	var old_vel := player_vehicle.linear_velocity
+	var old_ang := player_vehicle.angular_velocity
+	
+	player_vehicle.free()
+	
+	var new_v := VehicleController.new()
+	new_v.name = "PlayerVehicle"
+	new_v.car_id = car_id_to_spawn
+	add_child(new_v)
+	new_v.global_position = old_pos
+	new_v.global_rotation = old_rot
+	new_v.linear_velocity = old_vel
+	new_v.angular_velocity = old_ang
+	player_vehicle = new_v
+	
+	if camera_rig:
+		camera_rig.target_vehicle = new_v
+		camera_rig.snap_to_target()
 
 func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
