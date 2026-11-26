@@ -8,6 +8,28 @@ var macro_noise: FastNoiseLite
 var mountain_noise: FastNoiseLite
 var detail_noise: FastNoiseLite
 var terrain_material: Material
+var road_segments: Array[Dictionary] = []
+var road_spatial_grid: Dictionary = {}
+const ROAD_GRID_CELL: float = 128.0
+
+func set_road_segments(segs: Array[Dictionary]) -> void:
+	road_segments = segs
+	road_spatial_grid.clear()
+	for idx: int in range(segs.size()):
+		var seg: Dictionary = segs[idx]
+		var p0: Vector3 = seg["p0"]
+		var p1: Vector3 = seg["p1"]
+		var min_cx: int = int(floorf((minf(p0.x, p1.x) - 48.0) / ROAD_GRID_CELL))
+		var max_cx: int = int(floorf((maxf(p0.x, p1.x) + 48.0) / ROAD_GRID_CELL))
+		var min_cz: int = int(floorf((minf(p0.z, p1.z) - 48.0) / ROAD_GRID_CELL))
+		var max_cz: int = int(floorf((maxf(p0.z, p1.z) + 48.0) / ROAD_GRID_CELL))
+		for cz: int in range(min_cz, max_cz + 1):
+			for cx: int in range(min_cx, max_cx + 1):
+				var k := Vector2i(cx, cz)
+				if not road_spatial_grid.has(k):
+					var bucket: Array[int] = []
+					road_spatial_grid[k] = bucket
+				(road_spatial_grid[k] as Array[int]).append(idx)
 
 func _init(seed_val: int = 1337) -> void:
 	macro_noise = FastNoiseLite.new()
@@ -104,11 +126,15 @@ func get_height(x: float, z: float) -> float:
 	var volcano_crater: float = clamp(1.0 - (dist_volcano / 160.0), 0.0, 1.0)
 	var h_ne: float = 55.0 + (n_macro * 40.0) + (volcano_cone * 75.0) - (volcano_crater * 38.0) + (ridge * 35.0)
 	
-	# SW: Dust Bowl (Rolling desert dunes & canyon washes)
-	var h_sw: float = 18.0 + (n_macro * 20.0) + (n_mount * 10.0)
+	# SW: Dust Bowl (Rolling desert dunes, red mesas & canyon washes)
+	var mesa: float = clampf((absf(n_macro) - 0.15) * 2.8, 0.0, 1.0)
+	var h_sw: float = 18.0 + (n_macro * 22.0) + (n_mount * 12.0) + (mesa * 16.0)
 	
-	# SE: Neon Coast (Low coastal basin & docklands, sloping to ocean shore)
-	var h_se: float = 3.5 + (n_macro * 8.0) + (n_mount * 4.0)
+	# SE: Neon Coast (Promenade ridge ~50m inland from sweeping sandy turquoise ocean shoreline)
+	var coast_curve_x: float = 2160.0 - 0.00014 * (z - 200.0) * (z - 200.0)
+	var shore_x: float = coast_curve_x + 48.0 + sin(z * 0.004) * 18.0
+	var bay_drop: float = clampf((x - shore_x) / 145.0, 0.0, 1.0)
+	var h_se: float = lerp(6.8 + (n_macro * 4.5) + (n_mount * 2.0), -2.8, bay_drop)
 	
 	# Bilinear blend across all four quadrants
 	var north_h: float = lerp(h_nw, h_ne, weight_east)
@@ -120,9 +146,46 @@ func get_height(x: float, z: float) -> float:
 	if dist < 450.0:
 		var hub_factor: float = clamp((dist - 140.0) / 310.0, 0.0, 1.0)
 		hub_factor = hub_factor * hub_factor * (3.0 - 2.0 * hub_factor)
-		return max(1.5, lerp(hub_h, regional_h, hub_factor))
+		return max(-3.0, lerp(hub_h, regional_h, hub_factor))
 		
-	return max(1.5, regional_h)
+	return max(-3.0, regional_h)
+
+func get_mesh_height(x: float, z: float) -> float:
+	var h: float = get_height(x, z)
+	if road_spatial_grid.is_empty():
+		return h
+	var k := Vector2i(int(floorf(x / ROAD_GRID_CELL)), int(floorf(z / ROAD_GRID_CELL)))
+	if not road_spatial_grid.has(k):
+		return h
+	var p2 := Vector2(x, z)
+	var best_w: float = 0.0
+	var carved_y: float = h
+	var indices: Array[int] = road_spatial_grid[k]
+	for idx: int in indices:
+		var seg: Dictionary = road_segments[idx]
+		var a3: Vector3 = seg["p0"]
+		var b3: Vector3 = seg["p1"]
+		var a := Vector2(a3.x, a3.z)
+		var b := Vector2(b3.x, b3.z)
+		var ab: Vector2 = b - a
+		var len_sq: float = ab.length_squared()
+		var t: float = clampf((p2 - a).dot(ab) / len_sq, 0.0, 1.0) if len_sq > 0.0001 else 0.0
+		var d: float = p2.distance_to(a + ab * t)
+		var rw: float = float(seg["half_w"])
+		var inner_r: float = rw + 2.5
+		var outer_r: float = rw + 28.0
+		if d < outer_r:
+			var w: float = 1.0 - clampf((d - inner_r) / (outer_r - inner_r), 0.0, 1.0)
+			w = w * w * (3.0 - 2.0 * w)
+			var road_bed: float = lerpf(a3.y, b3.y, t) - 0.30
+			if w > best_w:
+				best_w = w
+				carved_y = road_bed
+			elif w > 0.80:
+				carved_y = minf(carved_y, road_bed)
+	if best_w > 0.001:
+		return lerpf(h, minf(h, carved_y), best_w)
+	return h
 
 func get_normal(x: float, z: float, step: float = 1.0) -> Vector3:
 	var hL := get_height(x - step, z)
@@ -132,53 +195,64 @@ func get_normal(x: float, z: float, step: float = 1.0) -> Vector3:
 	var normal := Vector3(hL - hR, 2.0 * step, hD - hU).normalized()
 	return normal
 
-func generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 32) -> MeshInstance3D:
+func generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 44, build_collider: bool = true) -> MeshInstance3D:
 	var chunk_size := OpenWorldConfig.CHUNK_SIZE
 	var origin_x := (chunk_x * chunk_size) - OpenWorldConfig.HALF_SIZE
 	var origin_z := (chunk_z * chunk_size) - OpenWorldConfig.HALF_SIZE
 	var step_size := chunk_size / float(resolution)
-	
+
+	# Precompute smooth grid vertices & analytical smoothed normals (eliminates flat faceted seams)
+	var verts_count: int = resolution + 1
+	var grid_pos := PackedVector3Array()
+	var grid_col := PackedColorArray()
+	var grid_norm := PackedVector3Array()
+	grid_pos.resize(verts_count * verts_count)
+	grid_col.resize(verts_count * verts_count)
+	grid_norm.resize(verts_count * verts_count)
+
+	for gz: int in range(verts_count):
+		for gx: int in range(verts_count):
+			var idx: int = gz * verts_count + gx
+			var vx: float = origin_x + (gx * step_size)
+			var vz: float = origin_z + (gz * step_size)
+			var vy: float = get_mesh_height(vx, vz)
+			grid_pos[idx] = Vector3(vx, vy, vz)
+			grid_col[idx] = _get_vertex_color(vx, vy, vz)
+			var hl: float = get_mesh_height(vx - 3.0, vz)
+			var hr: float = get_mesh_height(vx + 3.0, vz)
+			var hd: float = get_mesh_height(vx, vz - 3.0)
+			var hu: float = get_mesh_height(vx, vz + 3.0)
+			grid_norm[idx] = Vector3(hl - hr, 6.0, hd - hu).normalized()
+
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	
-	for gz in range(resolution):
-		for gx in range(resolution):
-			var x0 := origin_x + (gx * step_size)
-			var z0 := origin_z + (gz * step_size)
-			var x1 := x0 + step_size
-			var z1 := z0 + step_size
-			
-			var y00 := get_height(x0, z0)
-			var y10 := get_height(x1, z0)
-			var y01 := get_height(x0, z1)
-			var y11 := get_height(x1, z1)
-			
-			var p00 := Vector3(x0, y00, z0)
-			var p10 := Vector3(x1, y10, z0)
-			var p01 := Vector3(x0, y01, z1)
-			var p11 := Vector3(x1, y11, z1)
-			
-			var c00 := _get_vertex_color(x0, y00, z0)
-			var c10 := _get_vertex_color(x1, y10, z0)
-			var c01 := _get_vertex_color(x0, y01, z1)
-			var c11 := _get_vertex_color(x1, y11, z1)
-			
-			var uv00 := Vector2(x0 * 0.05, z0 * 0.05)
-			var uv10 := Vector2(x1 * 0.05, z0 * 0.05)
-			var uv01 := Vector2(x0 * 0.05, z1 * 0.05)
-			var uv11 := Vector2(x1 * 0.05, z1 * 0.05)
-			
-			# Triangle 1
-			st.set_color(c00); st.set_uv(uv00); st.add_vertex(p00)
-			st.set_color(c10); st.set_uv(uv10); st.add_vertex(p10)
-			st.set_color(c01); st.set_uv(uv01); st.add_vertex(p01)
-			
-			# Triangle 2
-			st.set_color(c10); st.set_uv(uv10); st.add_vertex(p10)
-			st.set_color(c11); st.set_uv(uv11); st.add_vertex(p11)
-			st.set_color(c01); st.set_uv(uv01); st.add_vertex(p01)
-			
-	st.generate_normals()
+
+	for gz: int in range(resolution):
+		for gx: int in range(resolution):
+			var i00: int = gz * verts_count + gx
+			var i10: int = i00 + 1
+			var i01: int = (gz + 1) * verts_count + gx
+			var i11: int = i01 + 1
+
+			var p00: Vector3 = grid_pos[i00]
+			var p10: Vector3 = grid_pos[i10]
+			var p01: Vector3 = grid_pos[i01]
+			var p11: Vector3 = grid_pos[i11]
+
+			var uv00 := Vector2(p00.x * 0.05, p00.z * 0.05)
+			var uv10 := Vector2(p10.x * 0.05, p10.z * 0.05)
+			var uv01 := Vector2(p01.x * 0.05, p01.z * 0.05)
+			var uv11 := Vector2(p11.x * 0.05, p11.z * 0.05)
+
+			st.set_normal(grid_norm[i00]); st.set_color(grid_col[i00]); st.set_uv(uv00); st.add_vertex(p00)
+			st.set_normal(grid_norm[i10]); st.set_color(grid_col[i10]); st.set_uv(uv10); st.add_vertex(p10)
+			st.set_normal(grid_norm[i01]); st.set_color(grid_col[i01]); st.set_uv(uv01); st.add_vertex(p01)
+
+			st.set_normal(grid_norm[i10]); st.set_color(grid_col[i10]); st.set_uv(uv10); st.add_vertex(p10)
+			st.set_normal(grid_norm[i11]); st.set_color(grid_col[i11]); st.set_uv(uv11); st.add_vertex(p11)
+			st.set_normal(grid_norm[i01]); st.set_color(grid_col[i01]); st.set_uv(uv01); st.add_vertex(p01)
+
+	st.index()
 	st.generate_tangents()
 	
 	var mesh := st.commit()
@@ -187,12 +261,13 @@ func generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 32) -> Me
 	mesh_inst.name = "Chunk_%d_%d" % [chunk_x, chunk_z]
 	mesh_inst.material_override = terrain_material
 	
-	# Add StaticBody3D collision shape for driving
-	var static_body := StaticBody3D.new()
-	var col_shape := CollisionShape3D.new()
-	col_shape.shape = mesh.create_trimesh_shape()
-	static_body.add_child(col_shape)
-	mesh_inst.add_child(static_body)
+	# Add StaticBody3D collision shape only for high-LOD drivable chunks
+	if build_collider:
+		var static_body := StaticBody3D.new()
+		var col_shape := CollisionShape3D.new()
+		col_shape.shape = mesh.create_trimesh_shape()
+		static_body.add_child(col_shape)
+		mesh_inst.add_child(static_body)
 	
 	return mesh_inst
 
