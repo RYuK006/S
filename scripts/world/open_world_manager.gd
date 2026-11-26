@@ -21,7 +21,7 @@ var scenery_populator: SceneryPopulator
 var active_chunks: Dictionary = {} # Vector2i(chunk_x, chunk_z) -> {"node": MeshInstance3D, "hi": bool}
 var current_player_chunk: Vector2i = Vector2i(999, 999)
 const LOAD_RADIUS: int = 2 # High-res colliding 5x5 chunks around player
-const LOAD_RADIUS_FAR: int = 6 # Outer lightweight visual horizon 13x13 chunks (eliminates floating horizon roads)
+const LOAD_RADIUS_FAR: int = 7 # Full 15x15 horizon chunks reaching map bounds cleanly
 
 # Open World UI
 var open_world_hud: CanvasLayer
@@ -83,13 +83,23 @@ func _setup_weather_particles() -> void:
 	mat.scale_max = 0.12
 	weather_particles.process_material = mat
 	
+	var p_img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	for py: int in range(32):
+		for px: int in range(32):
+			var d: float = Vector2(float(px) - 15.5, float(py) - 15.5).length() / 15.5
+			var a: float = clampf(1.0 - smoothstep(0.15, 0.98, d), 0.0, 1.0)
+			p_img.set_pixel(px, py, Color(1.0, 1.0, 1.0, a * a))
+	var p_tex := ImageTexture.create_from_image(p_img)
+
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.12, 0.12)
+	quad.size = Vector2(0.16, 0.16)
 	var p_mat := StandardMaterial3D.new()
-	p_mat.albedo_color = Color(0.95, 0.98, 1.0, 0.75)
+	p_mat.albedo_color = Color(0.95, 0.98, 1.0, 0.82)
+	p_mat.albedo_texture = p_tex
 	p_mat.vertex_color_use_as_albedo = true
 	p_mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	p_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	p_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	quad.material = p_mat
 	weather_particles.draw_pass_1 = quad
 	
@@ -214,11 +224,11 @@ func _build_coastal_ocean() -> void:
 	var ocean := MeshInstance3D.new()
 	ocean.name = "CoastalOceanWater"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(3600.0, 5600.0)
-	plane.subdivide_width = 160
-	plane.subdivide_depth = 200
+	plane.size = Vector2(3600.0, 6400.0)
+	plane.subdivide_width = 180
+	plane.subdivide_depth = 240
 	ocean.mesh = plane
-	ocean.position = Vector3(3650.0, 1.2, 1200.0)
+	ocean.position = Vector3(3650.0, 0.85, 1100.0)
 	
 	var water_shader := load("res://shaders/ocean_water.gdshader") as Shader
 	if water_shader:
@@ -290,7 +300,7 @@ func _update_chunks_around(pos: Vector3) -> void:
 						(info["node"] as Node).queue_free()
 						needs_rebuild = true
 				if needs_rebuild:
-					var res: int = 44 if is_hi else 10
+					var res: int = 56 if is_hi else 14
 					var chunk_mesh := terrain_gen.generate_chunk_mesh(cx, cz, res, is_hi)
 					add_child(chunk_mesh)
 					active_chunks[key] = {"node": chunk_mesh, "hi": is_hi}
