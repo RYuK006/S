@@ -27,25 +27,25 @@ Write-Host "Found $($files.Count) items to commit one-by-one..."
 $count = 0
 foreach ($f in $files) {
     $count++
-    $msg = "Update $f to Forza Horizon 5 visual fidelity"
+    $msg = "Upgrade Forward+ 6GB VRAM, AgX pipeline, LODs & scenes: $f"
     if ($f.EndsWith(".gdshader")) {
-        $msg = "Add PBR highway asphalt shader: $f"
+        $msg = "Update PBR highway/terrain shader: $f"
+    } elseif ($f.Contains("visual_pipeline")) {
+        $msg = "Add shared Forward+ AgX, LightmapGI, occluder & prewarm pipeline: $f"
+    } elseif ($f.Contains("optimize_vram_imports")) {
+        $msg = "Add BPTC/BC1/LOD asset import optimizer tool: $f"
+    } elseif ($f.Contains("prop_mesh_utils") -or $f.Contains("scenery_populator")) {
+        $msg = "Add ImporterMesh LOD decimation & spatial HLOD grid culling: $f"
     } elseif ($f.Contains("car_model_loader")) {
-        $msg = "Calibrate true 1:1 scale and PBR materials for car models: $f"
-    } elseif ($f.Contains("scenery_populator")) {
-        $msg = "Integrate 3D scanned photogrammetry rocks and props: $f"
-    } elseif ($f.Contains("road_network")) {
-        $msg = "Generate PBR highway road geometry with worn tire tracks: $f"
-    } elseif ($f.Contains("open_world")) {
-        $msg = "Upgrade open world environment with AgX tonemapper and 2K sunny sky: $f"
-    } elseif ($f.Contains("syferfontein")) {
-        $msg = "Add Poly Haven 2K clear sunny sky HDRI: $f"
-    } elseif ($f.Contains("cliff_rock")) {
-        $msg = "Add 3D photogrammetric scanned boulder rock field: $f"
-    } elseif ($f.Contains("audit")) {
-        $msg = "Add high-resolution Forward+ Vulkan GPU audit screenshot: $f"
-    } elseif ($f.Contains("tools")) {
-        $msg = "Add visual fidelity inspection and audit script: $f"
+        $msg = "Use imported LOD/BPTC cars & one-shot biome reflection probes: $f"
+    } elseif ($f.Contains("garage")) {
+        $msg = "Upgrade Garage Autoshow studio lighting, orbit camera & GLB models: $f"
+    } elseif ($f.Contains("track_test") -or $f.Contains("spline_track") -or $f.Contains("race_")) {
+        $msg = "Upgrade Rust Gate Circuit visuals, HUD anchoring & start countdown: $f"
+    } elseif ($f.Contains("debug_overlay")) {
+        $msg = "Add live F3 VRAM, draw-call, DRS & physics telemetry: $f"
+    } elseif ($f.Contains("audit") -or $f.Contains("m1_boot")) {
+        $msg = "Update Forward+ Vulkan visual verification screenshot: $f"
     }
     
     git add $f
