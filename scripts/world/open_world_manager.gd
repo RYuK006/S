@@ -9,6 +9,7 @@ const SceneryPopulator = preload("res://scripts/world/scenery_populator.gd")
 const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 const CameraRig = preload("res://scripts/vehicle/camera_rig.gd")
 const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
+const HorizonCompositorEffect = preload("res://scripts/core/horizon_compositor_effect.gd")
 const DebugOverlay = preload("res://scripts/ui/debug_overlay.gd")
 
 @export var player_vehicle: VehicleController
@@ -38,6 +39,7 @@ var pause_panel: PanelContainer
 var last_reported_biome: int = -1
 
 var weather_particles: GPUParticles3D
+var compositor_fx: HorizonCompositorEffect
 
 func _ready() -> void:
 	terrain_gen = TerrainGenerator.new(2026)
@@ -73,9 +75,11 @@ func _ready() -> void:
 	# 5. Initial chunk generation around spawn
 	_update_chunks_around(Vector3.ZERO)
 	
-	# 6. Build Open World HUD, Weather, and Startup Shader Pre-Warming
+	# 6. Build Open World HUD, Weather, CompositorEffect, and Startup Shader Pre-Warming
 	_build_open_world_hud()
 	_setup_weather_particles()
+	if world_environment:
+		compositor_fx = VisualPipeline.attach_horizon_compositor(world_environment, 0.14, 0.12)
 	var prewarm_mats: Array[Material] = []
 	VisualPipeline.collect_materials_from_node(self, prewarm_mats)
 	if camera_rig and camera_rig.camera:
@@ -285,6 +289,8 @@ func _physics_process(_delta: float) -> void:
 		_update_chunks_around(pos)
 		
 	_update_hud(pos)
+	if compositor_fx:
+		compositor_fx.set_speed_norm(player_vehicle.speed_kmh / 260.0)
 	
 	if weather_particles:
 		weather_particles.global_position = pos + Vector3(0.0, 8.0, 0.0)
