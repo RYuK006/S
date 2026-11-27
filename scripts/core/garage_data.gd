@@ -124,8 +124,51 @@ static func calculate_upgrade_cost(base_price: int, category: String, tier: int)
 	var effective_base: float = float(max(base_price, 12000))
 	return int(round(effective_base * base_fac * mult * 10.0))
 
+static func get_all_showroom_recipes() -> Dictionary:
+	var all_recipes: Dictionary = CAR_RECIPES.duplicate(true)
+	if not FileAccess.file_exists("res://data/vehicles.json"):
+		return all_recipes
+	var f := FileAccess.open("res://data/vehicles.json", FileAccess.READ)
+	if not f:
+		return all_recipes
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return all_recipes
+	var list: Array = parsed.get("vehicles", [])
+	for v_var: Variant in list:
+		if not (v_var is Dictionary):
+			continue
+		var v: Dictionary = v_var
+		var cid: String = str(v.get("id", ""))
+		if cid.is_empty() or all_recipes.has(cid):
+			continue
+		var pw_kw: float = roundf(float(v.get("engine_power_hp", 350.0)) * 0.7457)
+		var ms: float = float(v.get("mass", 1400.0))
+		var top_sp: float = roundf(clampf(180.0 + pw_kw * 0.28, 170.0, 405.0))
+		var arch: String = str(v.get("class_archetype", "Super"))
+		all_recipes[cid] = {
+			"id": cid,
+			"name": str(v.get("name", cid)),
+			"class": arch,
+			"mass": ms,
+			"power_kw": pw_kw,
+			"top_speed": top_sp,
+			"accel_0_100": clampf(ms / maxf(pw_kw, 80.0) * 1.15, 2.2, 8.5),
+			"health": float(v.get("health", 800.0)),
+			"price": int(roundf(pw_kw * 420.0)),
+			"level_req": 1,
+			"drivetrain": "AWD",
+			"slots": ["primary", "roof", "passive"],
+			"perk": "Autoshow Spec",
+			"perk_desc": "Unlocked FH5-grade exotic machine.",
+			"model_path": str(v.get("model_path", ""))
+		}
+	return all_recipes
+
 static func compute_car_stats(car_id: String, upgrades: Dictionary) -> Dictionary:
-	var base_recipe = CAR_RECIPES.get(car_id, CAR_RECIPES["sprinter_r2"])
+	var all_recipes: Dictionary = get_all_showroom_recipes()
+	var base_recipe: Dictionary = all_recipes.get(car_id, CAR_RECIPES["sprinter_r2"])
 	var mass: float = base_recipe["mass"]
 	var power: float = base_recipe["power_kw"]
 	var top_speed: float = base_recipe["top_speed"]
