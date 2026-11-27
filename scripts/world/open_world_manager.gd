@@ -6,6 +6,7 @@ const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
 const TerrainGenerator = preload("res://scripts/world/terrain_generator.gd")
 const RoadNetwork = preload("res://scripts/world/road_network.gd")
 const SceneryPopulator = preload("res://scripts/world/scenery_populator.gd")
+const DestructiblePropManager = preload("res://scripts/world/destructible_prop_manager.gd")
 const VehicleController = preload("res://scripts/vehicle/vehicle_controller.gd")
 const CameraRig = preload("res://scripts/vehicle/camera_rig.gd")
 const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
@@ -20,6 +21,7 @@ const DebugOverlay = preload("res://scripts/ui/debug_overlay.gd")
 var terrain_gen: TerrainGenerator
 var road_network: RoadNetwork
 var scenery_populator: SceneryPopulator
+var destruct_manager: DestructiblePropManager
 
 var active_chunks: Dictionary = {} # Vector2i(chunk_x, chunk_z) -> {"node": MeshInstance3D, "hi": bool}
 var current_player_chunk: Vector2i = Vector2i(999, 999)
@@ -49,8 +51,11 @@ func _ready() -> void:
 	add_child(road_network)
 	road_network.build_open_world_roads()
 	
-	# 2. Populate World Scenery with MultiMesh Instances
-	scenery_populator = SceneryPopulator.new(terrain_gen, road_network)
+	# 2. Populate World Scenery & Heterogeneous Physics Destruction Pool
+	destruct_manager = DestructiblePropManager.new()
+	destruct_manager.name = "DestructiblePropManager"
+	add_child(destruct_manager)
+	scenery_populator = SceneryPopulator.new(terrain_gen, road_network, destruct_manager)
 	add_child(scenery_populator)
 	scenery_populator.populate_world_scenery()
 	
@@ -214,6 +219,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_teleport_to_road("Volcano Ridge", 0.52)
 			KEY_5:
 				_teleport_to_road("Neon Coastline", 0.25)
+			KEY_6:
+				_cycle_fleet_vehicle(1)
 			KEY_7:
 				switch_player_vehicle("sprinter_r2") # Concept Hypercar
 			KEY_8:
@@ -222,6 +229,27 @@ func _unhandled_input(event: InputEvent) -> void:
 				switch_player_vehicle("aurelia_gt") # Lamborghini Aventador
 			KEY_0:
 				switch_player_vehicle("bavarian_evo") # BMW M4 Competition
+
+func _cycle_fleet_vehicle(step: int) -> void:
+	var f := FileAccess.open("res://data/vehicles.json", FileAccess.READ)
+	if not f:
+		return
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return
+	var list: Array = parsed.get("vehicles", [])
+	if list.is_empty():
+		return
+	var cur_id: String = player_vehicle.car_id if player_vehicle else ""
+	var cur_i: int = 0
+	for i: int in range(list.size()):
+		if str((list[i] as Dictionary).get("id", "")) == cur_id:
+			cur_i = i
+			break
+	var next_i: int = posmod(cur_i + step, list.size())
+	var next_id: String = str((list[next_i] as Dictionary).get("id", "sprinter_r2"))
+	switch_player_vehicle(next_id)
 
 func switch_player_vehicle(car_id_to_spawn: String) -> void:
 	if not player_vehicle:
@@ -275,9 +303,11 @@ func _build_coastal_ocean() -> void:
 		ocean.material_override = water_mat
 	add_child(ocean)
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not player_vehicle:
 		return
+	if destruct_manager:
+		destruct_manager.step_physics(player_vehicle, delta)
 		
 	var pos := player_vehicle.global_position
 	var p_chunk_x := int(floor((pos.x + OpenWorldConfig.HALF_SIZE) / OpenWorldConfig.CHUNK_SIZE))
@@ -382,7 +412,7 @@ func _build_open_world_hud() -> void:
 	vbox.add_child(label_coords)
 	
 	var label_hint := Label.new()
-	label_hint.text = "[1-5] Fast Travel | [7-0] Swap Car | [F3] VRAM/Perf | [Esc] Menu"
+	label_hint.text = "[1-5] Fast Travel | [6] Next Car | [7-0] Presets | [F3] Perf | [Esc] Menu"
 	label_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label_hint.add_theme_font_size_override("font_size", 11)
 	label_hint.add_theme_color_override("font_color", Color(0.65, 0.75, 0.86))
