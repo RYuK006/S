@@ -8,6 +8,8 @@ var terrain_gen: TerrainGenerator
 var road_nodes: Array[Node3D] = []
 var highway_waypoints: Array[Vector3] = []
 var all_road_segments: Array[Dictionary] = []
+var road_seg_grid: Dictionary = {} # Vector2i -> Array[int] into all_road_segments
+const CLEAR_GRID_CELL: float = 128.0
 var scenic_rail_paths: Array[Array] = []
 var road_centerlines: Dictionary = {}
 
@@ -16,6 +18,35 @@ func _init(tg: TerrainGenerator = null) -> void:
 		terrain_gen = tg
 	else:
 		terrain_gen = TerrainGenerator.new()
+
+func is_point_clear_of_roads(x: float, z: float, obj_radius: float = 11.5, ignore_road_name: String = "") -> bool:
+	if road_seg_grid.is_empty():
+		return true
+	var p2 := Vector2(x, z)
+	var cx: int = int(floorf(x / CLEAR_GRID_CELL))
+	var cz: int = int(floorf(z / CLEAR_GRID_CELL))
+	var cell_r: int = int(ceilf((obj_radius + 20.0) / CLEAR_GRID_CELL))
+	for gz: int in range(cz - cell_r, cz + cell_r + 1):
+		for gx: int in range(cx - cell_r, cx + cell_r + 1):
+			var k := Vector2i(gx, gz)
+			if not road_seg_grid.has(k):
+				continue
+			var idxs: Array[int] = road_seg_grid[k]
+			for idx: int in idxs:
+				var seg: Dictionary = all_road_segments[idx]
+				if not ignore_road_name.is_empty() and str(seg.get("road", "")) == ignore_road_name:
+					continue
+				var a3: Vector3 = seg["p0"]
+				var b3: Vector3 = seg["p1"]
+				var a := Vector2(a3.x, a3.z)
+				var b := Vector2(b3.x, b3.z)
+				var ab: Vector2 = b - a
+				var lsq: float = ab.length_squared()
+				var t: float = clampf((p2 - a).dot(ab) / lsq, 0.0, 1.0) if lsq > 0.0001 else 0.0
+				var d: float = p2.distance_to(a + ab * t)
+				if d < float(seg["half_w"]) + obj_radius:
+					return false
+	return true
 
 func get_road_pose(road_name_substr: String, t_norm: float) -> Dictionary:
 	for k: String in road_centerlines.keys():
@@ -31,20 +62,89 @@ func get_road_pose(road_name_substr: String, t_norm: float) -> Dictionary:
 	return {"pos": Vector3(0.0, terrain_gen.get_height(0.0, 15.0), 15.0), "yaw": 0.0}
 
 func build_open_world_roads() -> void:
-	_build_perimeter_highway()
-	_build_trans_expressway()
-	_build_meridian_boulevard()
-	_build_volcano_highway()
-	_build_desert_canyon_highway()
-	_build_coastal_promenade()
-	_build_desert_alpine_pass()
-	_build_mountain_hillclimb()
-	_build_festival_starting_grid()
+	if not _build_roads_from_json("res://data/real_world_roads.json"):
+		_build_perimeter_highway()
+		_build_trans_expressway()
+		_build_meridian_boulevard()
+		_build_volcano_highway()
+		_build_desert_canyon_highway()
+		_build_coastal_promenade()
+		_build_desert_alpine_pass()
+		_build_mountain_hillclimb()
+		_build_festival_starting_grid()
 
+	_rebuild_road_spatial_grid()
 	if terrain_gen:
 		terrain_gen.set_road_segments(all_road_segments)
 
 	_build_highway_guardrails()
+
+func _build_roads_from_json(json_path: String) -> bool:
+	if not FileAccess.file_exists(json_path):
+		return false
+	var f := FileAccess.open(json_path, FileAccess.READ)
+	if not f:
+		return false
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return false
+	var d: Dictionary = parsed
+	var roads_arr: Array = d.get("roads", [])
+	if roads_arr.is_empty():
+		return false
+
+	for r_item: Variant in roads_arr:
+		if not (r_item is Dictionary):
+			continue
+		var r_dict: Dictionary = r_item
+		var raw_pts: Array = r_dict.get("points", [])
+		if raw_pts.size() < 2:
+			continue
+		var r_name: String = str(r_dict.get("name", "Road"))
+		var kind_str: String = str(r_dict.get("kind", "arterial"))
+		var surf_str: String = str(r_dict.get("surface", "asphalt_dry"))
+		var road_w: float = float(r_dict.get("width", 11.0))
+		var closed: bool = bool(r_dict.get("closed", false))
+		var has_rails: bool = bool(r_dict.get("guardrails", false))
+		var elev_off: float = float(r_dict.get("elev_offset", 0.22))
+
+		var pts3: Array[Vector3] = _subdivide_polyline_max_len(raw_pts, closed, elev_off, 10.5)
+		var smooth_pts: Array[Vector3] = _smooth_road_heights(pts3, closed, elev_off)
+		road_centerlines[r_name] = smooth_pts
+		if r_name == "Grand Perimeter Highway":
+			highway_waypoints = smooth_pts
+		if has_rails and smooth_pts.size() > 16:
+			scenic_rail_paths.append([smooth_pts.slice(4, smooth_pts.size() - 4), road_w * 0.5, r_name])
+
+		var s_mode: int = 2 if surf_str == "gravel" else (1 if kind_str == "town_street" else 0)
+		var road_mesh: MeshInstance3D = _generate_ribbon_mesh(smooth_pts, road_w, closed, r_name, elev_off, s_mode, surf_str)
+		add_child(road_mesh)
+		road_nodes.append(road_mesh)
+
+	if highway_waypoints.is_empty() and not road_centerlines.is_empty():
+		var first_key: String = str(road_centerlines.keys()[0])
+		highway_waypoints = road_centerlines[first_key]
+	return road_nodes.size() >= 6
+
+func _rebuild_road_spatial_grid() -> void:
+	road_seg_grid.clear()
+	for idx: int in range(all_road_segments.size()):
+		var seg: Dictionary = all_road_segments[idx]
+		var p0: Vector3 = seg["p0"]
+		var p1: Vector3 = seg["p1"]
+		var pad: float = float(seg.get("half_w", 6.0)) + 28.0
+		var min_cx: int = int(floorf((minf(p0.x, p1.x) - pad) / CLEAR_GRID_CELL))
+		var max_cx: int = int(floorf((maxf(p0.x, p1.x) + pad) / CLEAR_GRID_CELL))
+		var min_cz: int = int(floorf((minf(p0.z, p1.z) - pad) / CLEAR_GRID_CELL))
+		var max_cz: int = int(floorf((maxf(p0.z, p1.z) + pad) / CLEAR_GRID_CELL))
+		for cz: int in range(min_cz, max_cz + 1):
+			for cx: int in range(min_cx, max_cx + 1):
+				var k := Vector2i(cx, cz)
+				if not road_seg_grid.has(k):
+					var b: Array[int] = []
+					road_seg_grid[k] = b
+				(road_seg_grid[k] as Array[int]).append(idx)
 
 func _build_festival_starting_grid() -> void:
 	var pts: Array[Vector3] = []
@@ -61,25 +161,25 @@ func _build_highway_guardrails() -> void:
 		return
 
 	var steel_mat := StandardMaterial3D.new()
-	steel_mat.albedo_color = Color(0.56, 0.59, 0.64)
-	steel_mat.metallic = 0.88
-	steel_mat.roughness = 0.28
+	steel_mat.albedo_color = Color(0.32, 0.34, 0.37)
+	steel_mat.metallic = 0.58
+	steel_mat.roughness = 0.46
 	steel_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	var post_mat := StandardMaterial3D.new()
-	post_mat.albedo_color = Color(0.30, 0.32, 0.36)
-	post_mat.metallic = 0.80
-	post_mat.roughness = 0.42
+	post_mat.albedo_color = Color(0.24, 0.25, 0.28)
+	post_mat.metallic = 0.55
+	post_mat.roughness = 0.55
 
 	var refl_mat := StandardMaterial3D.new()
 	refl_mat.albedo_color = Color(1.0, 0.58, 0.06)
 	refl_mat.emission_enabled = true
 	refl_mat.emission = Color(1.0, 0.52, 0.05)
-	refl_mat.emission_energy_multiplier = 1.6
+	refl_mat.emission_energy_multiplier = 1.4
 
 	# 3D Corrugated Armco W-Beam profile: (roadward offset, height above road bed)
-	var prof_out: PackedFloat32Array = PackedFloat32Array([0.04, -0.07, 0.03, -0.07, 0.04, 0.07, 0.07])
-	var prof_y: PackedFloat32Array = PackedFloat32Array([0.42, 0.50, 0.59, 0.68, 0.77, 0.77, 0.42])
+	var prof_out: PackedFloat32Array = PackedFloat32Array([0.04, -0.06, 0.03, -0.06, 0.04, 0.06, 0.06])
+	var prof_y: PackedFloat32Array = PackedFloat32Array([0.32, 0.40, 0.48, 0.56, 0.64, 0.64, 0.32])
 
 	var rail_st := SurfaceTool.new()
 	rail_st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -89,6 +189,7 @@ func _build_highway_guardrails() -> void:
 	for path_arr: Array in scenic_rail_paths:
 		var pts: Array[Vector3] = path_arr[0]
 		var half_w: float = float(path_arr[1])
+		var r_name: String = str(path_arr[2]) if path_arr.size() > 2 else ""
 		if pts.size() < 2:
 			continue
 		for side: float in [-1.0, 1.0]:
@@ -106,9 +207,14 @@ func _build_highway_guardrails() -> void:
 				if i + 2 < pts.size():
 					fwd1 = (pts[i + 2] - p1).normalized()
 				var right1: Vector3 = fwd1.cross(Vector3.UP).normalized()
+				if fwd0.dot(fwd1) < 0.80:
+					continue
 
 				var r0: Vector3 = p0 + right0 * rail_offset
 				var r1: Vector3 = p1 + right1 * rail_offset
+				var mid_r: Vector3 = r0.lerp(r1, 0.5)
+				if not is_point_clear_of_roads(mid_r.x, mid_r.z, 2.5, r_name):
+					continue
 				var inward0: Vector3 = right0 * (-side)
 				var inward1: Vector3 = right1 * (-side)
 
@@ -295,7 +401,7 @@ func _smooth_road_heights(pts: Array[Vector3], is_closed: bool, elev_offset: flo
 		out[i] = p
 	return out
 
-func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed: bool, road_name: String, elev_offset: float = 0.20) -> MeshInstance3D:
+func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed: bool, road_name: String, elev_offset: float = 0.20, surface_mode: int = 0, surface_meta: String = "asphalt_dry") -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var n_pts: int = points.size()
@@ -309,7 +415,7 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 		var seg_len: float = curr_p.distance_to(next_p)
 		if seg_len < 0.01:
 			continue
-		all_road_segments.append({"p0": curr_p, "p1": next_p, "half_w": half_w, "offset": elev_offset})
+		all_road_segments.append({"p0": curr_p, "p1": next_p, "half_w": half_w, "offset": elev_offset, "road": road_name, "surface": surface_meta})
 		var fwd: Vector3 = (next_p - curr_p).normalized()
 		var right: Vector3 = fwd.cross(Vector3.UP).normalized()
 
@@ -400,6 +506,7 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 		if gd: s_mat.set_shader_parameter("texture_gravel_diff", gd)
 		if gn: s_mat.set_shader_parameter("texture_gravel_nor", gn)
 		if gr: s_mat.set_shader_parameter("texture_gravel_rough", gr)
+		s_mat.set_shader_parameter("road_surface_mode", surface_mode)
 		inst.material_override = s_mat
 	else:
 		var mat := StandardMaterial3D.new()
@@ -409,12 +516,39 @@ func _generate_ribbon_mesh(points: Array[Vector3], road_width: float, is_closed:
 		inst.material_override = mat
 
 	var body := StaticBody3D.new()
-	body.set_meta("surface", "asphalt_dry")
+	body.set_meta("surface", surface_meta)
 	var col := CollisionShape3D.new()
 	col.shape = mesh.create_trimesh_shape()
 	body.add_child(col)
 	inst.add_child(body)
 	return inst
+
+func _subdivide_polyline_max_len(raw_pts: Array, is_closed: bool, elev_offset: float, max_seg_m: float) -> Array[Vector3]:
+	var n: int = raw_pts.size()
+	var out: Array[Vector3] = []
+	var seg_count: int = n if is_closed else n - 1
+	for i: int in range(seg_count):
+		var p1a: Array = raw_pts[i]
+		var p2a: Array = raw_pts[(i + 1) % n]
+		var p0a: Array = raw_pts[(i - 1 + n) % n] if is_closed else raw_pts[maxi(0, i - 1)]
+		var p3a: Array = raw_pts[(i + 2) % n] if is_closed else raw_pts[mini(n - 1, i + 2)]
+		var v1 := Vector3(float(p1a[0]), 0.0, float(p1a[1]))
+		var v2 := Vector3(float(p2a[0]), 0.0, float(p2a[1]))
+		var v0 := Vector3(float(p0a[0]), 0.0, float(p0a[1]))
+		var v3 := Vector3(float(p3a[0]), 0.0, float(p3a[1]))
+		var d: float = v1.distance_to(v2)
+		var subs: int = clampi(int(ceilf(d / maxf(max_seg_m, 4.0))), 1, 16)
+		for s: int in range(subs):
+			var t: float = float(s) / float(subs)
+			var ip: Vector3 = _catmull_rom(v0, v1, v2, v3, t)
+			ip.y = terrain_gen.get_height(ip.x, ip.z) + elev_offset
+			out.append(ip)
+	if not is_closed and n > 0:
+		var pn: Array = raw_pts[n - 1]
+		var px: float = float(pn[0])
+		var pz: float = float(pn[1])
+		out.append(Vector3(px, terrain_gen.get_height(px, pz) + elev_offset, pz))
+	return out
 
 func _subdivide_spline(pts: Array[Vector3], subdivisions: int, elev_offset: float = 0.22) -> Array[Vector3]:
 	var result: Array[Vector3] = []
