@@ -17,10 +17,17 @@ static func run() -> bool:
 	# Verify specific counts
 	var v_data = DataValidator._load_and_validate_json("res://data/vehicles.json")
 	var v_count = v_data.data.get("vehicles", []).size()
-	if v_count < 32:
-		printerr("[FAIL] Expected at least 32 vehicles, found %d" % v_count)
+	if v_count < 62:
+		printerr("[FAIL] Expected at least 62 vehicles (+30 new cars), found %d" % v_count)
 		return false
-	print("[PASS] Verified 32/32 vehicles in data/vehicles.json")
+	var unique_models: Dictionary = {}
+	for v: Variant in v_data.data.get("vehicles", []):
+		if v is Dictionary and (v as Dictionary).has("model_path"):
+			unique_models[str((v as Dictionary)["model_path"])] = true
+	if unique_models.size() < 45:
+		printerr("[FAIL] Expected at least 45 unique 3D car GLB models on disk, found %d" % unique_models.size())
+		return false
+	print("[PASS] Verified %d vehicles across %d distinct 3D car models in data/vehicles.json" % [v_count, unique_models.size()])
 	
 	var w_data = DataValidator._load_and_validate_json("res://data/weapons.json")
 	var w_count = w_data.data.get("weapons", []).size()
