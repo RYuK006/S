@@ -4,6 +4,23 @@
 class_name VisualPipeline
 extends RefCounted
 
+const HorizonCompositorEffect = preload("res://scripts/core/horizon_compositor_effect.gd")
+
+static func attach_horizon_compositor(world_env: WorldEnvironment, clarity: float = 0.14, vignette: float = 0.12) -> HorizonCompositorEffect:
+	if not world_env or RenderingServer.get_rendering_device() == null:
+		return null
+	var eff := HorizonCompositorEffect.new()
+	eff.clarity_strength = clarity
+	eff.vignette_strength = vignette
+	var comp := world_env.compositor
+	if not comp:
+		comp = Compositor.new()
+		world_env.compositor = comp
+	var arr: Array[CompositorEffect] = comp.compositor_effects.duplicate()
+	arr.append(eff)
+	comp.compositor_effects = arr
+	return eff
+
 static func apply_aaa_environment(env: Environment, preset: String = "outdoor") -> void:
 	if not env:
 		return
