@@ -142,7 +142,8 @@ func _update_header() -> void:
 	label_gold.text = "GOLD: %d" % int(d.get("gold", 0))
 	label_scrap.text = "SCRAP: %d" % int(d.get("scrap", 0))
 	
-	var car_recipe: Dictionary = GarageData.CAR_RECIPES.get(preview_car_id, {})
+	var all_recipes: Dictionary = GarageData.get_all_showroom_recipes()
+	var car_recipe: Dictionary = all_recipes.get(preview_car_id, {})
 	var car_name: String = car_recipe.get("name", "Sprinter R2")
 	var car_class: String = car_recipe.get("class", "Rally")
 	var stats := GarageData.compute_car_stats(preview_car_id, (d.get("owned_cars", {}).get(preview_car_id, {})).get("upgrades", {}))
@@ -163,10 +164,11 @@ func _render_showroom_tab() -> void:
 	var d := save_manager.save_data
 	var owned: Dictionary = d.get("owned_cars", {})
 	var selected_car: String = d.get("selected_car", "sprinter_r2")
+	var all_recipes: Dictionary = GarageData.get_all_showroom_recipes()
 	
-	for car_id in GarageData.CAR_RECIPES.keys():
-		var recipe: Dictionary = GarageData.CAR_RECIPES[car_id]
-		var is_owned: bool = owned.has(car_id)
+	for car_id in all_recipes.keys():
+		var recipe: Dictionary = all_recipes[car_id]
+		var is_owned: bool = owned.has(car_id) or not GarageData.CAR_RECIPES.has(car_id)
 		var is_selected: bool = (car_id == selected_car)
 		var stats := GarageData.compute_car_stats(car_id, (owned.get(car_id, {})).get("upgrades", {}))
 		
@@ -222,7 +224,8 @@ func _render_upgrades_tab() -> void:
 	var owned: Dictionary = d.get("owned_cars", {})
 	var car_info: Dictionary = owned.get(preview_car_id, {})
 	var upgrades: Dictionary = car_info.get("upgrades", {})
-	var recipe: Dictionary = GarageData.CAR_RECIPES.get(preview_car_id, {})
+	var all_recipes: Dictionary = GarageData.get_all_showroom_recipes()
+	var recipe: Dictionary = all_recipes.get(preview_car_id, {})
 	var base_price: int = recipe.get("price", 15000)
 	
 	for cat_id in GarageData.UPGRADE_CATEGORIES.keys():
@@ -372,21 +375,25 @@ func _preview_car_only(car_id: String) -> void:
 	_spawn_preview_car(car_id)
 	_update_header()
 
-func _set_paint_color(hex: String) -> void:
+func _ensure_car_entry(car_id: String) -> Dictionary:
 	var owned: Dictionary = save_manager.save_data.get("owned_cars", {})
-	if owned.has(preview_car_id):
-		owned[preview_car_id]["paint_color"] = hex
-		owned[preview_car_id]["custom_painted"] = true
-		save_manager.save_slot(save_manager.current_slot)
-		_spawn_preview_car(preview_car_id)
+	if not owned.has(car_id):
+		owned[car_id] = {"upgrades": {}, "paint_color": "#ee1808", "finish": "metallic", "custom_painted": false}
+	return owned
+
+func _set_paint_color(hex: String) -> void:
+	var owned: Dictionary = _ensure_car_entry(preview_car_id)
+	owned[preview_car_id]["paint_color"] = hex
+	owned[preview_car_id]["custom_painted"] = true
+	save_manager.save_slot(save_manager.current_slot)
+	_spawn_preview_car(preview_car_id)
 
 func _set_finish(finish: String) -> void:
-	var owned: Dictionary = save_manager.save_data.get("owned_cars", {})
-	if owned.has(preview_car_id):
-		owned[preview_car_id]["finish"] = finish
-		owned[preview_car_id]["custom_painted"] = true
-		save_manager.save_slot(save_manager.current_slot)
-		_spawn_preview_car(preview_car_id)
+	var owned: Dictionary = _ensure_car_entry(preview_car_id)
+	owned[preview_car_id]["finish"] = finish
+	owned[preview_car_id]["custom_painted"] = true
+	save_manager.save_slot(save_manager.current_slot)
+	_spawn_preview_car(preview_car_id)
 
 func _on_open_world_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/open_world.tscn")
