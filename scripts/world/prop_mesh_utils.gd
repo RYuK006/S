@@ -5,8 +5,8 @@ extends RefCounted
 
 static var _mesh_cache: Dictionary = {}
 
-static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bottom_m: float = 0.05, submesh_filter: String = "") -> Mesh:
-	var cache_key: String = "%s|%.4f|%.4f|%s" % [path, scale_factor, embed_bottom_m, submesh_filter.to_lower()]
+static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bottom_m: float = 0.05, submesh_filter: String = "", fit_max_dim: float = 0.0) -> Mesh:
+	var cache_key: String = "%s|%.4f|%.4f|%s|%.4f" % [path, scale_factor, embed_bottom_m, submesh_filter.to_lower(), fit_max_dim]
 	if _mesh_cache.has(cache_key):
 		return _mesh_cache[cache_key] as Mesh
 
@@ -44,9 +44,14 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 		else:
 			combined_aabb = combined_aabb.merge(ma)
 
+	var eff_scale: float = scale_factor
+	if fit_max_dim > 0.0:
+		var raw_max: float = maxf(combined_aabb.size.x, maxf(combined_aabb.size.y, combined_aabb.size.z))
+		if raw_max > 0.001:
+			eff_scale = fit_max_dim / raw_max
 	var ctr: Vector3 = combined_aabb.get_center()
 	var min_y: float = combined_aabb.position.y
-	var shift := Vector3(-ctr.x * scale_factor, -min_y * scale_factor - embed_bottom_m, -ctr.z * scale_factor)
+	var shift := Vector3(-ctr.x * eff_scale, -min_y * eff_scale - embed_bottom_m, -ctr.z * eff_scale)
 
 	var im := ImporterMesh.new()
 	var mats_out: Array[Material] = []
@@ -67,7 +72,7 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 			var out_verts := PackedVector3Array()
 			out_verts.resize(verts.size())
 			for i: int in range(verts.size()):
-				out_verts[i] = (xf * verts[i]) * scale_factor + shift
+				out_verts[i] = (xf * verts[i]) * eff_scale + shift
 			clean_arr[Mesh.ARRAY_VERTEX] = out_verts
 
 			var basis_n: Basis = xf.basis.orthonormalized()
@@ -126,19 +131,43 @@ static func load_centered_mesh(path: String, scale_factor: float = 1.0, embed_bo
 				if mat_dup is StandardMaterial3D:
 					var std: StandardMaterial3D = mat_dup
 					var ml: String = (mi.name + " " + std.resource_name + " " + path).to_lower()
-					var is_foliage: bool = ("leaf" in ml or "branch" in ml or "atlas" in ml or "frond" in ml or "bush" in ml or "grass" in ml or "fir_" in ml or "palm" in ml or "yucca" in ml or "tree" in ml or "fence" in ml or "object_4" in ml)
+					var is_foliage: bool = ("leaf" in ml or "branch" in ml or "atlas" in ml or "frond" in ml or "bush" in ml or "grass" in ml or "fir_" in ml or "palm" in ml or "yucca" in ml or "tree" in ml or "fence" in ml or "object_4" in ml or "fern" in ml or "shrub" in ml or "jacaranda" in ml or "joshua" in ml or "quiver" in ml or "succulent" in ml)
+					var is_stone_wood: bool = ("rock" in ml or "boulder" in ml or "cliff" in ml or "stone" in ml or "crate" in ml or "pallet" in ml or "cabin" in ml or "wood" in ml or "hay" in ml or "building" in ml or "shop" in ml or "concrete" in ml or "pier" in ml or "lighthouse" in ml)
 					if std.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA or is_foliage:
 						std.cull_mode = BaseMaterial3D.CULL_DISABLED
 						if std.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA:
 							std.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 							std.alpha_scissor_threshold = 0.36
-						std.roughness = maxf(std.roughness, 0.56)
+						std.roughness = clampf(maxf(std.roughness, 0.64), 0.64, 0.90)
+						std.metallic = minf(std.metallic, 0.02)
+						std.metallic_specular = 0.24
+						std.backlight_enabled = true
+						std.backlight = Color(0.24, 0.30, 0.16)
+					elif is_stone_wood:
+						std.roughness = clampf(maxf(std.roughness, 0.68), 0.68, 0.94)
+						std.metallic = minf(std.metallic, 0.06)
+						std.metallic_specular = 0.32
+					else:
+						std.roughness = maxf(std.roughness, 0.28)
+						std.metallic_specular = minf(std.metallic_specular, 0.48)
+					if std.emission_enabled and std.emission_energy_multiplier > 1.35:
+						std.emission_energy_multiplier = 1.35
 
 			im.add_surface(Mesh.PRIMITIVE_TRIANGLES, clean_arr, [], {}, mat_dup, "surf_%d" % mats_out.size(), 0)
 			mats_out.append(mat_dup)
 
-	# Generate automatic GPU hardware LOD chain; decimate ultra-dense >20k photogrammetry surfaces to LOD1 base
+	# Generate automatic GPU hardware LOD chain only for heavy >4.5k vertex meshes (huge boot speedup)
+	var total_verts: int = 0
+	for si_v: int in range(im.get_surface_count()):
+		var va: Array = im.get_surface_arrays(si_v)
+		if va.size() > Mesh.ARRAY_VERTEX and va[Mesh.ARRAY_VERTEX] is PackedVector3Array:
+			total_verts += (va[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
 	if im.get_surface_count() > 0:
+		if total_verts <= 4500:
+			var fast_mesh: ArrayMesh = im.get_mesh()
+			root.free()
+			_mesh_cache[cache_key] = fast_mesh
+			return fast_mesh
 		im.generate_lods(deg_to_rad(60.0), deg_to_rad(30.0), [])
 		var rebuilt := ImporterMesh.new()
 		var any_decimated: bool = false
