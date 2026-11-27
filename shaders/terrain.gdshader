@@ -66,25 +66,43 @@ void fragment() {
 	w_grass += low_snow * 0.55;
 	w_volcano += low_snow * 0.45; // Expose dark granite gravel under steep lower alpine faces
 
-	vec3 diff_grass = sample_antitile(tex_grass_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(0.62, 0.80, 0.44);
-	vec3 diff_sand = sample_antitile(tex_sand_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(1.12, 0.82, 0.56);
-	vec3 diff_snow = mix(texture(tex_snow_diff, uv_macro).rgb, texture(tex_snow_diff, uv_micro).rgb, 0.35) * vec3(0.95, 0.97, 1.02);
-	vec3 vol_raw = sample_antitile(tex_volcano_diff, uv_macro, uv_micro, uv_rot, blend_t);
-	float vol_lum = dot(vol_raw, vec3(0.299, 0.587, 0.114));
-	vec3 diff_volcano = mix(vec3(vol_lum), vol_raw, 0.20) * vec3(0.16, 0.165, 0.19);
-	vec3 diff_gravel = sample_antitile(tex_gravel_diff, uv_macro * 1.4, uv_micro * 1.6, uv_rot, blend_t) * vec3(0.80, 0.77, 0.72);
+	vec3 diff_grass = vec3(0.0);
+	vec3 nor_grass = vec3(0.5, 0.5, 1.0);
+	float r_grass = 0.85;
+	if (w_grass > 0.004) {
+		diff_grass = sample_antitile(tex_grass_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(0.62, 0.80, 0.44);
+		nor_grass = mix(texture(tex_grass_nor, uv_macro).rgb, texture(tex_grass_nor, uv_micro).rgb, 0.45);
+		r_grass = mix(texture(tex_grass_rough, uv_macro).r, texture(tex_grass_rough, uv_micro).r, 0.4);
+	}
 
-	vec3 nor_grass = mix(texture(tex_grass_nor, uv_macro).rgb, texture(tex_grass_nor, uv_micro).rgb, 0.45);
-	vec3 nor_sand = mix(texture(tex_sand_nor, uv_macro).rgb, texture(tex_sand_nor, uv_micro).rgb, 0.45);
-	vec3 nor_snow = mix(texture(tex_snow_nor, uv_macro).rgb, texture(tex_snow_nor, uv_micro).rgb, 0.35);
-	vec3 nor_volcano = mix(texture(tex_volcano_nor, uv_macro).rgb, texture(tex_volcano_nor, uv_micro).rgb, 0.45);
-	vec3 nor_gravel = mix(texture(tex_gravel_nor, uv_macro * 1.4).rgb, texture(tex_gravel_nor, uv_micro * 1.6).rgb, 0.5);
+	vec3 diff_sand = vec3(0.0);
+	vec3 nor_sand = vec3(0.5, 0.5, 1.0);
+	float r_sand = 0.85;
+	if (w_sand > 0.004) {
+		diff_sand = sample_antitile(tex_sand_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(1.12, 0.82, 0.56);
+		nor_sand = mix(texture(tex_sand_nor, uv_macro).rgb, texture(tex_sand_nor, uv_micro).rgb, 0.45);
+		r_sand = mix(texture(tex_sand_rough, uv_macro).r, texture(tex_sand_rough, uv_micro).r, 0.4);
+	}
 
-	float r_grass = mix(texture(tex_grass_rough, uv_macro).r, texture(tex_grass_rough, uv_micro).r, 0.4);
-	float r_sand = mix(texture(tex_sand_rough, uv_macro).r, texture(tex_sand_rough, uv_micro).r, 0.4);
-	float r_snow = mix(texture(tex_snow_rough, uv_macro).r, texture(tex_snow_rough, uv_micro).r, 0.4);
-	float r_volcano = mix(texture(tex_volcano_rough, uv_macro).r, texture(tex_volcano_rough, uv_micro).r, 0.4);
-	float r_gravel = mix(texture(tex_gravel_rough, uv_macro * 1.4).r, texture(tex_gravel_rough, uv_micro * 1.6).r, 0.45);
+	vec3 diff_snow = vec3(0.0);
+	vec3 nor_snow = vec3(0.5, 0.5, 1.0);
+	float r_snow = 0.72;
+	if (w_snow > 0.004) {
+		diff_snow = mix(texture(tex_snow_diff, uv_macro).rgb, texture(tex_snow_diff, uv_micro).rgb, 0.35) * vec3(0.95, 0.97, 1.02);
+		nor_snow = mix(texture(tex_snow_nor, uv_macro).rgb, texture(tex_snow_nor, uv_micro).rgb, 0.35);
+		r_snow = mix(texture(tex_snow_rough, uv_macro).r, texture(tex_snow_rough, uv_micro).r, 0.4);
+	}
+
+	vec3 diff_volcano = vec3(0.0);
+	vec3 nor_volcano = vec3(0.5, 0.5, 1.0);
+	float r_volcano = 0.88;
+	if (w_volcano > 0.004) {
+		vec3 vol_raw = sample_antitile(tex_volcano_diff, uv_macro, uv_micro, uv_rot, blend_t);
+		float vol_lum = dot(vol_raw, vec3(0.299, 0.587, 0.114));
+		diff_volcano = mix(vec3(vol_lum), vol_raw, 0.20) * vec3(0.16, 0.165, 0.19);
+		nor_volcano = mix(texture(tex_volcano_nor, uv_macro).rgb, texture(tex_volcano_nor, uv_micro).rgb, 0.45);
+		r_volcano = mix(texture(tex_volcano_rough, uv_macro).r, texture(tex_volcano_rough, uv_micro).r, 0.4);
+	}
 
 	float w_sum = max(0.001, w_grass + w_sand + w_snow + w_volcano);
 	vec3 base_diff = (diff_grass * w_grass + diff_sand * w_sand + diff_snow * w_snow + diff_volcano * w_volcano) / w_sum;
@@ -95,13 +113,17 @@ void fragment() {
 	float gully_w = smoothstep(0.32, 0.72, UV2.x) * (1.0 - w_snow * 0.7);
 	float road_verge_w = smoothstep(0.05, 0.68, UV2.y);
 	float gravel_blend = clamp(max(gully_w * 0.75, road_verge_w * 0.90), 0.0, 0.92);
-
-	vec3 gravel_tinted = mix(diff_gravel, diff_gravel * vec3(1.12, 0.88, 0.68), w_sand);
-	gravel_tinted = mix(gravel_tinted, gravel_tinted * vec3(0.26, 0.25, 0.28), w_volcano);
-	gravel_tinted = mix(gravel_tinted, gravel_tinted * vec3(0.55, 0.60, 0.66), clamp(w_snow * 1.4, 0.0, 1.0));
-	base_diff = mix(base_diff, gravel_tinted, gravel_blend);
-	base_nor = mix(base_nor, nor_gravel, gravel_blend);
-	base_rough = mix(base_rough, r_gravel, gravel_blend);
+	if (gravel_blend > 0.004) {
+		vec3 diff_gravel = sample_antitile(tex_gravel_diff, uv_macro * 1.4, uv_micro * 1.6, uv_rot, blend_t) * vec3(0.80, 0.77, 0.72);
+		vec3 nor_gravel = mix(texture(tex_gravel_nor, uv_macro * 1.4).rgb, texture(tex_gravel_nor, uv_micro * 1.6).rgb, 0.5);
+		float r_gravel = mix(texture(tex_gravel_rough, uv_macro * 1.4).r, texture(tex_gravel_rough, uv_micro * 1.6).r, 0.45);
+		vec3 gravel_tinted = mix(diff_gravel, diff_gravel * vec3(1.12, 0.88, 0.68), w_sand);
+		gravel_tinted = mix(gravel_tinted, gravel_tinted * vec3(0.26, 0.25, 0.28), w_volcano);
+		gravel_tinted = mix(gravel_tinted, gravel_tinted * vec3(0.55, 0.60, 0.66), clamp(w_snow * 1.4, 0.0, 1.0));
+		base_diff = mix(base_diff, gravel_tinted, gravel_blend);
+		base_nor = mix(base_nor, nor_gravel, gravel_blend);
+		base_rough = mix(base_rough, r_gravel, gravel_blend);
+	}
 
 	// Wet beach darkening near sea level
 	float wet_shore = 1.0 - smoothstep(0.8, 2.8, world_pos.y);
@@ -110,26 +132,29 @@ void fragment() {
 
 	// True 3-Axis Triplanar Cliff Walls with Mexican Sandstone Strata
 	float cliff_weight = smoothstep(0.24, 0.48, slope);
-	vec3 tri_w = pow(abs(world_norm), vec3(4.0));
-	tri_w /= max(0.0001, tri_w.x + tri_w.y + tri_w.z);
-	float c_scale = uv_scale * 0.72;
-	vec2 uv_cx = world_pos.zy * c_scale;
-	vec2 uv_cy = world_pos.xz * c_scale;
-	vec2 uv_cz = world_pos.xy * c_scale;
-	vec3 cliff_raw = texture(tex_cliff_diff, uv_cx).rgb * tri_w.x + texture(tex_cliff_diff, uv_cy).rgb * tri_w.y + texture(tex_cliff_diff, uv_cz).rgb * tri_w.z;
-	float cliff_lum = dot(cliff_raw, vec3(0.299, 0.587, 0.114));
-	vec3 cliff_basalt = mix(vec3(cliff_lum), cliff_raw, 0.18) * vec3(0.20, 0.205, 0.23);
-	float strata = 0.88 + 0.14 * sin(world_pos.y * 0.62 + sin(world_pos.x * 0.025 + world_pos.z * 0.025) * 1.8);
-	vec3 diff_cliff = mix(cliff_raw, cliff_basalt, clamp(w_volcano * 1.5, 0.0, 1.0));
-	diff_cliff = mix(diff_cliff, cliff_raw * vec3(1.22, 0.76, 0.48) * strata, clamp(w_sand, 0.0, 1.0));
-	diff_cliff = mix(diff_cliff, vec3(cliff_lum) * vec3(0.68, 0.72, 0.78), clamp(w_snow * 0.85, 0.0, 1.0));
-
-	vec3 nor_cliff = texture(tex_cliff_nor, uv_cx).rgb * tri_w.x + texture(tex_cliff_nor, uv_cy).rgb * tri_w.y + texture(tex_cliff_nor, uv_cz).rgb * tri_w.z;
-	float r_cliff = texture(tex_cliff_rough, uv_cx).r * tri_w.x + texture(tex_cliff_rough, uv_cy).r * tri_w.y + texture(tex_cliff_rough, uv_cz).r * tri_w.z;
-
-	vec3 final_albedo = mix(base_diff, diff_cliff, cliff_weight);
-	vec3 final_nor_tex = mix(base_nor, nor_cliff, cliff_weight);
-	float final_roughness = mix(base_rough, r_cliff, cliff_weight);
+	vec3 final_albedo = base_diff;
+	vec3 final_nor_tex = base_nor;
+	float final_roughness = base_rough;
+	if (cliff_weight > 0.004) {
+		vec3 tri_w = pow(abs(world_norm), vec3(4.0));
+		tri_w /= max(0.0001, tri_w.x + tri_w.y + tri_w.z);
+		float c_scale = uv_scale * 0.72;
+		vec2 uv_cx = world_pos.zy * c_scale;
+		vec2 uv_cy = world_pos.xz * c_scale;
+		vec2 uv_cz = world_pos.xy * c_scale;
+		vec3 cliff_raw = texture(tex_cliff_diff, uv_cx).rgb * tri_w.x + texture(tex_cliff_diff, uv_cy).rgb * tri_w.y + texture(tex_cliff_diff, uv_cz).rgb * tri_w.z;
+		float cliff_lum = dot(cliff_raw, vec3(0.299, 0.587, 0.114));
+		vec3 cliff_basalt = mix(vec3(cliff_lum), cliff_raw, 0.18) * vec3(0.20, 0.205, 0.23);
+		float strata = 0.88 + 0.14 * sin(world_pos.y * 0.62 + sin(world_pos.x * 0.025 + world_pos.z * 0.025) * 1.8);
+		vec3 diff_cliff = mix(cliff_raw, cliff_basalt, clamp(w_volcano * 1.5, 0.0, 1.0));
+		diff_cliff = mix(diff_cliff, cliff_raw * vec3(1.22, 0.76, 0.48) * strata, clamp(w_sand, 0.0, 1.0));
+		diff_cliff = mix(diff_cliff, vec3(cliff_lum) * vec3(0.68, 0.72, 0.78), clamp(w_snow * 0.85, 0.0, 1.0));
+		vec3 nor_cliff = texture(tex_cliff_nor, uv_cx).rgb * tri_w.x + texture(tex_cliff_nor, uv_cy).rgb * tri_w.y + texture(tex_cliff_nor, uv_cz).rgb * tri_w.z;
+		float r_cliff = texture(tex_cliff_rough, uv_cx).r * tri_w.x + texture(tex_cliff_rough, uv_cy).r * tri_w.y + texture(tex_cliff_rough, uv_cz).r * tri_w.z;
+		final_albedo = mix(base_diff, diff_cliff, cliff_weight);
+		final_nor_tex = mix(base_nor, nor_cliff, cliff_weight);
+		final_roughness = mix(base_rough, r_cliff, cliff_weight);
+	}
 
 	// Break distant horizon repetition with subtle geological color modulation
 	float macro_var = sin(world_pos.x * 0.011 + 0.7) * cos(world_pos.z * 0.013) * 0.08 - UV2.x * 0.14;
