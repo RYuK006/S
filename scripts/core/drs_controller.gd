@@ -45,3 +45,8 @@ func _process(delta: float):
 	var vp = get_viewport()
 	if vp:
 		vp.scaling_3d_scale = current_scale
+		if current_scale < 0.99:
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR
+			vp.fsr_sharpness = 0.25
+		else:
+			vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
