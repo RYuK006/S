@@ -11,6 +11,7 @@ const WeaponSystem = preload("res://scripts/weapons/weapon_system.gd")
 const TrackPickup = preload("res://scripts/race/pickups.gd")
 const PropMeshUtils = preload("res://scripts/world/prop_mesh_utils.gd")
 const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
+const HorizonCompositorEffect = preload("res://scripts/core/horizon_compositor_effect.gd")
 
 @onready var spline_track: SplineTrack = $SplineTrack
 @onready var player_vehicle: VehicleController = $PlayerVehicle
@@ -24,6 +25,7 @@ var ai_cars: Array[VehicleController] = []
 var player_weapons: WeaponSystem
 var pause_layer: CanvasLayer
 var pause_panel: PanelContainer
+var compositor_fx: HorizonCompositorEffect
 
 var screenshot_mode: bool = false
 var screenshot_timer: float = 1.1
@@ -73,7 +75,10 @@ func _ready() -> void:
 	race_hud.setup(player_vehicle, race_mgr, spline_track)
 	_build_pause_menu()
 
-	# 6. Pre-warm circuit & car Vulkan shader pipelines upfront
+	# 6. Attach Vulkan CompositorEffect & pre-warm shader pipelines upfront
+	var we := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if we:
+		compositor_fx = VisualPipeline.attach_horizon_compositor(we, 0.14, 0.12)
 	var prewarm_mats: Array[Material] = []
 	VisualPipeline.collect_materials_from_node(self, prewarm_mats)
 	if camera_rig and camera_rig.camera:
@@ -302,6 +307,9 @@ func _physics_process(_delta: float) -> void:
 			player_weapons.fire_roof()
 		if Input.is_action_just_pressed("fire_rear"):
 			player_weapons.fire_rear()
+
+	if compositor_fx:
+		compositor_fx.set_speed_norm(player_vehicle.speed_kmh / 260.0)
 
 	if audio_engine:
 		var max_slip: float = 0.0
