@@ -63,6 +63,7 @@ func _ready() -> void:
 	camera.position = Vector3(1.85, 1.38, -4.15)
 	camera.look_at(Vector3(-0.35, 0.62, 0.0), Vector3.UP)
 
+	VisualPipeline.attach_horizon_compositor(world_env, 0.12, 0.10)
 	var mats: Array[Material] = []
 	VisualPipeline.collect_materials_from_node(self, mats)
 	VisualPipeline.spawn_prewarm_batch(self, camera, mats)
