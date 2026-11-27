@@ -7,14 +7,18 @@ const TerrainGenerator = preload("res://scripts/world/terrain_generator.gd")
 const RoadNetwork = preload("res://scripts/world/road_network.gd")
 const PropMeshUtils = preload("res://scripts/world/prop_mesh_utils.gd")
 const BiomePropsBuilder = preload("res://scripts/world/biome_props_builder.gd")
+const ExtendedPropsPopulator = preload("res://scripts/world/extended_props_populator.gd")
+const DestructiblePropManager = preload("res://scripts/world/destructible_prop_manager.gd")
 
 var terrain_gen: TerrainGenerator
 var road_net: RoadNetwork
+var destruct_mgr: DestructiblePropManager
 var rng := RandomNumberGenerator.new()
 
-func _init(tg: TerrainGenerator = null, rn: RoadNetwork = null) -> void:
+func _init(tg: TerrainGenerator = null, rn: RoadNetwork = null, dm: DestructiblePropManager = null) -> void:
 	terrain_gen = tg if tg else TerrainGenerator.new()
 	road_net = rn
+	destruct_mgr = dm
 	rng.seed = 202605
 
 func populate_world_scenery() -> void:
@@ -29,30 +33,12 @@ func populate_world_scenery() -> void:
 	_populate_desert_flora()
 	_populate_desert_rocks()
 	_populate_ground_grass()
+	ExtendedPropsPopulator.populate_all(terrain_gen, road_net, rng, Callable(self, "_sample_roadside_in_quadrant"), mm_fn)
 
-func _is_road_clear(x: float, z: float, min_clearance: float = 11.5, ignore_offset: float = -1.0) -> bool:
+func _is_road_clear(x: float, z: float, min_clearance: float = 11.5, _ignore_offset: float = -1.0) -> bool:
 	if not road_net:
 		return true
-	var segs: Array[Dictionary] = road_net.all_road_segments
-	var p2 := Vector2(x, z)
-	for seg: Dictionary in segs:
-		if ignore_offset >= 0.0 and absf(float(seg.get("offset", 0.0)) - ignore_offset) < 0.005:
-			continue
-		var a3: Vector3 = seg["p0"]
-		var b3: Vector3 = seg["p1"]
-		var a := Vector2(a3.x, a3.z)
-		var b := Vector2(b3.x, b3.z)
-		if absf(a.x - x) > 90.0 and absf(b.x - x) > 90.0:
-			continue
-		if absf(a.y - z) > 90.0 and absf(b.y - z) > 90.0:
-			continue
-		var ab: Vector2 = b - a
-		var lsq: float = ab.length_squared()
-		var t: float = clampf((p2 - a).dot(ab) / lsq, 0.0, 1.0) if lsq > 0.001 else 0.0
-		var d: float = p2.distance_to(a + ab * t)
-		if d < float(seg["half_w"]) + min_clearance:
-			return false
-	return true
+	return road_net.is_point_clear_of_roads(x, z, min_clearance, "")
 
 func _sample_roadside_in_quadrant(x_min: float, x_max: float, z_min: float, z_max: float, min_d: float, max_d: float) -> Vector2:
 	if road_net and not road_net.all_road_segments.is_empty():
@@ -87,10 +73,14 @@ func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transf
 				tinted_mesh.surface_set_material(s, sd)
 		base_mesh = tinted_mesh
 
-	# Spatial 900m grid clustering enables true Forward+ frustum & occlusion culling + per-cell GPU LODs
-	# while keeping multi-biome Draw Calls super lean.
+	var aabb_sz: Vector3 = base_mesh.get_aabb().size
+	var base_foot_r: float = maxf(0.85, 0.50 * Vector2(aabb_sz.x, aabb_sz.z).length() + 1.15)
 	var cells: Dictionary = {}
 	for xf: Transform3D in xforms:
+		if road_net:
+			var sc_xz: float = maxf(xf.basis.x.length(), xf.basis.z.length())
+			if not road_net.is_point_clear_of_roads(xf.origin.x, xf.origin.z, base_foot_r * sc_xz, ""):
+				continue
 		var key := Vector2i(int(floorf(xf.origin.x / 900.0)), int(floorf(xf.origin.z / 900.0)))
 		if not cells.has(key):
 			var arr: Array[Transform3D] = []
@@ -98,6 +88,9 @@ func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transf
 		(cells[key] as Array[Transform3D]).append(xf)
 
 	var clamped_vis: float = minf(vis_end, 850.0)
+	var d_type := DestructiblePropManager.DestructType.SOLID_BUILDING
+	if destruct_mgr:
+		d_type = destruct_mgr.classify_batch_name(batch_name)
 	for key: Vector2i in cells.keys():
 		var cell_xforms: Array[Transform3D] = cells[key]
 		var mm := MultiMesh.new()
@@ -114,6 +107,8 @@ func _build_multimesh_batch(batch_name: String, mesh: Mesh, xforms: Array[Transf
 		inst.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if cast_shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(inst)
+		if destruct_mgr:
+			destruct_mgr.register_multimesh_prop_batch(batch_name, mm, base_mesh, d_type, cell_xforms)
 
 func _populate_pine_forests() -> void:
 	# Note: Object_2 = evergreen summer conifer; Object_3 = snow-laden winter alpine conifer
@@ -258,21 +253,21 @@ func _populate_desert_rocks() -> void:
 	_build_multimesh_batch("MultiMesh_DustBowlRocks", sandstone_slab, x_dust, 750.0, Color(0.84, 0.50, 0.30))
 
 	var x_volcano: Array[Transform3D] = []
-	for i: int in range(280):
-		var pt: Vector2 = _sample_roadside_in_quadrant(200.0, 2200.0, -2200.0, -200.0, 8.0, 115.0)
-		if i >= 200:
+	for i: int in range(440):
+		var pt: Vector2 = _sample_roadside_in_quadrant(160.0, 2350.0, -2350.0, -160.0, 7.2, 130.0)
+		if i >= 280:
 			var ang_v: float = rng.randf() * TAU
-			var rad_v: float = rng.randf_range(245.0, 440.0)
+			var rad_v: float = rng.randf_range(235.0, 620.0)
 			pt = Vector2(980.0 + cos(ang_v) * rad_v, -1140.0 + sin(ang_v) * rad_v)
-		if Vector2(pt.x - 980.0, pt.y + 1140.0).length() < 235.0:
+		if Vector2(pt.x - 980.0, pt.y + 1140.0).length() < 230.0:
 			continue
-		if not _is_road_clear(pt.x, pt.y, 12.0):
+		if not _is_road_clear(pt.x, pt.y, 11.5):
 			continue
-		if terrain_gen.get_normal(pt.x, pt.y).y < 0.78:
+		if terrain_gen.get_normal(pt.x, pt.y).y < 0.62:
 			continue
 		var ry: float = terrain_gen.get_height(pt.x, pt.y) - 0.85
-		var sc: float = rng.randf_range(0.75, 1.55)
-		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.10, 0.10), rng.randf() * TAU, rng.randf_range(-0.10, 0.10))).scaled(Vector3(sc, sc * 0.82, sc))
+		var sc: float = rng.randf_range(0.75, 2.25)
+		var bas := Basis.from_euler(Vector3(rng.randf_range(-0.14, 0.14), rng.randf() * TAU, rng.randf_range(-0.14, 0.14))).scaled(Vector3(sc * rng.randf_range(0.95, 1.3), sc * 0.88, sc))
 		x_volcano.append(Transform3D(bas, Vector3(pt.x, ry, pt.y)))
 	_build_multimesh_batch("MultiMesh_VolcanoBasaltCrags", granite_boulder, x_volcano, 850.0, Color(0.24, 0.22, 0.24))
 
