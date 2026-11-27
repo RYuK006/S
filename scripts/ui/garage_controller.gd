@@ -34,6 +34,9 @@ func _ready() -> void:
 	_render_showroom_tab()
 	_update_orbit_camera()
 
+	var we := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if we:
+		VisualPipeline.attach_horizon_compositor(we, 0.12, 0.10)
 	var mats: Array[Material] = []
 	VisualPipeline.collect_materials_from_node(self, mats)
 	VisualPipeline.spawn_prewarm_batch(self, camera_node, mats)
