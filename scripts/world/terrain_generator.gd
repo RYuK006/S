@@ -301,6 +301,9 @@ func generate_chunk_mesh(chunk_x: int, chunk_z: int, resolution: int = 56, build
 	mesh_inst.mesh = mesh
 	mesh_inst.name = "Chunk_%d_%d" % [chunk_x, chunk_z]
 	mesh_inst.material_override = terrain_material
+	mesh_inst.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
+	if not build_collider:
+		mesh_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 	if build_collider:
 		var static_body := StaticBody3D.new()
