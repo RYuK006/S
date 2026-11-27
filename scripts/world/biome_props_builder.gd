@@ -9,13 +9,14 @@ const PropMeshUtils = preload("res://scripts/world/prop_mesh_utils.gd")
 const VisualPipeline = preload("res://scripts/core/visual_pipeline.gd")
 
 static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: RoadNetwork, clear_fn: Callable, mm_fn: Callable) -> void:
-	# 1. Replace cartoon Pepsi gantry with monumental Festival Starting Truss Canopy + Illuminated Motorsport Gantry
-	var canopy_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/festival_canopy_tent.glb", 0.48, 0.05)
-	if canopy_mesh:
+	# 1. Position Festival Main Stage Canopy cleanly on the Paddock Plaza apron (never obstructing the Start Grid lane!)
+	var canopy_mesh: Mesh = PropMeshUtils.load_centered_mesh("res://assets/models/props/festival_canopy_tent.glb", 0.44, 0.05)
+	if canopy_mesh and clear_fn.call(-29.0, -48.0, 12.0, -1.0):
 		var mi := MeshInstance3D.new()
 		mi.name = "Mesh_FestivalStartCanopy"
 		mi.mesh = canopy_mesh
-		mi.position = Vector3(0.0, tg.get_height(0.0, -18.0) + 0.05, -18.0)
+		mi.position = Vector3(-29.0, tg.get_height(-29.0, -48.0) + 0.05, -48.0)
+		mi.rotation.y = PI * 0.42
 		parent.add_child(mi)
 
 	# Glowing Horizon Festival Start/Finish Overhead Signboard Gantry (clean matte steel truss + orange/cyan LED strips)
@@ -37,8 +38,8 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 	if bleacher_mesh:
 		var bl_xforms: Array[Transform3D] = []
 		for bz: float in [-48.0, -34.0, -20.0, -6.0, 8.0, 22.0, 36.0]:
-			for sx: float in [-13.5, 13.5]:
-				if not clear_fn.call(sx, bz, 6.2, 0.34):
+			for sx: float in [-18.5, 18.5]:
+				if not clear_fn.call(sx, bz, 7.0, -1.0):
 					continue
 				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
 				bl_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz), bz)))
@@ -53,8 +54,8 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 		var cf_xforms: Array[Transform3D] = []
 		for z_step: int in range(-66, 68, 8):
 			var bz: float = float(z_step)
-			for sx: float in [-10.2, 10.2]:
-				if not clear_fn.call(sx, bz, 2.0, 0.34):
+			for sx: float in [-12.2, 12.2]:
+				if not clear_fn.call(sx, bz, 3.2, -1.0):
 					continue
 				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
 				cf_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz) + 0.15, bz)))
@@ -65,8 +66,8 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 		var t_xforms: Array[Transform3D] = []
 		for z_step: int in range(-62, 62, 10):
 			var bz: float = float(z_step)
-			for sx: float in [-8.3, 8.3]:
-				if not clear_fn.call(sx, bz, 1.0, 0.34):
+			for sx: float in [-10.4, 10.4]:
+				if not clear_fn.call(sx, bz, 2.0, -1.0):
 					continue
 				var yaw: float = PI * 0.5
 				t_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz) + 0.25, bz)))
@@ -89,8 +90,8 @@ static func build_festival_hub_arena(parent: Node3D, tg: TerrainGenerator, rn: R
 	if light_mesh:
 		var l_xforms: Array[Transform3D] = []
 		for bz: float in [-58.0, -32.0, 16.0, 46.0]:
-			for sx: float in [-15.8, 15.8]:
-				if not clear_fn.call(sx, bz, 3.0, 0.34):
+			for sx: float in [-16.2, 16.2]:
+				if not clear_fn.call(sx, bz, 3.0, -1.0):
 					continue
 				var yaw: float = PI * 0.5 if sx < 0.0 else -PI * 0.5
 				l_xforms.append(Transform3D(Basis(Vector3.UP, yaw), Vector3(sx, tg.get_height(sx, bz), bz)))
