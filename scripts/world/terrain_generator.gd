@@ -182,6 +182,10 @@ func _eval_road_carve(x: float, z: float, base_h: float) -> Vector2:
 	var p2 := Vector2(x, z)
 	var best_w: float = 0.0
 	var best_verge: float = 0.0
+	var best_inner_d: float = 1e9
+	var best_inner_y: float = base_h
+	var bed_w_sum: float = 0.0
+	var bed_h_sum: float = 0.0
 	var carved_y: float = base_h
 	var indices: Array[int] = road_spatial_grid[k]
 	for idx: int in indices:
@@ -195,28 +199,30 @@ func _eval_road_carve(x: float, z: float, base_h: float) -> Vector2:
 		var t: float = clampf((p2 - a).dot(ab) / len_sq, 0.0, 1.0) if len_sq > 0.0001 else 0.0
 		var d: float = p2.distance_to(a + ab * t)
 		var rw: float = float(seg["half_w"])
-		var inner_r: float = rw + 5.8
-		var outer_r: float = rw + 26.0
-		if d < outer_r:
+		var inner_r: float = rw + 5.0
+		var outer_r: float = rw + 14.0
+		var road_bed: float = lerpf(a3.y, b3.y, t) - 0.56
+		if d <= inner_r:
+			best_w = 1.0
+			if d < best_inner_d:
+				best_inner_d = d
+				best_inner_y = road_bed
+		elif d < outer_r:
 			var w: float = 1.0 - clampf((d - inner_r) / (outer_r - inner_r), 0.0, 1.0)
 			w = w * w * (3.0 - 2.0 * w)
-			var road_bed: float = lerpf(a3.y, b3.y, t) - 0.58
-			if d <= inner_r:
-				best_w = 1.0
-				carved_y = minf(carved_y, road_bed) if best_w >= 0.99 else road_bed
-			elif w > best_w:
-				best_w = w
-				carved_y = road_bed
-			elif w > 0.78:
-				carved_y = lerpf(carved_y, road_bed, 0.5)
-		var verge_outer: float = rw + 11.5
+			if w > 0.01:
+				best_w = maxf(best_w, w)
+				bed_w_sum += w
+				bed_h_sum += road_bed * w
+		var verge_outer: float = rw + 10.5
 		if d < verge_outer:
 			var vw: float = 1.0 - clampf((d - (rw + 0.5)) / (verge_outer - (rw + 0.5)), 0.0, 1.0)
 			best_verge = maxf(best_verge, vw * vw * (3.0 - 2.0 * vw))
-	if best_w > 0.001:
+	if best_inner_d < 1e8:
+		return Vector2(best_inner_y, best_verge)
+	if bed_w_sum > 0.001:
+		carved_y = bed_h_sum / bed_w_sum
 		var blended_y: float = lerpf(base_h, carved_y, best_w)
-		if best_w >= 0.98:
-			blended_y = minf(blended_y, carved_y)
 		return Vector2(blended_y, best_verge)
 	return Vector2(base_h, best_verge)
 
