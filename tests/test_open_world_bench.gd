@@ -6,6 +6,7 @@ const OpenWorldConfig = preload("res://scripts/world/open_world_config.gd")
 const TerrainGenerator = preload("res://scripts/world/terrain_generator.gd")
 const RoadNetwork = preload("res://scripts/world/road_network.gd")
 const SceneryPopulator = preload("res://scripts/world/scenery_populator.gd")
+const DestructiblePropManager = preload("res://scripts/world/destructible_prop_manager.gd")
 
 static func run() -> bool:
 	print("--- Running TestOpenWorldBench ---")
@@ -67,7 +68,7 @@ static func run() -> bool:
 	if not has_col:
 		printerr("[FAIL] Terrain chunk missing StaticBody3D collision")
 		return false
-	chunk_mesh.queue_free()
+	chunk_mesh.free()
 	print("[PASS] Chunk Streaming: 500m ArrayMesh and Trimesh collision generated successfully")
 	
 	# Test 4: Arterial Road Network (Grand Perimeter Highway)
@@ -76,23 +77,57 @@ static func run() -> bool:
 	if rn.highway_waypoints.size() < 64:
 		printerr("[FAIL] Expected at least 64 highway waypoints, got %d" % rn.highway_waypoints.size())
 		return false
-	if rn.road_nodes.size() < 6:
-		printerr("[FAIL] Expected at least 6 interconnected road meshes, got %d" % rn.road_nodes.size())
+	if rn.road_nodes.size() < 24:
+		printerr("[FAIL] Expected at least 24 interconnected real-world road meshes, got %d" % rn.road_nodes.size())
 		return false
-	print("[PASS] Road Network: Grand Perimeter Highway (%d waypoints) + %d Interconnecting Highways & Connectors validated" % [rn.highway_waypoints.size(), rn.road_nodes.size()])
+	print("[PASS] Road Network: Grand Perimeter Highway (%d waypoints) + %d Restructured Real-World Roads validated" % [rn.highway_waypoints.size(), rn.road_nodes.size()])
 	
-	# Test 5: Scenery MultiMesh Instancing
-	var pop := SceneryPopulator.new(tg, rn)
+	# Test 5: Scenery MultiMesh Instancing, ZERO Props On Roads, & Heterogeneous Physics Destruction
+	var dm := DestructiblePropManager.new()
+	dm._init_pools()
+	var pop := SceneryPopulator.new(tg, rn, dm)
 	pop.populate_world_scenery()
 	var mm_count := 0
+	var total_instances := 0
+	var road_violations := 0
 	for child in pop.get_children():
 		if child is MultiMeshInstance3D:
 			mm_count += 1
-	if mm_count < 4:
-		printerr("[FAIL] Expected at least 4 MultiMeshInstance3D batches, found %d" % mm_count)
+			var mm: MultiMesh = (child as MultiMeshInstance3D).multimesh
+			if mm and mm.mesh:
+				total_instances += mm.instance_count
+	var entries: Array[Dictionary] = dm.get_prop_entries()
+	for entry: Dictionary in entries:
+		var gpos: Vector3 = entry["ground_pos"]
+		if gpos.y < -5000.0:
+			continue
+		if not rn.is_point_clear_of_roads(gpos.x, gpos.z, 0.45, ""):
+			road_violations += 1
+			if road_violations <= 5:
+				printerr("  [ROAD VIOLATION] %s at (%.1f, %.1f)" % [str(entry["batch"]), gpos.x, gpos.z])
+	if mm_count < 25:
+		printerr("[FAIL] Expected expanded multi-category prop MultiMeshes (>=25), found %d" % mm_count)
 		return false
-	print("[PASS] Scenery MultiMeshes: High-performance instanced batches verified (Poles, Pines, Desert Rocks, Spoilers)")
+	if road_violations > 0:
+		printerr("[FAIL] Found %d prop instances encroaching on roads!" % road_violations)
+		return false
+	if dm.get_total_prop_count() < 500:
+		printerr("[FAIL] Expected >=500 registered destructible/collidable props, got %d" % dm.get_total_prop_count())
+		return false
+
+	# Verify heterogeneous prop destruction behavior classes exist
+	var wood_t := dm.classify_batch_name("MM_PortWoodenCrate1")
+	var pole_t := dm.classify_batch_name("MM_TownFireHydrant")
+	var drum_t := dm.classify_batch_name("MM_PortBarrelRedExplosive")
+	var cactus_t := dm.classify_batch_name("MultiMesh_DustBowlSaguaros")
+	var rock_t := dm.classify_batch_name("MultiMesh_VolcanoBasaltCrags")
+	var slide_t := dm.classify_batch_name("MM_HwyConcreteBarrier")
+	if wood_t == pole_t or pole_t == drum_t or drum_t == rock_t or cactus_t == slide_t:
+		printerr("[FAIL] Expected distinct heterogeneous physics classes across prop types")
+		return false
+	print("[PASS] Scenery & Destruction: %d batches, %d instances verified with 0 props on roads, heterogeneous physics active" % [mm_count, total_instances])
 	
-	rn.queue_free()
-	pop.queue_free()
+	rn.free()
+	pop.free()
+	dm.free()
 	return true
