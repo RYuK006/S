@@ -58,19 +58,21 @@ void fragment() {
 	float w_coast_sand = w_coast * (1.0 - smoothstep(1.8, 5.6, world_pos.y));
 	w_sand += w_coast_sand;
 
-	// Natural Alpine snowline: lush green pine valleys below 74m, deep snow peaks above 112m
+	// Natural Alpine snowline with organic wind-drift noise + moss/granite valleys
 	float slope = 1.0 - clamp(world_norm.y, 0.0, 1.0);
-	float snowline = smoothstep(74.0, 112.0, world_pos.y) * (1.0 - smoothstep(0.20, 0.44, slope));
+	float snow_noise = sin(world_pos.x * 0.017) * cos(world_pos.z * 0.019) * 14.0 + sin((world_pos.x + world_pos.z) * 0.043) * 6.0;
+	float snowline = smoothstep(74.0 + snow_noise, 116.0 + snow_noise, world_pos.y) * (1.0 - smoothstep(0.18, 0.44, slope));
 	float low_snow = w_snow * (1.0 - snowline);
 	w_snow *= snowline;
-	w_grass += low_snow * 0.55;
-	w_volcano += low_snow * 0.45; // Expose dark granite gravel under steep lower alpine faces
+	w_grass += low_snow * 0.60;
+	w_volcano += low_snow * 0.40; // Expose dark granite gravel under steep lower alpine faces
 
 	vec3 diff_grass = vec3(0.0);
 	vec3 nor_grass = vec3(0.5, 0.5, 1.0);
 	float r_grass = 0.85;
 	if (w_grass > 0.004) {
-		diff_grass = sample_antitile(tex_grass_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(0.62, 0.80, 0.44);
+		vec3 alpine_cool = mix(vec3(0.56, 0.68, 0.43), vec3(0.46, 0.56, 0.40), low_snow);
+		diff_grass = sample_antitile(tex_grass_diff, uv_macro, uv_micro, uv_rot, blend_t) * alpine_cool;
 		nor_grass = mix(texture(tex_grass_nor, uv_macro).rgb, texture(tex_grass_nor, uv_micro).rgb, 0.45);
 		r_grass = mix(texture(tex_grass_rough, uv_macro).r, texture(tex_grass_rough, uv_micro).r, 0.4);
 	}
@@ -79,7 +81,7 @@ void fragment() {
 	vec3 nor_sand = vec3(0.5, 0.5, 1.0);
 	float r_sand = 0.85;
 	if (w_sand > 0.004) {
-		diff_sand = sample_antitile(tex_sand_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(1.12, 0.82, 0.56);
+		diff_sand = sample_antitile(tex_sand_diff, uv_macro, uv_micro, uv_rot, blend_t) * vec3(0.92, 0.72, 0.52);
 		nor_sand = mix(texture(tex_sand_nor, uv_macro).rgb, texture(tex_sand_nor, uv_micro).rgb, 0.45);
 		r_sand = mix(texture(tex_sand_rough, uv_macro).r, texture(tex_sand_rough, uv_micro).r, 0.4);
 	}
@@ -88,7 +90,7 @@ void fragment() {
 	vec3 nor_snow = vec3(0.5, 0.5, 1.0);
 	float r_snow = 0.72;
 	if (w_snow > 0.004) {
-		diff_snow = mix(texture(tex_snow_diff, uv_macro).rgb, texture(tex_snow_diff, uv_micro).rgb, 0.35) * vec3(0.95, 0.97, 1.02);
+		diff_snow = mix(texture(tex_snow_diff, uv_macro).rgb, texture(tex_snow_diff, uv_micro).rgb, 0.35) * vec3(0.84, 0.88, 0.94);
 		nor_snow = mix(texture(tex_snow_nor, uv_macro).rgb, texture(tex_snow_nor, uv_micro).rgb, 0.35);
 		r_snow = mix(texture(tex_snow_rough, uv_macro).r, texture(tex_snow_rough, uv_micro).r, 0.4);
 	}
@@ -156,8 +158,10 @@ void fragment() {
 		final_roughness = mix(base_rough, r_cliff, cliff_weight);
 	}
 
-	// Break distant horizon repetition with subtle geological color modulation
+	// Break distant horizon repetition + add crisp basalt scoria micro-contrast on Volcano slopes
 	float macro_var = sin(world_pos.x * 0.011 + 0.7) * cos(world_pos.z * 0.013) * 0.08 - UV2.x * 0.14;
+	float scoria_grain = texture(tex_volcano_rough, uv_micro * 0.55).r;
+	final_albedo = mix(final_albedo, final_albedo * (0.76 + 0.42 * scoria_grain), w_volcano * 0.75);
 	final_albedo = clamp(final_albedo * (1.02 + macro_var), vec3(0.0), vec3(1.0));
 
 	// Per-pixel organic lava magma fissures & glowing molten lake inside Caldera (zero polygon diamonds!)
