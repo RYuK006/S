@@ -5,6 +5,7 @@ extends RefCounted
 
 const ProceduralCarMesh = preload("res://scripts/vehicle/procedural_car_mesh.gd")
 const RaycastWheel = preload("res://scripts/vehicle/raycast_wheel.gd")
+const CarMaterialEnhancer = preload("res://scripts/vehicle/car_material_enhancer.gd")
 
 static func load_car_visuals(controller: Node3D, recipe: Dictionary) -> Node3D:
 	var glb_path: String = "res://assets/models/cars/subaru_sti.glb"
@@ -39,11 +40,15 @@ static func load_car_visuals(controller: Node3D, recipe: Dictionary) -> Node3D:
 	_strip_studio_artifacts(loaded_model, path_low)
 
 	# 2. Orient model front toward -Z and normalize horizontal length
+	var has_explicit_spec: bool = _has_explicit_model_spec(path_low)
 	var spec: Dictionary = _get_model_spec(path_low)
 	loaded_model.rotation.y = float(spec.get("rot_y", PI))
 	var target_len: float = float(spec.get("target_len", 4.65))
 
 	var body_aabb: AABB = _calc_hierarchy_aabb(holder, loaded_model, Transform3D.IDENTITY)
+	if not has_explicit_spec and body_aabb.size.x > body_aabb.size.z * 1.12:
+		loaded_model.rotation.y += PI * 0.5
+		body_aabb = _calc_hierarchy_aabb(holder, loaded_model, Transform3D.IDENTITY)
 	var max_horiz: float = maxf(body_aabb.size.x, body_aabb.size.z)
 	if "mclaren" in path_low:
 		max_horiz = body_aabb.size.z
@@ -59,9 +64,9 @@ static func load_car_visuals(controller: Node3D, recipe: Dictionary) -> Node3D:
 	_bind_spatial_wheels(controller, holder, loaded_model, path_low)
 
 	# 4. Selective Forza Horizon 5 PBR Paint, Rubber & Light enhancements across body + wheels
-	_apply_fh5_car_materials(controller, path_low)
+	CarMaterialEnhancer.apply_fh5_car_materials(controller, path_low)
 	_optimize_car_shadows(holder)
-	_setup_car_reflection_probe(controller)
+	CarMaterialEnhancer.setup_car_reflection_probe(controller)
 	return holder
 
 static func _optimize_car_shadows(node: Node) -> void:
@@ -78,6 +83,12 @@ static func _optimize_car_shadows(node: Node) -> void:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for c: Node in node.get_children():
 		_optimize_car_shadows(c)
+
+static func _has_explicit_model_spec(path_low: String) -> bool:
+	for k: String in ["ford_bronco", "ford_raptor", "subaru_sti", "dodge_challenger", "ferrari_488", "nissan_gtr", "mclaren_p1", "porsche_911", "bmw_m4", "aventador", "countach", "mustang_gt", "koenigsegg_ccx", "dodge_ram", "porsche_gt2"]:
+		if k in path_low:
+			return true
+	return false
 
 static func _get_model_spec(path_low: String) -> Dictionary:
 	if "ford_bronco" in path_low:
@@ -104,6 +115,12 @@ static func _get_model_spec(path_low: String) -> Dictionary:
 		return {"rot_y": 0.0, "target_len": 4.80}
 	if "mustang_gt" in path_low:
 		return {"rot_y": PI * 0.5, "target_len": 4.78}
+	if "koenigsegg_ccx" in path_low:
+		return {"rot_y": PI * 0.5, "target_len": 4.30}
+	if "dodge_ram" in path_low:
+		return {"rot_y": -PI * 0.5, "target_len": 5.50}
+	if "porsche_gt2" in path_low:
+		return {"rot_y": -PI * 0.5, "target_len": 4.57}
 	return {"rot_y": PI, "target_len": 4.65}
 
 static func _strip_studio_artifacts(node: Node, path_low: String) -> void:
@@ -111,17 +128,36 @@ static func _strip_studio_artifacts(node: Node, path_low: String) -> void:
 	for child in node.get_children():
 		var nl: String = child.name.to_lower()
 		var is_junk: bool = false
+		var mat_names: String = ""
+		if child is MeshInstance3D and (child as MeshInstance3D).mesh:
+			var c_mesh: Mesh = (child as MeshInstance3D).mesh
+			for s_i: int in range(c_mesh.get_surface_count()):
+				var sm: Material = (child as MeshInstance3D).get_active_material(s_i)
+				if sm and sm.resource_name:
+					mat_names += " " + sm.resource_name.to_lower()
 		if "shadow_plane" in nl or "clouds" in nl:
 			is_junk = true
 		elif "dodge_challenger" in path_low and nl == "object_5":
 			is_junk = true
+		elif "lamborghini_terzo" in path_low and "material.044" in mat_names:
+			is_junk = true
 		elif "gt_sports" in path_low and "plane" in nl:
 			is_junk = true
+		elif ("floor" in mat_names or "smoke" in mat_names or "carshadow" in mat_names or "back," in (mat_names + ",") or mat_names.strip_edges() == "back" or "material.003" in mat_names and "koenigsegg_ccx" in path_low or "material_4" in mat_names and "aston" in path_low):
+			is_junk = true
+		elif ("koenigsegg_ccx" in path_low) and ("plane_002" in nl or "plane_003" in nl or "plane_004" in nl):
+			is_junk = true
+		elif ("floor" in nl or "ground" in nl or "plinth" in nl or "stage" in nl or "shadow" in nl or "plane" in nl or "studio" in nl or "text" in nl) and child is MeshInstance3D:
+			var mi_f: MeshInstance3D = child
+			if mi_f.mesh:
+				var af: AABB = mi_f.mesh.get_aabb()
+				if minf(af.size.x, minf(af.size.y, af.size.z)) < 0.25 and maxf(af.size.x, maxf(af.size.y, af.size.z)) > 1.8:
+					is_junk = true
 		elif child is MeshInstance3D:
 			var mi: MeshInstance3D = child
 			if mi.mesh:
 				var aabb: AABB = mi.mesh.get_aabb()
-				if aabb.size.y < 0.02 and maxf(aabb.size.x, aabb.size.z) > 8.0 and not ("challenger" in path_low):
+				if minf(aabb.size.x, minf(aabb.size.y, aabb.size.z)) < 0.05 and maxf(aabb.size.x, maxf(aabb.size.y, aabb.size.z)) > 7.5 and not ("challenger" in path_low):
 					is_junk = true
 		if is_junk:
 			to_remove.append(child)
@@ -133,6 +169,28 @@ static func _strip_studio_artifacts(node: Node, path_low: String) -> void:
 			n.get_parent().remove_child(n)
 		n.queue_free()
 
+static func _xf_mesh_aabb(mesh: Mesh, xf: Transform3D) -> AABB:
+	var xn: Vector3 = xf.basis.x.normalized()
+	var yn: Vector3 = xf.basis.y.normalized()
+	if maxf(absf(xn.x), maxf(absf(xn.y), absf(xn.z))) > 0.998 and maxf(absf(yn.x), maxf(absf(yn.y), absf(yn.z))) > 0.998:
+		return xf * mesh.get_aabb()
+	var min_p := Vector3(1e9, 1e9, 1e9)
+	var max_p := Vector3(-1e9, -1e9, -1e9)
+	var any_v: bool = false
+	for s: int in range(mesh.get_surface_count()):
+		var arr: Array = mesh.surface_get_arrays(s)
+		if arr.size() <= Mesh.ARRAY_VERTEX or not (arr[Mesh.ARRAY_VERTEX] is PackedVector3Array):
+			continue
+		var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		for v: Vector3 in verts:
+			var wp: Vector3 = xf * v
+			min_p = min_p.min(wp)
+			max_p = max_p.max(wp)
+			any_v = true
+	if not any_v:
+		return xf * mesh.get_aabb()
+	return AABB(min_p, (max_p - min_p).max(Vector3(0.001, 0.001, 0.001)))
+
 static func _calc_hierarchy_aabb(space_root: Node3D, node: Node, parent_xform: Transform3D) -> AABB:
 	var cur_xform: Transform3D = parent_xform
 	if node is Node3D and node != space_root:
@@ -143,7 +201,7 @@ static func _calc_hierarchy_aabb(space_root: Node3D, node: Node, parent_xform: T
 	if node is MeshInstance3D:
 		var mi: MeshInstance3D = node
 		if mi.visible and mi.mesh:
-			total = cur_xform * mi.mesh.get_aabb()
+			total = _xf_mesh_aabb(mi.mesh, cur_xform)
 			has_aabb = true
 	for c in node.get_children():
 		var sub: AABB = _calc_hierarchy_aabb(space_root, c, cur_xform)
@@ -318,11 +376,11 @@ static func _collect_wheel_meshes(node: Node, cur_xform: Transform3D, corners: D
 		if c is MeshInstance3D:
 			var mi: MeshInstance3D = c
 			if mi.visible and mi.mesh and _is_wheel_candidate(mi, path_low):
-				var ma: AABB = next_xform * mi.mesh.get_aabb()
+				var ma: AABB = _xf_mesh_aabb(mi.mesh, next_xform)
 				var max_d: float = maxf(ma.size.x, maxf(ma.size.y, ma.size.z))
 				var ctr: Vector3 = ma.get_center()
 				var min_sz: float = 0.28 if ("porsche" in path_low or "countach" in path_low) else 0.04
-				if max_d > min_sz and max_d < 1.25 and ma.size.y > 0.20 and ctr.y < 0.85 and absf(ctr.x) > 0.42 and absf(ctr.z) > 0.72:
+				if max_d > min_sz and max_d < 1.25 and ma.size.y > 0.02 and ctr.y < 0.85 and absf(ctr.x) > 0.42 and absf(ctr.z) > 0.72:
 					var key: String = ("F" if ctr.z < 0.0 else "R") + ("L" if ctr.x < 0.0 else "R")
 					corners[key].append({"node": mi, "holder_xform": next_xform})
 					continue
@@ -404,196 +462,47 @@ static func _split_mesh_by_quadrants(mi: MeshInstance3D, hx: Transform3D, corner
 		mi.visible = false
 
 static func _is_wheel_candidate(mi: MeshInstance3D, path_low: String) -> bool:
-	var combined: String = mi.name.to_lower()
+	var leaf_low: String = mi.name.to_lower()
 	var mats_low: String = ""
-	var p: Node = mi.get_parent()
-	for _depth in range(3):
-		if not p:
-			break
-		combined += " " + p.name.to_lower()
-		p = p.get_parent()
 	if mi.mesh:
 		for s in range(mi.mesh.get_surface_count()):
 			var mat: Material = mi.get_active_material(s)
 			if mat and mat.resource_name:
-				var rl: String = mat.resource_name.to_lower()
-				combined += " " + rl
-				mats_low += " " + rl
-	if "steering" in combined or "caliper" in combined or "calliper" in combined or "brake" in combined or "disc" in combined or "rotor" in combined or "__paint_2_" in combined:
+				mats_low += " " + mat.resource_name.to_lower()
+	var leaf_check: String = leaf_low + " " + mats_low
+	if "steering" in leaf_check or "caliper" in leaf_check or "calliper" in leaf_check or "brake" in leaf_check or "disc" in leaf_check or "rotor" in leaf_check or "__paint_2_" in leaf_check:
 		return false
-	if "porsche" in path_low and "circle_048" in combined:
+	if "porsche" in path_low and "circle_048" in leaf_check:
 		return false
-	# Challenger: ONLY Material__301 (full wheels/tires; avoids Object_23 chrome trunk strip)
 	if "dodge_challenger" in path_low and "material__301" in mats_low:
 		return true
 	if "countach" in path_low and ("material.025" in mats_low or "material.011" in mats_low):
 		return true
 	if "bmw_m4" in path_low and "meshesm8rim" in mats_low:
 		return true
-	return ("wheel" in combined or "rim" in combined or "tyre" in combined or "tire" in combined or "matte2" in combined or "matte3" in combined or "matte4" in combined or "matte5" in combined or "metal2" in combined or "metal3" in combined or "metal4" in combined or "metal5" in combined or "930_rim" in combined or "930_tire" in combined or "tyrewallblack" in combined)
+	if "porsche_gt2" in path_low and "meshpart2mtl" in mats_low:
+		return true
+	if "lamborghini_terzo" in path_low and ("jantes" in mats_low or "material.049" in mats_low or "tire" in mats_low):
+		return true
+	if "honda_nsx" in path_low and ("material.011" in mats_low or "material.023" in mats_low):
+		return true
+	if "mazda_rx7" in path_low and ("material.011" in mats_low or "material.014" in mats_low):
+		return true
+	if "dodge_ram" in path_low and leaf_low == "object_9":
+		return true
+	var parent_low: String = leaf_check
+	var p: Node = mi.get_parent()
+	for _depth in range(2):
+		if not p:
+			break
+		parent_low += " " + p.name.to_lower()
+		p = p.get_parent()
+	if "steering" in parent_low:
+		return false
+	return ("wheel" in parent_low or "rim" in parent_low or "tyre" in parent_low or "tire" in parent_low or "matte2" in parent_low or "matte3" in parent_low or "matte4" in parent_low or "matte5" in parent_low or "metal2" in parent_low or "metal3" in parent_low or "metal4" in parent_low or "metal5" in parent_low or "930_rim" in parent_low or "930_tire" in parent_low or "tyrewallblack" in parent_low)
 
 static func _setup_car_reflection_probe(controller: Node3D) -> void:
-	if not controller.get_node_or_null("CarDynamicReflectionProbe"):
-		var probe := ReflectionProbe.new()
-		probe.name = "CarDynamicReflectionProbe"
-		# Bake sky + local biome cubemap once on spawn/biome change instead of re-rendering 6 faces every frame
-		probe.update_mode = ReflectionProbe.UPDATE_ONCE
-		probe.intensity = 0.80
-		probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
-		# Bottom at 1.45 - 1.20 = +0.25m above ground so probe NEVER creates dark square shadows on terrain
-		probe.size = Vector3(5.2, 2.4, 6.0)
-		probe.origin_offset = Vector3(0.0, 0.0, 0.0)
-		probe.max_distance = 48.0
-		probe.enable_shadows = false
-		probe.position = Vector3(0.0, 1.45, 0.0)
-		controller.add_child(probe)
+	CarMaterialEnhancer.setup_car_reflection_probe(controller)
 
 static func apply_custom_paint(root: Node, custom_paint: Color, finish: String = "metallic") -> void:
-	var seen: Dictionary = {}
-	_apply_custom_paint_recursive(root, custom_paint, finish, seen)
-
-static func _apply_custom_paint_recursive(node: Node, custom_paint: Color, finish: String, seen: Dictionary) -> void:
-	if node is MeshInstance3D:
-		var mi: MeshInstance3D = node
-		if mi.mesh:
-			for s: int in range(mi.mesh.get_surface_count()):
-				var mat: Material = mi.get_active_material(s)
-				if mat is StandardMaterial3D:
-					var std: StandardMaterial3D = mat
-					var rid: int = std.get_instance_id()
-					if seen.has(rid):
-						continue
-					seen[rid] = true
-					var rname: String = std.resource_name.to_lower()
-					var is_secondary: bool = ("black" in rname or rname.ends_with("2") or "paint2" in rname or "coat2" in rname or "interior" in rname or "glass" in rname or "tire" in rname or "tyre" in rname or "rim" in rname or "brake" in rname or "caliper" in rname or "carbon" in rname or "chrome" in rname)
-					if is_secondary:
-						continue
-					var is_body: bool = ("paint" in rname or "coat" in rname or "scocca" in rname or "coloured" in rname or "body" in rname or "livery" in rname or rname == "mt_body" or rname == "mt_mirrorcover" or rname == "material.008")
-					if is_body:
-						if std.albedo_texture == null:
-							std.albedo_color = custom_paint
-						match finish:
-							"metallic":
-								std.metallic = 0.85
-								std.roughness = 0.14
-								std.clearcoat_enabled = true
-								std.clearcoat = 1.0
-								std.clearcoat_roughness = 0.03
-							"gloss":
-								std.metallic = 0.15
-								std.roughness = 0.08
-								std.clearcoat_enabled = true
-								std.clearcoat = 0.90
-								std.clearcoat_roughness = 0.02
-							"matte":
-								std.metallic = 0.05
-								std.roughness = 0.68
-								std.clearcoat_enabled = false
-								std.clearcoat = 0.0
-							"satin":
-								std.metallic = 0.45
-								std.roughness = 0.34
-								std.clearcoat_enabled = true
-								std.clearcoat = 0.40
-								std.clearcoat_roughness = 0.15
-							"pearl":
-								std.metallic = 0.72
-								std.roughness = 0.15
-								std.clearcoat_enabled = true
-								std.clearcoat = 1.0
-								std.clearcoat_roughness = 0.03
-	for c: Node in node.get_children():
-		_apply_custom_paint_recursive(c, custom_paint, finish, seen)
-
-static func _apply_fh5_car_materials(root: Node, path_low: String) -> void:
-	var custom_paint: Color = Color(-1, 0, 0)
-	if "nissan_gtr" in path_low:
-		custom_paint = Color(0.04, 0.14, 0.48) # Bayside Midnight Blue Metallic
-	elif "mclaren_p1" in path_low:
-		custom_paint = Color(0.95, 0.34, 0.03) # Volcano Papaya Orange
-	elif "porsche_911" in path_low:
-		custom_paint = Color(0.78, 0.05, 0.04) # Guards Red
-	elif "aventador" in path_low:
-		custom_paint = Color(0.94, 0.68, 0.04) # Giallo Orion
-	elif "ferrari_488" in path_low:
-		custom_paint = Color(0.76, 0.02, 0.03) # Rosso Corsa
-	elif "mustang_gt" in path_low:
-		custom_paint = Color(0.06, 0.25, 0.72)
-
-	var processed_mats: Dictionary = {}
-	_enhance_materials_recursive(root, custom_paint, path_low, processed_mats)
-
-static func _enhance_materials_recursive(node: Node, custom_paint: Color, path_low: String, seen: Dictionary) -> void:
-	if node is MeshInstance3D:
-		var mi: MeshInstance3D = node
-		if mi.mesh:
-			for s in range(mi.mesh.get_surface_count()):
-				var mat: Material = mi.get_active_material(s)
-				if mat is StandardMaterial3D:
-					var std: StandardMaterial3D = mat
-					var rid: int = std.get_instance_id()
-					if seen.has(rid):
-						continue
-					seen[rid] = true
-					var rname: String = std.resource_name.to_lower()
-					var has_tex: bool = std.albedo_texture != null
-
-					var is_secondary: bool = ("black" in rname or rname.ends_with("2") or "paint2" in rname or "coat2" in rname)
-					if not has_tex and ("paint" in rname or "coat" in rname or "scocca" in rname or "coloured" in rname or rname == "mt_body" or rname == "mt_mirrorcover"):
-						if custom_paint.r >= 0.0 and not is_secondary:
-							std.albedo_color = custom_paint
-						std.metallic = maxf(std.metallic, 0.78)
-						std.roughness = minf(maxf(std.roughness, 0.14), 0.24)
-						std.clearcoat_enabled = true
-						std.clearcoat = 1.0
-						std.clearcoat_roughness = 0.03
-					elif "countach" in path_low and rname == "material.008":
-						# Tame clipped pure-white body highlight to pearl white so sun specular doesn't wash out
-						std.albedo_color = Color(0.84, 0.85, 0.88)
-						std.metallic = 0.35
-						std.roughness = 0.16
-						std.clearcoat_enabled = true
-						std.clearcoat = 1.0
-						std.clearcoat_roughness = 0.03
-					elif "undercarriage" in rname:
-						# Eliminate bright white inside Ford Raptor wheel-well fender arches
-						std.albedo_color = Color(0.08, 0.08, 0.09)
-						std.roughness = 0.88
-						std.metallic = 0.05
-					elif has_tex and ("coat" in rname or "body" in rname or "livery" in rname or "texturede" in rname):
-						if "texturede" in rname:
-							std.metallic = 0.45
-							std.roughness = 0.22
-						std.clearcoat_enabled = true
-						std.clearcoat = 0.90
-						std.clearcoat_roughness = 0.04
-					elif "glass" in rname or "windscreen" in rname or "windshield" in rname or "window" in rname or "cristal" in rname or "lunas" in rname:
-						std.clearcoat_enabled = true
-						std.clearcoat = 1.0
-						std.clearcoat_roughness = 0.02
-						std.roughness = 0.03
-					elif "sasasa" in rname or "tyre_side" in rname or "volk" in rname or "material_7" in rname or ("countach" in path_low and rname == "material.025") or (("tyre" in rname or "tire" in rname) and ("ferrari" in path_low or "mclaren" in path_low)):
-						# Clean matte dark performance tire sidewalls & treads (removes chalk stencils & harsh specular bumps)
-						std.albedo_texture = null
-						std.normal_enabled = false
-						std.albedo_color = Color(0.06, 0.06, 0.065)
-						std.roughness = 0.88
-						std.metallic = 0.0
-						std.metallic_specular = 0.22
-					elif "carbon" in rname:
-						std.albedo_color = Color(0.09, 0.09, 0.10)
-						std.metallic = 0.25
-						std.roughness = 0.22
-						std.clearcoat_enabled = true
-						std.clearcoat = 0.65
-						std.clearcoat_roughness = 0.08
-					elif ("taillight" in rname or "brakelight" in rname or "redlight" in rname or "led_rojo" in rname or "reflector_tl" in rname or "reflector_bl" in rname) and not has_tex:
-						std.emission_enabled = true
-						std.emission = Color(0.95, 0.04, 0.02)
-						std.emission_energy_multiplier = 1.8
-					elif ("headlight" in rname or "light_emissive" in rname) and not has_tex and not ("glass" in rname):
-						std.emission_enabled = true
-						std.emission = Color(1.0, 0.96, 0.90)
-						std.emission_energy_multiplier = 1.4
-	for c in node.get_children():
-		_enhance_materials_recursive(c, custom_paint, path_low, seen)
+	CarMaterialEnhancer.apply_custom_paint(root, custom_paint, finish)
