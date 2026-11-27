@@ -32,20 +32,20 @@ static func apply_aaa_environment(env: Environment, preset: String = "outdoor") 
 
 	# AgX Filmic Highlight Roll-Off + Punchy Zero-Cost Contrast
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_agx_white = 14.5
-	env.tonemap_agx_contrast = 1.20 if preset != "studio" else 1.22
+	env.tonemap_agx_white = 14.0
+	env.tonemap_agx_contrast = 1.18 if preset != "studio" else 1.22
 
 	# Ambient-Only Contact Shadows (light_affect = 0.0 avoids staining direct sunlight)
 	env.ssao_enabled = true
 	env.ssao_radius = 1.55
-	env.ssao_intensity = 2.25
+	env.ssao_intensity = 2.05
 	env.ssao_power = 1.65
 	env.ssao_light_affect = 0.0
 
 	# Half-Res Screen-Space Indirect Lighting (Subtle Color Bleed Bounce)
 	env.ssil_enabled = true
 	env.ssil_radius = 4.5
-	env.ssil_intensity = 0.72
+	env.ssil_intensity = 0.78
 
 	# Temporally Stable Rewritten SSR (Wet Puddles, Car Clearcoat, Showroom Floor)
 	env.ssr_enabled = true
@@ -96,9 +96,9 @@ static func apply_aaa_environment(env: Environment, preset: String = "outdoor") 
 		env.volumetric_fog_temporal_reprojection_enabled = true
 
 		env.adjustment_enabled = true
-		env.adjustment_brightness = 1.03
-		env.adjustment_contrast = 1.07
-		env.adjustment_saturation = 1.12
+		env.adjustment_brightness = 1.02
+		env.adjustment_contrast = 1.06
+		env.adjustment_saturation = 1.04
 
 
 static func configure_directional_sun(sun: DirectionalLight3D, max_dist: float = 480.0) -> void:
