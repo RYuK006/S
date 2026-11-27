@@ -68,6 +68,7 @@ for (const file of files) {
     setParam(lines, "detect_3d/compress_to", "0");
   } else if (/\.(png|jpg|jpeg)\.import$/i.test(norm)) {
     const isCar = norm.includes("/models/cars/");
+    const isProp = norm.includes("/models/props/") || norm.includes("/models/foliage/") || norm.includes("/models/rocks/");
     const isNormal = /(_nor|_normal|-normal|_nrm)/.test(norm);
     const isAlphaOrPng = norm.endsWith(".png.import");
     const useBC7 = isNormal || isAlphaOrPng;
@@ -77,7 +78,7 @@ for (const file of files) {
     setParam(lines, "compress/normal_map", "0");
     setParam(lines, "mipmaps/generate", "true");
     setParam(lines, "detect_3d/compress_to", "2");
-    setParam(lines, "process/size_limit", isCar ? "4096" : "2048");
+    setParam(lines, "process/size_limit", isCar ? "2048" : (isProp ? "1024" : "2048"));
 
     if (useBC7) counts.bc7++;
     else counts.bc1++;
