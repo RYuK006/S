@@ -60,8 +60,24 @@ static func load_car_visuals(controller: Node3D, recipe: Dictionary) -> Node3D:
 
 	# 4. Selective Forza Horizon 5 PBR Paint, Rubber & Light enhancements across body + wheels
 	_apply_fh5_car_materials(controller, path_low)
+	_optimize_car_shadows(holder)
 	_setup_car_reflection_probe(controller)
 	return holder
+
+static func _optimize_car_shadows(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mi: MeshInstance3D = node
+		var nl: String = mi.name.to_lower()
+		var is_interior: bool = ("interior" in nl or "seat" in nl or "dash" in nl or "glass" in nl or "window" in nl or "windshield" in nl or "badge" in nl or "emblem" in nl or "caliper" in nl or "rotor" in nl or "disc" in nl or "steering" in nl or "exhaust" in nl or "light" in nl)
+		var tiny: bool = false
+		if mi.mesh:
+			var sz: Vector3 = mi.mesh.get_aabb().size
+			if maxf(sz.x, maxf(sz.y, sz.z)) < 0.42:
+				tiny = true
+		if is_interior or tiny:
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for c: Node in node.get_children():
+		_optimize_car_shadows(c)
 
 static func _get_model_spec(path_low: String) -> Dictionary:
 	if "ford_bronco" in path_low:
