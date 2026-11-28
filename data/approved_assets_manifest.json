@@ -1,0 +1,972 @@
+{
+  "cars": [
+    {
+      "slug": "koenigsegg_one1",
+      "uid": "b4e5a4c5fa5d4d45acd6715d3325254f",
+      "name": "Koenigsegg One:1",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.5,
+      "mass": 1360,
+      "hp": 1341,
+      "torque": 1371,
+      "topSpeed": 400,
+      "redline": 8250,
+      "model_path": "res://assets/models/cars/koenigsegg_one1.glb"
+    },
+    {
+      "slug": "bugatti_centodieci",
+      "uid": "7647afdfba6b47a086f9b644442ebeb6",
+      "name": "Bugatti Centodieci",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.54,
+      "mass": 1975,
+      "hp": 1577,
+      "torque": 1600,
+      "topSpeed": 380,
+      "redline": 7200,
+      "model_path": "res://assets/models/cars/bugatti_centodieci.glb"
+    },
+    {
+      "slug": "audi_r8_lms",
+      "uid": "1faf7b2931444fb49e7c28483ac40c0c",
+      "name": "Audi R8 LMS Ultra GT3",
+      "archetype": "Supercar Track",
+      "targetLen": 4.46,
+      "mass": 1290,
+      "hp": 570,
+      "torque": 540,
+      "topSpeed": 315,
+      "redline": 8500,
+      "model_path": "res://assets/models/cars/audi_r8_lms.glb"
+    },
+    {
+      "slug": "porsche_gt2_rs",
+      "uid": "97947fc2a58b4e8b8ffa95e827a792e6",
+      "name": "Porsche 911 GT2 RS Clubsport",
+      "archetype": "Supercar Track",
+      "targetLen": 4.57,
+      "mass": 1390,
+      "hp": 700,
+      "torque": 750,
+      "topSpeed": 340,
+      "redline": 7200,
+      "model_path": "res://assets/models/cars/porsche_gt2_rs.glb"
+    },
+    {
+      "slug": "lamborghini_terzo",
+      "uid": "7ad3dffa9d344c3c978eafcc220cb709",
+      "name": "Lamborghini Terzo Millennio",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.68,
+      "mass": 1250,
+      "hp": 1120,
+      "torque": 1080,
+      "topSpeed": 370,
+      "redline": 9000,
+      "model_path": "res://assets/models/cars/lamborghini_terzo.glb"
+    },
+    {
+      "slug": "koenigsegg_ccx",
+      "uid": "423b64e085974b97b5cfd5a87d9dcce3",
+      "name": "Koenigsegg CCX Roadster",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.3,
+      "mass": 1280,
+      "hp": 806,
+      "torque": 920,
+      "topSpeed": 375,
+      "redline": 7600,
+      "model_path": "res://assets/models/cars/koenigsegg_ccx.glb"
+    },
+    {
+      "slug": "ferrari_f40_lm",
+      "uid": "8f67f3c0bbcc4e7084ee7f49cab9c7db",
+      "name": "Ferrari F40 LM 1989",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.36,
+      "mass": 1050,
+      "hp": 720,
+      "torque": 700,
+      "topSpeed": 352,
+      "redline": 8100,
+      "model_path": "res://assets/models/cars/ferrari_f40_lm.glb"
+    },
+    {
+      "slug": "mazda_rx7_fd",
+      "uid": "d35ff630df614771b82e7b2f59035b1e",
+      "name": "Mazda RX-7 FD3S",
+      "archetype": "JDM Street",
+      "targetLen": 4.28,
+      "mass": 1260,
+      "hp": 315,
+      "torque": 330,
+      "topSpeed": 265,
+      "redline": 8200,
+      "model_path": "res://assets/models/cars/mazda_rx7_fd.glb"
+    },
+    {
+      "slug": "ares_s1_project",
+      "uid": "4f1bd08fd2914a0e8d3ff44fc7d0b0b9",
+      "name": "Ares S1 Project Spyder",
+      "archetype": "Supercar Track",
+      "targetLen": 4.65,
+      "mass": 1420,
+      "hp": 715,
+      "torque": 690,
+      "topSpeed": 332,
+      "redline": 8600,
+      "model_path": "res://assets/models/cars/ares_s1_project.glb"
+    },
+    {
+      "slug": "skyline_r32_gtr",
+      "uid": "8810e677eca543a6b840cf67dd064aa4",
+      "name": "Nissan Skyline R32 GT-R",
+      "archetype": "JDM Street",
+      "targetLen": 4.54,
+      "mass": 1430,
+      "hp": 360,
+      "torque": 410,
+      "topSpeed": 278,
+      "redline": 8200,
+      "model_path": "res://assets/models/cars/skyline_r32_gtr.glb"
+    },
+    {
+      "slug": "mitsubishi_evo_ix",
+      "uid": "f0509bed976d453c92dfcd83a5ac14e5",
+      "name": "Mitsubishi Lancer Evo IX MR",
+      "archetype": "Rally Special",
+      "targetLen": 4.49,
+      "mass": 1410,
+      "hp": 345,
+      "torque": 455,
+      "topSpeed": 262,
+      "redline": 7600,
+      "model_path": "res://assets/models/cars/mitsubishi_evo_ix.glb"
+    },
+    {
+      "slug": "aston_vantage_v600",
+      "uid": "4f2d9b51a0d44ea186d8354246379941",
+      "name": "Aston Martin Vantage V600",
+      "archetype": "GT Tourer",
+      "targetLen": 4.58,
+      "mass": 1970,
+      "hp": 600,
+      "torque": 813,
+      "topSpeed": 320,
+      "redline": 6800,
+      "model_path": "res://assets/models/cars/aston_vantage_v600.glb"
+    },
+    {
+      "slug": "honda_nsx_1990",
+      "uid": "1cc15628a00a4739a6b6c01128927c8d",
+      "name": "Honda NSX Type-S 1990",
+      "archetype": "JDM Street",
+      "targetLen": 4.43,
+      "mass": 1320,
+      "hp": 310,
+      "torque": 320,
+      "topSpeed": 274,
+      "redline": 8300,
+      "model_path": "res://assets/models/cars/honda_nsx_1990.glb"
+    },
+    {
+      "slug": "nissan_silvia_s13",
+      "uid": "e398ad20e83d42e581ab43438d5b6e49",
+      "name": "Nissan Silvia S13 Spec",
+      "archetype": "JDM Street",
+      "targetLen": 4.47,
+      "mass": 1180,
+      "hp": 270,
+      "torque": 310,
+      "topSpeed": 252,
+      "redline": 7500,
+      "model_path": "res://assets/models/cars/nissan_silvia_s13.glb"
+    },
+    {
+      "slug": "dodge_viper_gtsr",
+      "uid": "e984e36cabe943e1b953a276f145ecdf",
+      "name": "Dodge SRT Viper GTS-R",
+      "archetype": "Supercar Track",
+      "targetLen": 4.46,
+      "mass": 1380,
+      "hp": 645,
+      "torque": 813,
+      "topSpeed": 331,
+      "redline": 6500,
+      "model_path": "res://assets/models/cars/dodge_viper_gtsr.glb"
+    },
+    {
+      "slug": "shelby_gt500",
+      "uid": "3c6073393d4f4a3083ec697a389992a7",
+      "name": "Shelby GT500 Cobra 2010",
+      "archetype": "Muscle Bruiser",
+      "targetLen": 4.78,
+      "mass": 1730,
+      "hp": 540,
+      "torque": 690,
+      "topSpeed": 305,
+      "redline": 6500,
+      "model_path": "res://assets/models/cars/shelby_gt500.glb"
+    },
+    {
+      "slug": "bmw_m3_gtr",
+      "uid": "7f060f9d44b74c34a5184399a6cfc6d7",
+      "name": "BMW M3 GTR E46",
+      "archetype": "GT Tourer",
+      "targetLen": 4.61,
+      "mass": 1350,
+      "hp": 460,
+      "torque": 480,
+      "topSpeed": 298,
+      "redline": 8200,
+      "model_path": "res://assets/models/cars/bmw_m3_gtr.glb"
+    },
+    {
+      "slug": "ford_shelby_gr1",
+      "uid": "bd62972dd652443fa46cbde715e3c7c8",
+      "name": "Ford Shelby GR-1 V10",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.41,
+      "mass": 1760,
+      "hp": 605,
+      "torque": 679,
+      "topSpeed": 322,
+      "redline": 7200,
+      "model_path": "res://assets/models/cars/ford_shelby_gr1.glb"
+    },
+    {
+      "slug": "alfa_giulia_gta",
+      "uid": "460d44b163e24836bbefa48be9357ee1",
+      "name": "Alfa Romeo Giulia Sprint GTA",
+      "archetype": "GT Tourer",
+      "targetLen": 4.14,
+      "mass": 785,
+      "hp": 170,
+      "torque": 195,
+      "topSpeed": 225,
+      "redline": 7500,
+      "model_path": "res://assets/models/cars/alfa_giulia_gta.glb"
+    },
+    {
+      "slug": "dodge_charger_police",
+      "uid": "c6d52512e32d42abb89466ced4d56c1d",
+      "name": "Dodge Charger SRT Interceptor",
+      "archetype": "Muscle Bruiser",
+      "targetLen": 5.05,
+      "mass": 1980,
+      "hp": 485,
+      "torque": 644,
+      "topSpeed": 290,
+      "redline": 6600,
+      "model_path": "res://assets/models/cars/dodge_charger_police.glb"
+    },
+    {
+      "slug": "audi_sport_quattro",
+      "uid": "a2e98736245448afa807a2b5cabe05c7",
+      "name": "Audi Sport Quattro 1984",
+      "archetype": "Rally Special",
+      "targetLen": 4.16,
+      "mass": 1290,
+      "hp": 390,
+      "torque": 450,
+      "topSpeed": 258,
+      "redline": 7600,
+      "model_path": "res://assets/models/cars/audi_sport_quattro.glb"
+    },
+    {
+      "slug": "porsche_959",
+      "uid": "0530aa8fa4b74427a71c961a5bdd7087",
+      "name": "Porsche 959 Twin-Turbo",
+      "archetype": "Rally Special",
+      "targetLen": 4.26,
+      "mass": 1450,
+      "hp": 450,
+      "torque": 500,
+      "topSpeed": 317,
+      "redline": 7600,
+      "model_path": "res://assets/models/cars/porsche_959.glb"
+    },
+    {
+      "slug": "vw_golf_gti_mk1",
+      "uid": "1fc46cb37bd748e3bb9355fcedaf3817",
+      "name": "VW Golf GTI Mk1 1976",
+      "archetype": "Rally Special",
+      "targetLen": 3.82,
+      "mass": 840,
+      "hp": 175,
+      "torque": 205,
+      "topSpeed": 218,
+      "redline": 7200,
+      "model_path": "res://assets/models/cars/vw_golf_gti_mk1.glb"
+    },
+    {
+      "slug": "jeep_wrangler_rubicon",
+      "uid": "e3ecbf7d1fda464cb84d4bf41925d383",
+      "name": "Jeep Wrangler Rubicon",
+      "archetype": "Offroad & Trucks",
+      "targetLen": 4.75,
+      "mass": 2050,
+      "hp": 375,
+      "torque": 520,
+      "topSpeed": 195,
+      "redline": 6400,
+      "model_path": "res://assets/models/cars/jeep_wrangler_rubicon.glb"
+    },
+    {
+      "slug": "subaru_brz_varis",
+      "uid": "f0d1a65a4f8e496bbb7f187e57dc90cc",
+      "name": "Subaru BRZ Widebody",
+      "archetype": "JDM Street",
+      "targetLen": 4.24,
+      "mass": 1250,
+      "hp": 330,
+      "torque": 365,
+      "topSpeed": 268,
+      "redline": 7800,
+      "model_path": "res://assets/models/cars/subaru_brz_varis.glb"
+    },
+    {
+      "slug": "mclaren_720s",
+      "uid": "56dff31093154a788f103fa39be90dc2",
+      "name": "McLaren 720S Coupe",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.54,
+      "mass": 1419,
+      "hp": 720,
+      "torque": 770,
+      "topSpeed": 341,
+      "redline": 8200,
+      "model_path": "res://assets/models/cars/mclaren_720s.glb"
+    },
+    {
+      "slug": "land_rover_defender",
+      "uid": "0fbbc07768a5456c9f6f8c9c7e048d28",
+      "name": "Land Rover Defender 110",
+      "archetype": "Offroad & Trucks",
+      "targetLen": 4.6,
+      "mass": 2150,
+      "hp": 340,
+      "torque": 550,
+      "topSpeed": 185,
+      "redline": 5800,
+      "model_path": "res://assets/models/cars/land_rover_defender.glb"
+    },
+    {
+      "slug": "bmw_m5_cs",
+      "uid": "30fa0c4408bc43be8c3a67c51fcc6184",
+      "name": "BMW M5 F90 Competition",
+      "archetype": "GT Tourer",
+      "targetLen": 4.96,
+      "mass": 1865,
+      "hp": 625,
+      "torque": 750,
+      "topSpeed": 305,
+      "redline": 7200,
+      "model_path": "res://assets/models/cars/bmw_m5_cs.glb"
+    },
+    {
+      "slug": "ferrari_laferrari",
+      "uid": "8b46fa49718647de846387ef4c1e95b3",
+      "name": "Ferrari LaFerrari",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.7,
+      "mass": 1385,
+      "hp": 950,
+      "torque": 900,
+      "topSpeed": 352,
+      "redline": 9250,
+      "model_path": "res://assets/models/cars/ferrari_laferrari.glb"
+    },
+    {
+      "slug": "jaguar_etype_1963",
+      "uid": "5670ebba9bbb4e42b9ce3ff5f37b743c",
+      "name": "Jaguar E-Type Lightweight",
+      "archetype": "GT Tourer",
+      "targetLen": 4.45,
+      "mass": 980,
+      "hp": 300,
+      "torque": 350,
+      "topSpeed": 262,
+      "redline": 6500,
+      "model_path": "res://assets/models/cars/jaguar_etype_1963.glb"
+    },
+    {
+      "slug": "dodge_ram_2500",
+      "uid": "b4259af6d85d472b8fde9517bcd38154",
+      "name": "RAM 2500 Heavy Rebel",
+      "archetype": "Offroad & Trucks",
+      "targetLen": 5.5,
+      "mass": 3100,
+      "hp": 650,
+      "torque": 1080,
+      "topSpeed": 192,
+      "redline": 5600,
+      "model_path": "res://assets/models/cars/dodge_ram_2500.glb"
+    },
+    {
+      "slug": "mercedes_g63_amg",
+      "uid": "f583b5bfc17346c08573dc4f1edebefe",
+      "name": "Mercedes-AMG G63 Biturbo",
+      "archetype": "Offroad & Trucks",
+      "targetLen": 4.82,
+      "mass": 2560,
+      "hp": 585,
+      "torque": 850,
+      "topSpeed": 240,
+      "redline": 6500,
+      "model_path": "res://assets/models/cars/mercedes_g63_amg.glb"
+    },
+    {
+      "slug": "chevy_camaro_ss67",
+      "uid": "3016d29e5dd54e40b92a9898476c3ccc",
+      "name": "Chevrolet Camaro SS 1967",
+      "archetype": "Muscle Bruiser",
+      "targetLen": 4.69,
+      "mass": 1520,
+      "hp": 425,
+      "torque": 580,
+      "topSpeed": 265,
+      "redline": 6200,
+      "model_path": "res://assets/models/cars/chevy_camaro_ss67.glb"
+    },
+    {
+      "slug": "honda_civic_ek9",
+      "uid": "4012706636b843d49ad3974af8fba593",
+      "name": "Honda Civic Type R EK9",
+      "archetype": "JDM Street",
+      "targetLen": 4.18,
+      "mass": 1050,
+      "hp": 220,
+      "torque": 215,
+      "topSpeed": 238,
+      "redline": 8600,
+      "model_path": "res://assets/models/cars/honda_civic_ek9.glb"
+    },
+    {
+      "slug": "ford_gt_2017",
+      "uid": "7eb9c5aca1e84d428898bf88fa9ab8b7",
+      "name": "Ford GT EcoBoost 2017",
+      "archetype": "Hypercar Exotics",
+      "targetLen": 4.76,
+      "mass": 1385,
+      "hp": 660,
+      "torque": 745,
+      "topSpeed": 347,
+      "redline": 7000,
+      "model_path": "res://assets/models/cars/ford_gt_2017.glb"
+    },
+    {
+      "slug": "corvette_c7_z06",
+      "uid": "3648a2668d5049d2a15e84facb150562",
+      "name": "Chevrolet Corvette C7 Z06",
+      "archetype": "Supercar Track",
+      "targetLen": 4.51,
+      "mass": 1598,
+      "hp": 650,
+      "torque": 881,
+      "topSpeed": 315,
+      "redline": 6600,
+      "model_path": "res://assets/models/cars/corvette_c7_z06.glb"
+    }
+  ],
+  "props": [
+    {
+      "slug": "mailbox_street",
+      "uid": "582c0ce1ffee41179ab981146ae0ff87",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/mailbox_street.glb"
+    },
+    {
+      "slug": "highway_billboard",
+      "uid": "20d1a51fbfa94373900e29de74a0f9ee",
+      "cat": "SOLID_BUILDING",
+      "biome": "highway",
+      "scale": 1,
+      "model_path": "res://assets/models/props/highway_billboard.glb"
+    },
+    {
+      "slug": "guard_booth",
+      "uid": "422ec83e0bd64687a0026c67abb6bc07",
+      "cat": "SOLID_BUILDING",
+      "biome": "port",
+      "scale": 1,
+      "model_path": "res://assets/models/props/guard_booth.glb"
+    },
+    {
+      "slug": "steel_bollard",
+      "uid": "1ccd0c761fc744a3a62e168044a9d2eb",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/steel_bollard.glb"
+    },
+    {
+      "slug": "gas_station_pump",
+      "uid": "53abc45c2c7b44078b8f0f03ec7bcf57",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "highway",
+      "scale": 1,
+      "model_path": "res://assets/models/props/gas_station_pump.glb"
+    },
+    {
+      "slug": "bus_stop_shelter",
+      "uid": "8c984e73fa274c49a444f9991444d542",
+      "cat": "SOLID_BUILDING",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/bus_stop_shelter.glb"
+    },
+    {
+      "slug": "street_trash_can",
+      "uid": "f61aeec14ff441abb0f6add5485a2e90",
+      "cat": "LIGHT_PLASTIC_FLICK",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/street_trash_can.glb"
+    },
+    {
+      "slug": "solar_street_panel",
+      "uid": "d69ad151457c4aad830b40e8dd92eece",
+      "cat": "POLE_SNAP",
+      "biome": "desert",
+      "scale": 1,
+      "model_path": "res://assets/models/props/solar_street_panel.glb"
+    },
+    {
+      "slug": "coastal_lighthouse",
+      "uid": "464af883421f4ac68ede2605f4f1407b",
+      "cat": "SOLID_BUILDING",
+      "biome": "coast",
+      "scale": 1,
+      "model_path": "res://assets/models/props/coastal_lighthouse.glb"
+    },
+    {
+      "slug": "metal_barrier_crowd",
+      "uid": "3843be0d065847bc8e0b2b2002e7e46f",
+      "cat": "LIGHT_PLASTIC_FLICK",
+      "biome": "hub",
+      "scale": 1,
+      "model_path": "res://assets/models/props/metal_barrier_crowd.glb"
+    },
+    {
+      "slug": "desert_water_tower",
+      "uid": "500cfe0cf4a74350bb49c5736b692339",
+      "cat": "SOLID_BUILDING",
+      "biome": "desert",
+      "scale": 1,
+      "model_path": "res://assets/models/props/desert_water_tower.glb"
+    },
+    {
+      "slug": "beach_lifeguard_tower",
+      "uid": "69cb65bb670f46d59e48d92c7f08da6b",
+      "cat": "WOOD_SPLINTER",
+      "biome": "coast",
+      "scale": 1,
+      "model_path": "res://assets/models/props/beach_lifeguard_tower.glb"
+    },
+    {
+      "slug": "wooden_pallet",
+      "uid": "2a4411c6956f4adeb7877f03436bb742",
+      "cat": "WOOD_SPLINTER",
+      "biome": "port",
+      "scale": 1,
+      "model_path": "res://assets/models/props/wooden_pallet.glb"
+    },
+    {
+      "slug": "wind_turbine_tall",
+      "uid": "e0678e6615a74ed29c1376a591262159",
+      "cat": "SOLID_BUILDING",
+      "biome": "highway",
+      "scale": 1,
+      "model_path": "res://assets/models/props/wind_turbine_tall.glb"
+    },
+    {
+      "slug": "electric_transformer_box",
+      "uid": "e1855872634042abab77dfb7e51a3287",
+      "cat": "SOLID_BUILDING",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/electric_transformer_box.glb"
+    },
+    {
+      "slug": "road_construction_barrier",
+      "uid": "2a09091d4e7b4539abe03f6a50762409",
+      "cat": "WOOD_SPLINTER",
+      "biome": "highway",
+      "scale": 1,
+      "model_path": "res://assets/models/props/road_construction_barrier.glb"
+    },
+    {
+      "slug": "park_bench_iron",
+      "uid": "acf643ab6a4a4ef2b894abd59aebdf4d",
+      "cat": "WOOD_SPLINTER",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/park_bench_iron.glb"
+    },
+    {
+      "slug": "wooden_warehouse_shed",
+      "uid": "e03a76f5f010465ca570c3e3dc2fb1d1",
+      "cat": "SOLID_BUILDING",
+      "biome": "desert",
+      "scale": 1,
+      "model_path": "res://assets/models/props/wooden_warehouse_shed.glb"
+    },
+    {
+      "slug": "street_vending_machine",
+      "uid": "19d4bd442279453297b26dca4d517501",
+      "cat": "HEAVY_SLIDE",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/street_vending_machine.glb"
+    },
+    {
+      "slug": "rigging_truss_stage",
+      "uid": "c25451c9c53249b4a040b6b27cec259e",
+      "cat": "SOLID_BUILDING",
+      "biome": "hub",
+      "scale": 1,
+      "model_path": "res://assets/models/props/rigging_truss_stage.glb"
+    },
+    {
+      "slug": "beach_parasol_umbrella",
+      "uid": "e559392994e04527b3f5ee35a8c3c418",
+      "cat": "WOOD_SPLINTER",
+      "biome": "coast",
+      "scale": 1,
+      "model_path": "res://assets/models/props/beach_parasol_umbrella.glb"
+    },
+    {
+      "slug": "modern_shop_building",
+      "uid": "e925b04cdd8e4e51841a20b37bc9c056",
+      "cat": "SOLID_BUILDING",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/modern_shop_building.glb"
+    },
+    {
+      "slug": "wooden_rowboat",
+      "uid": "3e9093b6f0ce474da4d8cfea7e01f420",
+      "cat": "WOOD_SPLINTER",
+      "biome": "coast",
+      "scale": 1,
+      "model_path": "res://assets/models/props/wooden_rowboat.glb"
+    },
+    {
+      "slug": "metal_generator_yellow",
+      "uid": "b0de972e500a48d6a26a7d1ef6f5143f",
+      "cat": "HEAVY_SLIDE",
+      "biome": "hub",
+      "scale": 1,
+      "model_path": "res://assets/models/props/metal_generator_yellow.glb"
+    },
+    {
+      "slug": "gas_pump_retro",
+      "uid": "add0f902b9164718bd0540e88bf9927e",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "highway",
+      "scale": 1,
+      "model_path": "res://assets/models/props/gas_pump_retro.glb"
+    },
+    {
+      "slug": "hay_bale_round",
+      "uid": "e01a6a0f9ed843279adfac2427c99679",
+      "cat": "WOOD_SPLINTER",
+      "biome": "desert",
+      "scale": 1,
+      "model_path": "res://assets/models/props/hay_bale_round.glb"
+    },
+    {
+      "slug": "alpine_wooden_cabin",
+      "uid": "c90674a377864ac1b8fd141ad1917ee3",
+      "cat": "SOLID_BUILDING",
+      "biome": "snow",
+      "scale": 1,
+      "model_path": "res://assets/models/props/alpine_wooden_cabin.glb"
+    },
+    {
+      "slug": "joshua_desert_tree",
+      "uid": "0da4ba781b37449087dfd34162eb4184",
+      "cat": "TREE_SNAP",
+      "biome": "desert",
+      "scale": 1,
+      "model_path": "res://assets/models/props/joshua_desert_tree.glb"
+    },
+    {
+      "slug": "traffic_stop_sign_kit",
+      "uid": "27a6775c51e44bfda8e1ac8725eb3e9e",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "scale": 1,
+      "model_path": "res://assets/models/props/traffic_stop_sign_kit.glb"
+    },
+    {
+      "id": "street_lamp_01",
+      "slug": "ph_street_lamp_01",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "model_path": "res://assets/models/props/street_lamp_01/street_lamp_01.gltf"
+    },
+    {
+      "id": "street_lamp_02",
+      "slug": "ph_street_lamp_02",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "model_path": "res://assets/models/props/street_lamp_02/street_lamp_02.gltf"
+    },
+    {
+      "id": "metal_trash_can",
+      "slug": "ph_metal_trash_can",
+      "cat": "LIGHT_PLASTIC_FLICK",
+      "biome": "town",
+      "model_path": "res://assets/models/props/metal_trash_can/metal_trash_can.gltf"
+    },
+    {
+      "id": "Barrel_02",
+      "slug": "ph_barrel_blue",
+      "cat": "HEAVY_SLIDE",
+      "biome": "port",
+      "model_path": "res://assets/models/props/Barrel_02/Barrel_02.gltf"
+    },
+    {
+      "id": "Barrel_01",
+      "slug": "ph_barrel_red",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "port",
+      "model_path": "res://assets/models/props/Barrel_01/Barrel_01.gltf"
+    },
+    {
+      "id": "barrel_03",
+      "slug": "ph_barrel_rust",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "port",
+      "model_path": "res://assets/models/props/barrel_03/barrel_03.gltf"
+    },
+    {
+      "id": "CheeseBox_01",
+      "slug": "ph_wooden_box_flat",
+      "cat": "WOOD_SPLINTER",
+      "biome": "port",
+      "model_path": "res://assets/models/props/CheeseBox_01/CheeseBox_01.gltf"
+    },
+    {
+      "id": "portable_welding_cart",
+      "slug": "ph_welding_cart",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/portable_welding_cart/portable_welding_cart.gltf"
+    },
+    {
+      "id": "fire_hydrant",
+      "slug": "ph_fire_hydrant",
+      "cat": "POLE_SNAP",
+      "biome": "town",
+      "model_path": "res://assets/models/props/fire_hydrant/fire_hydrant.gltf"
+    },
+    {
+      "id": "modular_wooden_pier",
+      "slug": "ph_wooden_pier",
+      "cat": "SOLID_BUILDING",
+      "biome": "coast",
+      "model_path": "res://assets/models/props/modular_wooden_pier/modular_wooden_pier.gltf"
+    },
+    {
+      "id": "modular_pipes",
+      "slug": "ph_modular_pipes",
+      "cat": "HEAVY_SLIDE",
+      "biome": "port",
+      "model_path": "res://assets/models/props/modular_pipes/modular_pipes.gltf"
+    },
+    {
+      "id": "bark_debris_01",
+      "slug": "ph_bark_debris",
+      "cat": "WOOD_SPLINTER",
+      "biome": "snow",
+      "model_path": "res://assets/models/props/bark_debris_01/bark_debris_01.gltf"
+    },
+    {
+      "id": "cheiridopsis_succulent",
+      "slug": "ph_succulent",
+      "cat": "CACTUS_BURST",
+      "biome": "desert",
+      "model_path": "res://assets/models/props/cheiridopsis_succulent/cheiridopsis_succulent.gltf"
+    },
+    {
+      "id": "dead_quiver_trunk",
+      "slug": "ph_dead_quiver_trunk",
+      "cat": "TREE_SNAP",
+      "biome": "desert",
+      "model_path": "res://assets/models/props/dead_quiver_trunk/dead_quiver_trunk.gltf"
+    },
+    {
+      "id": "overhead_crane",
+      "slug": "ph_overhead_crane",
+      "cat": "SOLID_BUILDING",
+      "biome": "port",
+      "model_path": "res://assets/models/props/overhead_crane/overhead_crane.gltf"
+    },
+    {
+      "id": "concrete_road_barrier",
+      "slug": "ph_concrete_barrier_01",
+      "cat": "HEAVY_SLIDE",
+      "biome": "highway",
+      "model_path": "res://assets/models/props/concrete_road_barrier/concrete_road_barrier.gltf"
+    },
+    {
+      "id": "modular_street_seating",
+      "slug": "ph_street_seating",
+      "cat": "HEAVY_SLIDE",
+      "biome": "town",
+      "model_path": "res://assets/models/props/modular_street_seating/modular_street_seating.gltf"
+    },
+    {
+      "id": "portable_generator",
+      "slug": "ph_portable_generator",
+      "cat": "HEAVY_SLIDE",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/portable_generator/portable_generator.gltf"
+    },
+    {
+      "id": "portable_searchlight",
+      "slug": "ph_portable_searchlight",
+      "cat": "POLE_SNAP",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/portable_searchlight/portable_searchlight.gltf"
+    },
+    {
+      "id": "modular_chainlink_fence",
+      "slug": "ph_chainlink_fence",
+      "cat": "WOOD_SPLINTER",
+      "biome": "port",
+      "model_path": "res://assets/models/props/modular_chainlink_fence/modular_chainlink_fence.gltf"
+    },
+    {
+      "id": "propane_tank",
+      "slug": "ph_propane_tank",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "port",
+      "model_path": "res://assets/models/props/propane_tank/propane_tank.gltf"
+    },
+    {
+      "id": "wooden_crate_01",
+      "slug": "ph_wooden_crate_01",
+      "cat": "WOOD_SPLINTER",
+      "biome": "port",
+      "model_path": "res://assets/models/props/wooden_crate_01/wooden_crate_01.gltf"
+    },
+    {
+      "id": "metal_jerrycan",
+      "slug": "ph_metal_jerrycan",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/metal_jerrycan/metal_jerrycan.gltf"
+    },
+    {
+      "id": "small_lpg_tank",
+      "slug": "ph_small_lpg_tank",
+      "cat": "EXPLOSIVE_DRUM",
+      "biome": "town",
+      "model_path": "res://assets/models/props/small_lpg_tank/small_lpg_tank.gltf"
+    },
+    {
+      "id": "wooden_crate_02",
+      "slug": "ph_wooden_crate_02",
+      "cat": "WOOD_SPLINTER",
+      "biome": "port",
+      "model_path": "res://assets/models/props/wooden_crate_02/wooden_crate_02.gltf"
+    },
+    {
+      "id": "wooden_military_crate",
+      "slug": "ph_wooden_mil_crate",
+      "cat": "WOOD_SPLINTER",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/wooden_military_crate/wooden_military_crate.gltf"
+    },
+    {
+      "id": "old_tyre",
+      "slug": "ph_old_tyre",
+      "cat": "LIGHT_PLASTIC_FLICK",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/old_tyre/old_tyre.gltf"
+    },
+    {
+      "id": "wooden_picnic_table",
+      "slug": "ph_picnic_table",
+      "cat": "WOOD_SPLINTER",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/wooden_picnic_table/wooden_picnic_table.gltf"
+    },
+    {
+      "id": "wooden_barrels_01",
+      "slug": "ph_wooden_barrels",
+      "cat": "WOOD_SPLINTER",
+      "biome": "town",
+      "model_path": "res://assets/models/props/wooden_barrels_01/wooden_barrels_01.gltf"
+    },
+    {
+      "id": "quiver_tree_01",
+      "slug": "ph_quiver_tree",
+      "cat": "TREE_SNAP",
+      "biome": "desert",
+      "model_path": "res://assets/models/props/quiver_tree_01/quiver_tree_01.gltf"
+    },
+    {
+      "id": "pine_sapling_medium",
+      "slug": "ph_pine_sapling",
+      "cat": "TREE_SNAP",
+      "biome": "snow",
+      "model_path": "res://assets/models/props/pine_sapling_medium/pine_sapling_medium.gltf"
+    },
+    {
+      "id": "island_tree_01",
+      "slug": "ph_island_tree",
+      "cat": "TREE_SNAP",
+      "biome": "coast",
+      "model_path": "res://assets/models/props/island_tree_01/island_tree_01.gltf"
+    },
+    {
+      "id": "moon_rock_01",
+      "slug": "ph_volcano_boulder",
+      "cat": "SOLID_ROCK",
+      "biome": "volcano",
+      "model_path": "res://assets/models/props/moon_rock_01/moon_rock_01.gltf"
+    },
+    {
+      "id": "namaqualand_cliff_01",
+      "slug": "ph_sandstone_cliff",
+      "cat": "SOLID_ROCK",
+      "biome": "desert",
+      "model_path": "res://assets/models/props/namaqualand_cliff_01/namaqualand_cliff_01.gltf"
+    },
+    {
+      "id": "fern_02",
+      "slug": "ph_fern",
+      "cat": "CACTUS_BURST",
+      "biome": "coast",
+      "model_path": "res://assets/models/props/fern_02/fern_02.gltf"
+    },
+    {
+      "id": "coast_land_rocks_02",
+      "slug": "ph_coast_rock_outcrop",
+      "cat": "SOLID_ROCK",
+      "biome": "coast",
+      "model_path": "res://assets/models/props/coast_land_rocks_02/coast_land_rocks_02.gltf"
+    },
+    {
+      "id": "jacaranda_tree",
+      "slug": "ph_jacaranda_tree",
+      "cat": "TREE_SNAP",
+      "biome": "hub",
+      "model_path": "res://assets/models/props/jacaranda_tree/jacaranda_tree.gltf"
+    },
+    {
+      "id": "fir_tree_01",
+      "slug": "ph_fir_tree",
+      "cat": "TREE_SNAP",
+      "biome": "snow",
+      "model_path": "res://assets/models/props/fir_tree_01/fir_tree_01.gltf"
+    }
+  ]
+}
