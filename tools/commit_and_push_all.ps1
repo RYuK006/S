@@ -1,10 +1,29 @@
 # tools/commit_and_push_all.ps1
 $ErrorActionPreference = "Continue"
 
+function Push-CommitChunks {
+    $pending = @(git rev-list --reverse origin/main..HEAD)
+    if ($pending.Count -eq 0) { return }
+    Write-Host "Catching up $($pending.Count) unpushed local commits in chunks of 12..."
+    for ($i = 0; $i -lt $pending.Count; $i += 12) {
+        $end = [math]::Min($i + 11, $pending.Count - 1)
+        $sha = $pending[$end]
+        $ok = $false
+        for ($retry = 1; $retry -le 4; $retry++) {
+            git push origin "${sha}:refs/heads/main"
+            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+            Start-Sleep -Seconds (3 * $retry)
+        }
+        if (-not $ok) { throw "Failed to push catchup chunk ending at $sha" }
+    }
+}
+
+Push-CommitChunks
+
 # Get all changed and untracked files individually (-uall ensures directory contents commit one-by-one)
 $status = git status --porcelain -uall
 if (-not $status) {
-    Write-Host "No files to commit."
+    Write-Host "No remaining files to commit."
     exit 0
 }
 
@@ -25,6 +44,8 @@ foreach ($line in $status) {
 Write-Host "Found $($files.Count) items to commit one-by-one..."
 
 $count = 0
+$batchCount = 0
+[long]$batchBytes = 0
 foreach ($f in $files) {
     $count++
     $msg = "Update GRIDLETHAL project asset/config: $f"
@@ -47,19 +68,26 @@ foreach ($f in $files) {
     } elseif ($f.Contains("test_") -or $f.Contains("audit_") -or $f.Contains("upgrade_v1")) {
         $msg = "Update verification suite & GPU visual audit outputs: $f"
     }
-    
+
+    $fSize = (Get-Item $f).Length
     git add -f -- $f
     if ($LASTEXITCODE -ne 0) { throw "git add failed on $f" }
     git commit --author="RYuK006 <ryuk@gridlethal.com>" -m "$msg"
     if ($LASTEXITCODE -ne 0) { throw "git commit failed on $f" }
-    if (($count % 100) -eq 0 -or $count -eq $files.Count) {
-        Write-Host "[$count/$($files.Count)] Pushing batch to origin main (last: $f)..."
-        for ($retry = 1; $retry -le 3; $retry++) {
+
+    $batchCount++
+    $batchBytes += $fSize
+    if ($batchCount -ge 20 -or $batchBytes -ge 30MB -or $count -eq $files.Count) {
+        Write-Host "[$count/$($files.Count)] Pushing $batchCount commits ($([math]::Round($batchBytes/1MB,1)) MB) to origin main (last: $f)..."
+        $ok = $false
+        for ($retry = 1; $retry -le 4; $retry++) {
             git push origin main
-            if ($LASTEXITCODE -eq 0) { break }
-            Start-Sleep -Seconds 4
+            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+            Start-Sleep -Seconds (3 * $retry)
         }
-        if ($LASTEXITCODE -ne 0) { throw "Failed to push batch at $count ($f)" }
+        if (-not $ok) { throw "Failed to push batch at $count ($f)" }
+        $batchCount = 0
+        $batchBytes = 0
     }
 }
 
