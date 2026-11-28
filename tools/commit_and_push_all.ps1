@@ -4,15 +4,15 @@ $ErrorActionPreference = "Continue"
 function Push-CommitChunks {
     $pending = @(git rev-list --reverse origin/main..HEAD)
     if ($pending.Count -eq 0) { return }
-    Write-Host "Catching up $($pending.Count) unpushed local commits in chunks of 12..."
-    for ($i = 0; $i -lt $pending.Count; $i += 12) {
-        $end = [math]::Min($i + 11, $pending.Count - 1)
+    Write-Host "Catching up $($pending.Count) unpushed local commits in chunks of 6..."
+    for ($i = 0; $i -lt $pending.Count; $i += 6) {
+        $end = [math]::Min($i + 5, $pending.Count - 1)
         $sha = $pending[$end]
         $ok = $false
-        for ($retry = 1; $retry -le 4; $retry++) {
-            git push origin "${sha}:refs/heads/main"
+        for ($retry = 1; $retry -le 6; $retry++) {
+            git -c http.version=HTTP/1.1 push origin "${sha}:refs/heads/main"
             if ($LASTEXITCODE -eq 0) { $ok = $true; break }
-            Start-Sleep -Seconds (3 * $retry)
+            Start-Sleep -Seconds (5 * $retry)
         }
         if (-not $ok) { throw "Failed to push catchup chunk ending at $sha" }
     }
@@ -77,13 +77,13 @@ foreach ($f in $files) {
 
     $batchCount++
     $batchBytes += $fSize
-    if ($batchCount -ge 20 -or $batchBytes -ge 30MB -or $count -eq $files.Count) {
+    if ($batchCount -ge 18 -or $batchBytes -ge 20MB -or $count -eq $files.Count) {
         Write-Host "[$count/$($files.Count)] Pushing $batchCount commits ($([math]::Round($batchBytes/1MB,1)) MB) to origin main (last: $f)..."
         $ok = $false
-        for ($retry = 1; $retry -le 4; $retry++) {
-            git push origin main
+        for ($retry = 1; $retry -le 6; $retry++) {
+            git -c http.version=HTTP/1.1 push origin main
             if ($LASTEXITCODE -eq 0) { $ok = $true; break }
-            Start-Sleep -Seconds (3 * $retry)
+            Start-Sleep -Seconds (5 * $retry)
         }
         if (-not $ok) { throw "Failed to push batch at $count ($f)" }
         $batchCount = 0
